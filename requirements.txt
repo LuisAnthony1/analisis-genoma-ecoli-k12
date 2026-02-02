@@ -1,0 +1,15 @@
+# Analisis Bioinformatico - E. coli K-12 MG1655
+# Instalar con: pip install -r requirements.txt
+
+# Bioinformatica
+biopython>=1.81
+
+# Analisis de datos
+pandas>=2.0.0
+
+# Visualizacion
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilidades
+numpy>=1.24.0
