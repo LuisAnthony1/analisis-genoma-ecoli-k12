@@ -1,0 +1,100 @@
+{
+  "fecha_analisis": "2026-02-02T04:51:21.232933",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/ecoli_k12.gb",
+  "estadisticas_generales": {
+    "total_genes": 4318,
+    "longitud_genoma_pb": 4641652,
+    "total_pb_codificante": 4048751,
+    "densidad_genica_porcentaje": 87.23,
+    "tamano_gen": {
+      "minimo_pb": 27,
+      "maximo_pb": 8622,
+      "promedio_pb": 937.64,
+      "mediana_pb": 825.0,
+      "desviacion_std": 649.08
+    },
+    "contenido_gc_cds": {
+      "promedio": 50.79,
+      "minimo": 13.64,
+      "maximo": 66.72
+    },
+    "distribucion_hebras": {
+      "forward": 2103,
+      "reverse": 2215,
+      "porcentaje_forward": 48.7,
+      "porcentaje_reverse": 51.3
+    }
+  },
+  "distribucion_tamanos": {
+    "0-300 pb (muy cortos)": {
+      "cantidad": 532,
+      "porcentaje": 12.32
+    },
+    "301-600 pb (cortos)": {
+      "cantidad": 900,
+      "porcentaje": 20.84
+    },
+    "601-900 pb (medianos)": {
+      "cantidad": 957,
+      "porcentaje": 22.16
+    },
+    "901-1500 pb (largos)": {
+      "cantidad": 1337,
+      "porcentaje": 30.96
+    },
+    "1501-3000 pb (muy largos)": {
+      "cantidad": 533,
+      "porcentaje": 12.34
+    },
+    ">3000 pb (extra largos)": {
+      "cantidad": 59,
+      "porcentaje": 1.37
+    }
+  },
+  "comparacion_literatura": {
+    "Total genes": {
+      "observado": 4318,
+      "literatura": 4300,
+      "diferencia": 18,
+      "diferencia_porcentaje": 0.42
+    },
+    "Densidad genica": {
+      "observado": 87.23,
+      "literatura": 87.0,
+      "diferencia": 0.23,
+      "diferencia_porcentaje": 0.26
+    },
+    "GC en CDS": {
+      "observado": 50.79,
+      "literatura": 51.5,
+      "diferencia": -0.71,
+      "diferencia_porcentaje": -1.38
+    },
+    "Tamano promedio": {
+      "observado": 937.64,
+      "literatura": 950,
+      "diferencia": -12.36,
+      "diferencia_porcentaje": -1.3
+    }
+  },
+  "tipos_features": {
+    "source": 1,
+    "gene": 4651,
+    "CDS": 4318,
+    "mobile_element": 50,
+    "ncRNA": 108,
+    "rRNA": 22,
+    "tRNA": 86,
+    "misc_feature": 48,
+    "rep_origin": 1
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4641652,
+    "genes_totales": 4300,
+    "genes_codificantes": 4290,
+    "contenido_gc_genoma": 50.8,
+    "contenido_gc_cds": 51.5,
+    "densidad_genica": 87.0,
+    "tamano_promedio_gen": 950
+  }
+}

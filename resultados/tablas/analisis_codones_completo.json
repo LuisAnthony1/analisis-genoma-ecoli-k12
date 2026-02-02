@@ -1,0 +1,55 @@
+{
+  "fecha_analisis": "2026-02-02T04:51:15.379885",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/ecoli_k12.fasta",
+  "codones_inicio": {
+    "codon": "ATG",
+    "conteo_total": 76282,
+    "longitud_genoma_pb": 4641652,
+    "densidad_por_kb": 16.4342,
+    "genes_anotados_literatura": 4300,
+    "ratio_atg_por_gen": 17.74
+  },
+  "codones_parada": {
+    "conteos": {
+      "TAA": 68858,
+      "TAG": 27254,
+      "TGA": 83532
+    },
+    "total_codones_parada": 179644,
+    "densidades_por_kb": {
+      "TAA": 14.8348,
+      "TAG": 5.8716,
+      "TGA": 17.9962
+    },
+    "proporciones_porcentaje": {
+      "TAA": 38.33,
+      "TAG": 15.17,
+      "TGA": 46.5
+    },
+    "proporciones_literatura": {
+      "TAA": 63.0,
+      "TAG": 8.0,
+      "TGA": 29.0
+    }
+  },
+  "contenido_gc": {
+    "conteo_nucleotidos": {
+      "A": 1142742,
+      "T": 1141382,
+      "G": 1177437,
+      "C": 1180091
+    },
+    "contenido_gc_porcentaje": 50.79,
+    "contenido_at_porcentaje": 49.21,
+    "gc_literatura": 50.8,
+    "diferencia_con_literatura": -0.01
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4641652,
+    "genes_anotados": 4300,
+    "contenido_gc": 50.8,
+    "proporcion_taa": 63.0,
+    "proporcion_tag": 8.0,
+    "proporcion_tga": 29.0
+  }
+}
