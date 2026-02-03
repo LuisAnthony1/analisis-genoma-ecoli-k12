@@ -4,9 +4,10 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Autor** | Luis Anthony Mamani Mescco|
-| | Aracely Llancaya Tapia|
-| **Email** | 194522@unsaac.edu.pe |
+| **Autores** | Luis Anthony Mamani Mescco (194522@unsaac.edu.pe) |
+| | Tirssa Ivonne Guevara D (192420@unsaac.edu.pe) |
+| | Lino Zeynt Huaracallo Arenas (204798@unsaac.edu.pe) |
+| | Aracely Llancaya Tapia (220549@unsaac.edu.pe) |
 | **Universidad** | Universidad Nacional de San Antonio Abad del Cusco (UNSAAC) |
 | **Curso** | Bioinformatica |
 | **Fecha de Analisis** | 2026-02-02 |
