@@ -168,7 +168,9 @@ Los resultados fueron validados mediante:
 ## Autor
 
 - **Nombre**: Luis Anthony Mamani Mescco
+- **Nombre**: Tirssa Ivonne Guevara D
 - **Email**: 194522@unsaac.edu.pe
+- **Email**: 192420@unsaac.edu.pe
 - **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 - **Curso**: BioInformatica
 - **Fecha**: 2026
