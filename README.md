@@ -165,10 +165,14 @@ Los resultados fueron validados mediante:
 2. NCBI Reference Sequence: NC_000913.3 / U00096.3
 3. EcoGene Database: https://ecogene.org/
 
-## Autor
+## Autores
 
 - **Nombre**: Luis Anthony Mamani Mescco
 - **Email**: 194522@unsaac.edu.pe
+
+- **Nombre**: Lino Zeynt Huaracallo Arenas
+- **Email**: 204798@unsaac.edu.pe
+
 - **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 - **Curso**: BioInformatica
 - **Fecha**: 2026
