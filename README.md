@@ -170,9 +170,11 @@ Los resultados fueron validados mediante:
 - **Nombre**: Luis Anthony Mamani Mescco
 - **Nombre**: Tirssa Ivonne Guevara D
 - **Nombre**: Lino Zeynt Huaracallo Arenas
+- **Nombre**: Aracely Llancaya Tapia
 - **Email**: 194522@unsaac.edu.pe
 - **Email**: 192420@unsaac.edu.pe
 - **Email**: 204798@unsaac.edu.pe
+- **Email**: 220549@unsaac.edu.pe
 - **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 - **Curso**: BioInformatica
 - **Fecha**: 2026
