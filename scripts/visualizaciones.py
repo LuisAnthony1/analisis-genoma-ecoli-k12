@@ -103,7 +103,8 @@ def guardar_figura(figura, nombre_archivo):
         nombre_archivo: Nombre del archivo (sin extension)
     """
     ruta = os.path.join(RUTA_RESULTADOS_FIGURAS, f"{nombre_archivo}.png")
-    figura.savefig(ruta, dpi=300, bbox_inches='tight', facecolor='white')
+    # DPI reducido a 150 para ahorrar memoria en AWS (suficiente para informes)
+    figura.savefig(ruta, dpi=150, bbox_inches='tight', facecolor='white')
     print(f"[OK] Figura guardada: {ruta}")
     plt.close(figura)
     # Limpiar memoria (importante para AWS con poca RAM)
@@ -640,7 +641,7 @@ def graficar_comparacion_genomas(datos_comparacion):
     ec = metricas['ecoli']
     sal = metricas['salmonella']
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))  # Reducido
 
     # --- Grafico 1: Tamano del genoma ---
     ax1 = axes[0, 0]
@@ -728,7 +729,7 @@ def graficar_genes_virulencia(datos_comparacion):
     ec_vir = virulencia['ecoli']
     sal_vir = virulencia['salmonella']
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))  # Reducido
 
     # --- Grafico 1: Total de genes de virulencia ---
     ax1 = axes[0]
@@ -798,7 +799,7 @@ def graficar_distancias_intergenicas(datos_comparacion):
     ec_dist = distancias['ecoli']
     sal_dist = distancias['salmonella']
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))  # Reducido
 
     # --- Grafico 1: Estadisticas de distancias ---
     ax1 = axes[0]
@@ -874,7 +875,7 @@ def graficar_resumen_comparacion(datos_comparacion):
     virulencia = datos_comparacion['genes_virulencia']
     resumen = datos_comparacion.get('resumen_interpretativo', {})
 
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(14, 9))  # Reducido para menos memoria
 
     # Crear grid de subplots
     gs = fig.add_gridspec(2, 3, hspace=0.3, wspace=0.3)
@@ -960,7 +961,7 @@ def graficar_resumen_general(datos_codones, datos_genes):
     """
     print("[INFO] Generando grafico resumen general...")
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))  # Reducido para menos memoria
 
     # --- Subgrafico 1: Metricas principales ---
     ax1 = axes[0, 0]
