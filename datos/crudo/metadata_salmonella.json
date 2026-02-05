@@ -1,0 +1,17 @@
+{
+  "fecha_descarga": "2026-02-05T05:09:06.553559",
+  "fuente": "NCBI",
+  "id_acceso": "NC_003197.2",
+  "email_usado": "194522@unsaac.edu.pe",
+  "organismo_config": "Salmonella enterica serovar Typhimurium LT2",
+  "genoma": {
+    "id": "NC_003197.2",
+    "nombre": "NC_003197",
+    "descripcion": "Salmonella enterica subsp. enterica serovar Typhimurium str. LT2, complete genome",
+    "longitud": 4857450,
+    "organismo": "Salmonella enterica subsp. enterica serovar Typhimurium str. LT2",
+    "fecha_actualizacion": "08-SEP-2022",
+    "num_features": 14062,
+    "nombre_corto": "salmonella_lt2"
+  }
+}

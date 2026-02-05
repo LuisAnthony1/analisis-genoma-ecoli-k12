@@ -1,5 +1,7 @@
 {
-  "fecha_analisis": "2026-02-05T04:35:06.880270",
+  "fecha_analisis": "2026-02-05T05:11:41.591725",
+  "organismo": "Escherichia coli K-12 MG1655",
+  "organismo_corto": "ecoli_k12",
   "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/ecoli_k12.gb",
   "estadisticas_generales": {
     "total_genes": 4318,
@@ -110,9 +112,8 @@
   },
   "referencias_bibliograficas": {
     "ncbi_refseq": "NCBI Reference Sequence NC_000913.3",
-    "ecocyc": "EcoCyc Database (https://ecocyc.org/)",
-    "blattner_1997": "Blattner FR et al. (1997) Science 277:1453-1462",
-    "nota": "Los valores pueden variar ligeramente entre versiones de anotacion"
+    "database": "EcoCyc Database (https://ecocyc.org/)",
+    "paper": "Blattner FR et al. (1997) Science 277:1453-1462"
   },
   "analisis_genes_vs_cds": {
     "genes_totales_anotados": 4651,

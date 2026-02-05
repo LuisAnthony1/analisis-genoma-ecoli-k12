@@ -196,15 +196,28 @@ El genoma de E. coli K-12 fue completamente secuenciado por Blattner et al. en 1
 
 ## 4. Visualizaciones Generadas
 
-Se generaron 7 graficos profesionales:
+Se generaron 7 graficos profesionales ubicados en `resultados/figuras/`:
 
-1. **codones_parada.png** - Distribucion de codones de parada
-2. **codones_inicio_atg.png** - Analisis de codones ATG
-3. **contenido_gc.png** - Composicion de nucleotidos y GC
-4. **distribucion_tamanos_genes.png** - Histograma de tamanos de genes
-5. **distribucion_hebras.png** - Genes por hebra (forward/reverse)
-6. **comparacion_literatura.png** - Valores observados vs literatura
-7. **resumen_general.png** - Panel resumen del analisis
+### 4.1 Distribucion de Codones de Parada
+![Codones de Parada](../resultados/figuras/codones_parada.png)
+
+### 4.2 Analisis de Codones de Inicio (ATG)
+![Codones ATG](../resultados/figuras/codones_inicio_atg.png)
+
+### 4.3 Contenido de GC
+![Contenido GC](../resultados/figuras/contenido_gc.png)
+
+### 4.4 Distribucion de Tamanos de Genes
+![Distribucion Tamanos](../resultados/figuras/distribucion_tamanos_genes.png)
+
+### 4.5 Distribucion por Hebras
+![Distribucion Hebras](../resultados/figuras/distribucion_hebras.png)
+
+### 4.6 Comparacion con Literatura
+![Comparacion Literatura](../resultados/figuras/comparacion_literatura.png)
+
+### 4.7 Resumen General del Analisis
+![Resumen General](../resultados/figuras/resumen_general.png)
 
 ---
 
