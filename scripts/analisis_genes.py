@@ -853,6 +853,21 @@ def main():
         else:
             print(f"       {tipo}: {cantidad:,}")
 
+    # Verificar que se encontraron genes
+    if len(genes) == 0:
+        print("\n" + "=" * 70)
+        print("[ERROR] NO SE ENCONTRARON GENES CDS EN EL ARCHIVO GENBANK")
+        print("=" * 70)
+        print("  El archivo GenBank parece no tener anotaciones de genes.")
+        print("  Esto puede ocurrir si:")
+        print("    1. El archivo se descargo sin anotaciones (solo secuencia)")
+        print("    2. El formato de descarga no fue el correcto")
+        print("")
+        print("  SOLUCION: Vuelve a ejecutar descargar_genoma.py")
+        print("            y selecciona el organismo nuevamente.")
+        print("=" * 70 + "\n")
+        return
+
     # Analizar genes totales vs CDS (codificantes vs no codificantes)
     analisis_genes_cds = analizar_genes_vs_cds(registro, genes)
 

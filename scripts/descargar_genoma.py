@@ -122,16 +122,42 @@ def descargar_genoma(id_genoma, nombre_organismo, formato="gb"):
     print(f"       ID: {id_genoma} | Formato: {nombre_formato}")
 
     try:
+        # Para GenBank, usar "gbwithparts" para obtener todas las anotaciones
+        # Esto es necesario para genomas grandes con muchas features
+        if formato == "gb":
+            rettype = "gbwithparts"
+        else:
+            rettype = formato
+
         # Realizar la peticion a NCBI
         manejador = Entrez.efetch(
             db="nucleotide",
             id=id_genoma,
-            rettype=formato,
+            rettype=rettype,
             retmode="text"
         )
 
         contenido = manejador.read()
         manejador.close()
+
+        # Verificar que el GenBank tiene anotaciones
+        if formato == "gb" and "CDS" not in contenido:
+            print(f"[WARN] El archivo descargado puede no tener anotaciones completas")
+            print(f"       Intentando descarga alternativa...")
+
+            # Intentar con formato "gb" directamente
+            manejador = Entrez.efetch(
+                db="nucleotide",
+                id=id_genoma,
+                rettype="gb",
+                retmode="text"
+            )
+            contenido_alt = manejador.read()
+            manejador.close()
+
+            if "CDS" in contenido_alt:
+                contenido = contenido_alt
+                print(f"[OK] Descarga alternativa exitosa con anotaciones")
 
         print(f"[OK] Descarga {formato.upper()} completada")
         return contenido
