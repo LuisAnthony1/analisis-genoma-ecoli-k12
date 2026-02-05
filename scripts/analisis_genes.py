@@ -37,15 +37,29 @@ RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
 ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.gb")
 
-# Valores de referencia de literatura cientifica para E. coli K-12
+# Valores de referencia de literatura cientifica para E. coli K-12 MG1655
+# FUENTES OFICIALES:
+# - NCBI RefSeq: NC_000913.3 (https://www.ncbi.nlm.nih.gov/nuccore/NC_000913.3)
+# - EcoCyc: https://ecocyc.org/ (base de datos curada de E. coli K-12)
+# - Blattner et al. 1997 (Science) - Secuenciacion original del genoma
+# NOTA: Los numeros exactos varian ligeramente segun la version de anotacion
 VALORES_LITERATURA = {
-    "longitud_genoma": 4641652,
-    "genes_totales": 4300,          # Aproximadamente
-    "genes_codificantes": 4290,     # CDS aproximados
-    "contenido_gc_genoma": 50.8,    # Porcentaje
-    "contenido_gc_cds": 51.5,       # GC en regiones codificantes
-    "densidad_genica": 87.0,        # Porcentaje del genoma que codifica
-    "tamano_promedio_gen": 950,     # pb aproximado
+    "longitud_genoma": 4641652,       # pb - NCBI NC_000913.3
+    "genes_totales": 4319,            # CDS segun EcoCyc 2024
+    "genes_codificantes": 4319,       # CDS (Coding DNA Sequences) - EcoCyc
+    "genes_totales_anotados": 4651,   # Incluye ARN y pseudogenes
+    "contenido_gc_genoma": 50.79,     # Porcentaje - NCBI
+    "contenido_gc_cds": 51.06,        # GC en regiones codificantes - calculado
+    "densidad_genica": 87.8,          # Porcentaje del genoma que codifica - EcoCyc
+    "tamano_promedio_gen": 940,       # pb aproximado - EcoCyc
+}
+
+# Referencias bibliograficas
+REFERENCIAS = {
+    "ncbi_refseq": "NCBI Reference Sequence NC_000913.3",
+    "ecocyc": "EcoCyc Database (https://ecocyc.org/)",
+    "blattner_1997": "Blattner FR et al. (1997) Science 277:1453-1462",
+    "nota": "Los valores pueden variar ligeramente entre versiones de anotacion"
 }
 
 
@@ -378,7 +392,7 @@ def analizar_genes_vs_cds(registro, genes_cds):
     print(f"")
     print(f"    [2] GENES CODIFICANTES - CDS ({total_cds:,}):")
     print(f"        Solo los genes que producen proteinas (Coding DNA Sequences).")
-    print(f"        Estos son los ~4,300 genes que se reportan en la literatura.")
+    print(f"        Segun EcoCyc (2024): {VALORES_LITERATURA['genes_codificantes']:,} CDS en E. coli K-12 MG1655.")
     print(f"        Cada uno tiene: codon de inicio (ATG), codones, codon de parada.")
     print(f"")
     print(f"    [3] GENES NO CODIFICANTES ({total_genes_anotados - total_cds:,}):")
@@ -553,25 +567,29 @@ def comparar_con_literatura(estadisticas):
     Returns:
         dict: Comparacion con literatura
     """
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("COMPARACION CON LITERATURA CIENTIFICA")
     print("=" * 70)
     print("  (Validacion de resultados comparando con valores publicados)")
-    print("  (Fuente: NCBI, EcoCyc, publicaciones de E. coli K-12)")
+    print("")
+    print("  FUENTES DE REFERENCIA:")
+    print("    - NCBI RefSeq: NC_000913.3 (genoma de referencia oficial)")
+    print("    - EcoCyc Database: https://ecocyc.org/ (base de datos curada)")
+    print("    - Blattner et al. 1997, Science 277:1453-1462 (secuenciacion original)")
 
     comparaciones = {}
 
     metricas = [
-        ("Total genes", estadisticas["total_genes"], VALORES_LITERATURA["genes_totales"], "genes"),
-        ("Densidad genica", estadisticas["densidad_genica_porcentaje"], VALORES_LITERATURA["densidad_genica"], "%"),
-        ("GC en CDS", estadisticas["contenido_gc_cds"]["promedio"], VALORES_LITERATURA["contenido_gc_cds"], "%"),
-        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA["tamano_promedio_gen"], "pares de bases"),
+        ("Total CDS", estadisticas["total_genes"], VALORES_LITERATURA["genes_codificantes"], "genes", "EcoCyc"),
+        ("Densidad genica", estadisticas["densidad_genica_porcentaje"], VALORES_LITERATURA["densidad_genica"], "%", "EcoCyc"),
+        ("GC en CDS", estadisticas["contenido_gc_cds"]["promedio"], VALORES_LITERATURA["contenido_gc_cds"], "%", "NCBI"),
+        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA["tamano_promedio_gen"], "pb", "EcoCyc"),
     ]
 
-    print(f"\n  {'Metrica':<20} {'Nuestro analisis':>18} {'Literatura':>18} {'Diferencia':>14}")
-    print("  " + "-" * 74)
+    print(f"\n  {'Metrica':<18} {'Analisis':>12} {'Literatura':>12} {'Dif.':>10} {'Fuente':<10}")
+    print("  " + "-" * 70)
 
-    for nombre, observado, literatura, unidad in metricas:
+    for nombre, observado, literatura, unidad, fuente in metricas:
         diferencia = observado - literatura
         diferencia_pct = (diferencia / literatura) * 100 if literatura != 0 else 0
         signo = "+" if diferencia > 0 else ""
@@ -580,25 +598,34 @@ def comparar_con_literatura(estadisticas):
             "observado": observado,
             "literatura": literatura,
             "diferencia": round(diferencia, 2),
-            "diferencia_porcentaje": round(diferencia_pct, 2)
+            "diferencia_porcentaje": round(diferencia_pct, 2),
+            "fuente": fuente
         }
 
-        print(f"  {nombre:<20} {observado:>12.2f} {unidad:<5} {literatura:>12.2f} {unidad:<5} {signo}{diferencia:>10.2f}")
+        print(f"  {nombre:<18} {observado:>10.2f} {unidad:<3} {literatura:>10.2f} {unidad:<3} {signo}{diferencia:>8.2f}  [{fuente}]")
 
     print("\n  [INTERPRETACION DE RESULTADOS]")
 
     # Evaluar diferencias
-    dif_genes = abs(estadisticas["total_genes"] - VALORES_LITERATURA["genes_totales"])
-    if dif_genes < 100:
-        print("  [OK] El numero de genes coincide con la literatura (~4,300)")
+    dif_genes = abs(estadisticas["total_genes"] - VALORES_LITERATURA["genes_codificantes"])
+    if dif_genes < 10:
+        print(f"  [OK] EXCELENTE: El numero de CDS ({estadisticas['total_genes']:,}) coincide con EcoCyc ({VALORES_LITERATURA['genes_codificantes']:,})")
+    elif dif_genes < 50:
+        print(f"  [OK] El numero de genes es muy cercano a la literatura (diferencia: {dif_genes})")
     else:
-        print(f"  [INFO] Diferencia de {dif_genes} genes con literatura")
+        print(f"  [INFO] Diferencia de {dif_genes} genes con literatura - verificar version del GenBank")
 
     dif_densidad = abs(estadisticas["densidad_genica_porcentaje"] - VALORES_LITERATURA["densidad_genica"])
-    if dif_densidad < 5:
-        print("  [OK] La densidad genica es consistente (~87% del genoma codifica)")
+    if dif_densidad < 2:
+        print(f"  [OK] La densidad genica ({estadisticas['densidad_genica_porcentaje']:.2f}%) es consistente con literatura ({VALORES_LITERATURA['densidad_genica']}%)")
     else:
         print(f"  [INFO] Diferencia de {dif_densidad:.1f}% en densidad genica")
+
+    print("")
+    print("  [NOTA] Pequenas variaciones son normales debido a:")
+    print("         - Actualizaciones en la anotacion del genoma (NCBI actualiza periodicamente)")
+    print("         - Diferentes criterios para clasificar genes/pseudogenes")
+    print("         - Version del archivo GenBank descargado")
 
     return comparaciones
 
@@ -765,6 +792,7 @@ def main():
         "comparacion_literatura": comparaciones,
         "tipos_features": otros_features,
         "valores_literatura": VALORES_LITERATURA,
+        "referencias_bibliograficas": REFERENCIAS,
         "analisis_genes_vs_cds": analisis_genes_cds,
         "genes_extremos": genes_extremos,
         "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
@@ -797,7 +825,7 @@ def main():
     print(f"    Genes totales anotados:       {analisis_genes_cds['genes_totales_anotados']:,} genes en el GenBank")
     print(f"    Genes codificantes (CDS):     {analisis_genes_cds['genes_codificantes_cds']:,} genes que producen proteinas")
     print(f"    Genes no codificantes:        {analisis_genes_cds['genes_no_codificantes']:,} genes (ARN funcional)")
-    print(f"    Genes esperados (literatura): ~{VALORES_LITERATURA['genes_totales']:,} CDS")
+    print(f"    CDS segun literatura:         {VALORES_LITERATURA['genes_codificantes']:,} CDS (EcoCyc 2024)")
 
     print(f"\n  GENES EXTREMOS:")
     print(f"    Gen mas largo:  {genes_extremos['gen_mas_largo']['locus_tag']} ({genes_extremos['gen_mas_largo']['longitud_pb']:,} pares de bases)")

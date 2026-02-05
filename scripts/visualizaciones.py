@@ -395,17 +395,18 @@ def graficar_comparacion_literatura(datos_genes):
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    metricas = ['Total\ngenes', 'Densidad\ngenica (%)', 'GC en\nCDS (%)', 'Tamano\npromedio (pb)']
+    metricas = ['Total\nCDS', 'Densidad\ngenica (%)', 'GC en\nCDS (%)', 'Tamano\npromedio (pb)']
 
+    # Usar las nuevas claves (Total CDS en lugar de Total genes)
     observados = [
-        comparacion['Total genes']['observado'],
+        comparacion.get('Total CDS', comparacion.get('Total genes', {}))['observado'],
         comparacion['Densidad genica']['observado'],
         comparacion['GC en CDS']['observado'],
         comparacion['Tamano promedio']['observado']
     ]
 
     literatura_vals = [
-        comparacion['Total genes']['literatura'],
+        comparacion.get('Total CDS', comparacion.get('Total genes', {}))['literatura'],
         comparacion['Densidad genica']['literatura'],
         comparacion['GC en CDS']['literatura'],
         comparacion['Tamano promedio']['literatura']
@@ -442,6 +443,153 @@ def graficar_comparacion_literatura(datos_genes):
 
     plt.tight_layout()
     guardar_figura(fig, "comparacion_literatura")
+
+
+def graficar_genes_vs_cds(datos_genes):
+    """
+    Genera grafico comparando genes totales vs CDS (codificantes).
+
+    Args:
+        datos_genes: Diccionario con datos de analisis de genes
+    """
+    print("[INFO] Generando grafico de genes vs CDS...")
+
+    analisis = datos_genes.get('analisis_genes_vs_cds', {})
+    if not analisis:
+        print("[WARN] No hay datos de analisis_genes_vs_cds")
+        return
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- Grafico 1: Genes totales vs CDS ---
+    ax1 = axes[0]
+
+    categorias = ['Genes totales\nanotados', 'Genes codificantes\n(CDS)', 'Genes no\ncodificantes']
+    valores = [
+        analisis['genes_totales_anotados'],
+        analisis['genes_codificantes_cds'],
+        analisis['genes_no_codificantes']
+    ]
+    colores = [COLORES['gris'], COLORES['primario'], COLORES['secundario']]
+
+    barras = ax1.bar(categorias, valores, color=colores, edgecolor='black', linewidth=0.5)
+
+    for barra, valor in zip(barras, valores):
+        altura = barra.get_height()
+        ax1.annotate(f'{valor:,}',
+                    xy=(barra.get_x() + barra.get_width() / 2, altura),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+
+    ax1.set_ylabel('Numero de Genes', fontsize=11)
+    ax1.set_title('Genes Totales vs Codificantes (CDS)', fontsize=12, fontweight='bold')
+
+    # --- Grafico 2: Desglose de genes no codificantes ---
+    ax2 = axes[1]
+
+    desglose = analisis.get('desglose_rna', {})
+    pseudogenes = analisis.get('pseudogenes', 0)
+
+    if desglose:
+        etiquetas = list(desglose.keys()) + (['Pseudogenes'] if pseudogenes > 0 else [])
+        valores_rna = list(desglose.values()) + ([pseudogenes] if pseudogenes > 0 else [])
+
+        # Descripciones para leyenda
+        descripciones = {
+            'tRNA': 'ARN transferencia',
+            'rRNA': 'ARN ribosomal',
+            'ncRNA': 'ARN no codificante',
+            'tmRNA': 'ARN tm',
+            'Pseudogenes': 'Genes inactivos'
+        }
+
+        colores_rna = sns.color_palette("Set2", len(etiquetas))
+
+        wedges, texts, autotexts = ax2.pie(
+            valores_rna,
+            labels=etiquetas,
+            autopct='%1.1f%%',
+            colors=colores_rna,
+            startangle=90,
+            explode=[0.02] * len(etiquetas)
+        )
+
+        # Leyenda con descripciones
+        leyenda_labels = [f'{e}: {descripciones.get(e, e)}' for e in etiquetas]
+        ax2.legend(wedges, leyenda_labels, title="Tipo", loc="lower left", fontsize=8)
+
+    ax2.set_title('Desglose de Genes No Codificantes', fontsize=12, fontweight='bold')
+
+    plt.suptitle('Analisis de Genes Codificantes vs No Codificantes\nE. coli K-12 MG1655',
+                fontsize=14, fontweight='bold', y=1.02)
+    plt.tight_layout()
+
+    guardar_figura(fig, "genes_vs_cds")
+
+
+def graficar_genes_extremos(datos_genes):
+    """
+    Genera grafico mostrando los genes extremos (mas largo y mas corto).
+
+    Args:
+        datos_genes: Diccionario con datos de analisis de genes
+    """
+    print("[INFO] Generando grafico de genes extremos...")
+
+    extremos = datos_genes.get('genes_extremos', {})
+    if not extremos:
+        print("[WARN] No hay datos de genes_extremos")
+        return
+
+    gen_largo = extremos['gen_mas_largo']
+    gen_corto = extremos['gen_mas_corto']
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    # Datos para las barras
+    genes = [f"{gen_corto['locus_tag']}\n({gen_corto['nombre'] or 'sin nombre'})",
+             f"{gen_largo['locus_tag']}\n({gen_largo['nombre'] or 'sin nombre'})"]
+    tamanos = [gen_corto['longitud_pb'], gen_largo['longitud_pb']]
+    colores = [COLORES['secundario'], COLORES['primario']]
+
+    barras = ax.barh(genes, tamanos, color=colores, edgecolor='black', height=0.5)
+
+    # Agregar valores
+    for barra, tamano in zip(barras, tamanos):
+        ancho = barra.get_width()
+        aminoacidos = tamano // 3
+        ax.annotate(f'{tamano:,} pb ({aminoacidos:,} aa)',
+                   xy=(ancho, barra.get_y() + barra.get_height()/2),
+                   xytext=(5, 0), textcoords="offset points",
+                   ha='left', va='center', fontsize=10, fontweight='bold')
+
+    ax.set_xlabel('Longitud (pares de bases)', fontsize=11)
+    ax.set_title('Genes Extremos: Mas Largo vs Mas Corto\nE. coli K-12 MG1655',
+                fontsize=14, fontweight='bold')
+
+    # Cuadro informativo
+    info_text = (
+        f"GEN MAS LARGO:\n"
+        f"  Locus: {gen_largo['locus_tag']}\n"
+        f"  Producto: {gen_largo['producto'][:40]}...\n"
+        f"  Posicion: {gen_largo['inicio']:,} - {gen_largo['fin']:,}\n\n"
+        f"GEN MAS CORTO:\n"
+        f"  Locus: {gen_corto['locus_tag']}\n"
+        f"  Producto: {gen_corto['producto'][:40]}...\n"
+        f"  Posicion: {gen_corto['inicio']:,} - {gen_corto['fin']:,}"
+    )
+
+    ax.text(0.98, 0.02, info_text, transform=ax.transAxes, fontsize=8,
+           verticalalignment='bottom', horizontalalignment='right',
+           bbox=dict(boxstyle='round', facecolor='white', alpha=0.9),
+           family='monospace')
+
+    # Escala logaritmica para mejor visualizacion
+    ax.set_xscale('log')
+    ax.set_xlim(10, 20000)
+
+    plt.tight_layout()
+    guardar_figura(fig, "genes_extremos")
 
 
 def graficar_resumen_general(datos_codones, datos_genes):
@@ -571,6 +719,8 @@ def main():
     graficar_distribucion_tamanos(datos_genes)
     graficar_distribucion_hebras(datos_genes)
     graficar_comparacion_literatura(datos_genes)
+    graficar_genes_vs_cds(datos_genes)
+    graficar_genes_extremos(datos_genes)
 
     # Grafico resumen
     graficar_resumen_general(datos_codones, datos_genes)
@@ -581,13 +731,15 @@ def main():
     print("=" * 60)
     print(f"  Directorio: {RUTA_RESULTADOS_FIGURAS}")
     print("  Archivos:")
-    print("    - codones_parada.png")
-    print("    - codones_inicio_atg.png")
-    print("    - contenido_gc.png")
-    print("    - distribucion_tamanos_genes.png")
-    print("    - distribucion_hebras.png")
-    print("    - comparacion_literatura.png")
-    print("    - resumen_general.png")
+    print("    - codones_parada.png          (proporciones de codones de parada)")
+    print("    - codones_inicio_atg.png      (codones ATG vs genes)")
+    print("    - contenido_gc.png            (composicion de nucleotidos)")
+    print("    - distribucion_tamanos_genes.png (histograma de tamanos)")
+    print("    - distribucion_hebras.png     (genes por hebra + / -)")
+    print("    - comparacion_literatura.png  (validacion con fuentes)")
+    print("    - genes_vs_cds.png            (codificantes vs no codificantes)")
+    print("    - genes_extremos.png          (gen mas largo y mas corto)")
+    print("    - resumen_general.png         (dashboard completo)")
     print("=" * 60)
 
     print("\n[OK] Todas las visualizaciones generadas exitosamente\n")
