@@ -165,12 +165,16 @@ Los resultados fueron validados mediante:
 2. NCBI Reference Sequence: NC_000913.3 / U00096.3
 3. EcoGene Database: https://ecogene.org/
 
-## Autores
+## Autor
 
 - **Nombre**: Luis Anthony Mamani Mescco
-- **Email**: 194522@unsaac.edu.pe
+- **Nombre**: Tirssa Ivonne Guevara D
 - **Nombre**: Lino Zeynt Huaracallo Arenas
+- **Nombre**: Aracely Llancaya Tapia
+- **Email**: 194522@unsaac.edu.pe
+- **Email**: 192420@unsaac.edu.pe
 - **Email**: 204798@unsaac.edu.pe
+- **Email**: 220549@unsaac.edu.pe
 - **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 - **Curso**: BioInformatica
 - **Fecha**: 2026

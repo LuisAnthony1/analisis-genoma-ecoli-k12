@@ -76,7 +76,9 @@ def cargar_genbank(ruta_archivo):
 
     registro = SeqIO.read(ruta_archivo, "genbank")
 
-    print(f"[OK] GenBank cargado: {len(registro.seq):,} pb, {len(registro.features):,} features")
+    print(f"[OK] GenBank cargado exitosamente:")
+    print(f"     - Longitud del genoma: {len(registro.seq):,} pares de bases")
+    print(f"     - Elementos anotados:  {len(registro.features):,} features (genes, ARN, etc.)")
     return registro
 
 
@@ -131,12 +133,13 @@ def extraer_genes(registro):
                 "hebra": "+" if hebra == 1 else "-",
                 "contenido_gc": round(gc_gen, 2),
                 "producto": producto,
-                "proteina_id": proteina_id
+                "proteina_id": proteina_id,
+                "secuencia": str(secuencia_gen)  # Guardamos la secuencia completa
             }
 
             genes.append(gen_info)
 
-    print(f"[OK] Genes extraidos: {len(genes):,} CDS")
+    print(f"[OK] Extraccion completada: {len(genes):,} secuencias codificantes (CDS) encontradas")
     return genes
 
 
@@ -158,6 +161,247 @@ def extraer_otros_features(registro):
     return dict(conteo_features)
 
 
+def analizar_genes_extremos(genes):
+    """
+    Analiza y muestra informacion detallada del gen mas largo y mas corto.
+    Incluye secuencia (primeros y ultimos 10 nucleotidos), proteina y posiciones.
+
+    Args:
+        genes: Lista de genes extraidos
+    """
+    print("\n" + "=" * 70)
+    print("ANALISIS DE GENES EXTREMOS (MAS LARGO Y MAS CORTO)")
+    print("=" * 70)
+    print("  (Mostramos los genes con tamanos extremos para entender la variabilidad)")
+
+    # Ordenar genes por longitud
+    genes_ordenados = sorted(genes, key=lambda g: g["longitud_pb"], reverse=True)
+
+    # Gen mas largo
+    gen_largo = genes_ordenados[0]
+    # Gen mas corto
+    gen_corto = genes_ordenados[-1]
+
+    # ========== GEN MAS LARGO ==========
+    print("\n" + "-" * 70)
+    print("  GEN MAS LARGO DEL GENOMA")
+    print("-" * 70)
+
+    secuencia_largo = gen_largo["secuencia"]
+    primeros_10_largo = secuencia_largo[:10]
+    ultimos_10_largo = secuencia_largo[-10:]
+
+    print(f"\n  IDENTIFICACION:")
+    print(f"    Locus tag:          {gen_largo['locus_tag']}")
+    print(f"    Nombre del gen:     {gen_largo['nombre_gen'] if gen_largo['nombre_gen'] else '(sin nombre asignado)'}")
+    print(f"    ID de proteina:     {gen_largo['proteina_id']}")
+
+    print(f"\n  UBICACION EN EL GENOMA:")
+    print(f"    Posicion de inicio: {gen_largo['inicio']:,} (par de bases donde comienza)")
+    print(f"    Posicion de fin:    {gen_largo['fin']:,} (par de bases donde termina)")
+    print(f"    Hebra:              {gen_largo['hebra']} ({'forward 5->3' if gen_largo['hebra'] == '+' else 'reverse 3->5'})")
+
+    print(f"\n  TAMANO:")
+    print(f"    Longitud total:     {gen_largo['longitud_pb']:,} pares de bases")
+    print(f"    Aminoacidos:        {gen_largo['num_aminoacidos']:,} aminoacidos en la proteina")
+    print(f"    Contenido GC:       {gen_largo['contenido_gc']:.2f}%")
+
+    print(f"\n  SECUENCIA DE NUCLEOTIDOS:")
+    print(f"    Primeros 10 nucleotidos: 5'-{primeros_10_largo}-... (inicio del gen)")
+    print(f"    Ultimos 10 nucleotidos:  ...-{ultimos_10_largo}-3' (final del gen)")
+    print(f"    Secuencia completa:      {len(secuencia_largo):,} nucleotidos totales")
+
+    print(f"\n  PROTEINA QUE CODIFICA:")
+    print(f"    Producto: {gen_largo['producto']}")
+    if gen_largo['producto']:
+        print(f"    (Esta proteina tiene {gen_largo['num_aminoacidos']:,} aminoacidos de longitud)")
+
+    # ========== GEN MAS CORTO ==========
+    print("\n" + "-" * 70)
+    print("  GEN MAS CORTO DEL GENOMA")
+    print("-" * 70)
+
+    secuencia_corto = gen_corto["secuencia"]
+    primeros_10_corto = secuencia_corto[:10] if len(secuencia_corto) >= 10 else secuencia_corto
+    ultimos_10_corto = secuencia_corto[-10:] if len(secuencia_corto) >= 10 else secuencia_corto
+
+    print(f"\n  IDENTIFICACION:")
+    print(f"    Locus tag:          {gen_corto['locus_tag']}")
+    print(f"    Nombre del gen:     {gen_corto['nombre_gen'] if gen_corto['nombre_gen'] else '(sin nombre asignado)'}")
+    print(f"    ID de proteina:     {gen_corto['proteina_id']}")
+
+    print(f"\n  UBICACION EN EL GENOMA:")
+    print(f"    Posicion de inicio: {gen_corto['inicio']:,} (par de bases donde comienza)")
+    print(f"    Posicion de fin:    {gen_corto['fin']:,} (par de bases donde termina)")
+    print(f"    Hebra:              {gen_corto['hebra']} ({'forward 5->3' if gen_corto['hebra'] == '+' else 'reverse 3->5'})")
+
+    print(f"\n  TAMANO:")
+    print(f"    Longitud total:     {gen_corto['longitud_pb']:,} pares de bases")
+    print(f"    Aminoacidos:        {gen_corto['num_aminoacidos']:,} aminoacidos en la proteina")
+    print(f"    Contenido GC:       {gen_corto['contenido_gc']:.2f}%")
+
+    print(f"\n  SECUENCIA DE NUCLEOTIDOS:")
+    if len(secuencia_corto) <= 20:
+        print(f"    Secuencia completa:      5'-{secuencia_corto}-3'")
+        print(f"    (El gen es tan corto que mostramos la secuencia completa)")
+    else:
+        print(f"    Primeros 10 nucleotidos: 5'-{primeros_10_corto}-... (inicio del gen)")
+        print(f"    Ultimos 10 nucleotidos:  ...-{ultimos_10_corto}-3' (final del gen)")
+    print(f"    Total nucleotidos:       {len(secuencia_corto):,} nucleotidos")
+
+    print(f"\n  PROTEINA QUE CODIFICA:")
+    print(f"    Producto: {gen_corto['producto']}")
+    if gen_corto['producto']:
+        print(f"    (Esta proteina tiene solo {gen_corto['num_aminoacidos']:,} aminoacidos - muy pequena)")
+
+    return {
+        "gen_mas_largo": {
+            "locus_tag": gen_largo["locus_tag"],
+            "nombre": gen_largo["nombre_gen"],
+            "longitud_pb": gen_largo["longitud_pb"],
+            "inicio": gen_largo["inicio"],
+            "fin": gen_largo["fin"],
+            "producto": gen_largo["producto"],
+            "primeros_10_nt": primeros_10_largo,
+            "ultimos_10_nt": ultimos_10_largo
+        },
+        "gen_mas_corto": {
+            "locus_tag": gen_corto["locus_tag"],
+            "nombre": gen_corto["nombre_gen"],
+            "longitud_pb": gen_corto["longitud_pb"],
+            "inicio": gen_corto["inicio"],
+            "fin": gen_corto["fin"],
+            "producto": gen_corto["producto"],
+            "primeros_10_nt": primeros_10_corto,
+            "ultimos_10_nt": ultimos_10_corto
+        }
+    }
+
+
+def analizar_genes_vs_cds(registro, genes_cds):
+    """
+    Analiza la diferencia entre todos los genes anotados y los CDS (codificantes).
+    Explica cuantos genes fueron "descartados" y por que.
+
+    Args:
+        registro: Objeto SeqRecord con el genoma
+        genes_cds: Lista de genes CDS extraidos
+
+    Returns:
+        dict: Analisis detallado de genes vs CDS
+    """
+    print("\n" + "=" * 70)
+    print("ANALISIS: GENES TOTALES vs GENES CODIFICANTES (CDS)")
+    print("=" * 70)
+    print("  (Diferencia entre todos los genes y los que codifican proteinas)")
+
+    # Contar todos los features tipo "gene"
+    genes_totales = []
+    genes_tipo_gene = []
+    for feature in registro.features:
+        if feature.type == "gene":
+            locus = feature.qualifiers.get("locus_tag", [""])[0]
+            nombre = feature.qualifiers.get("gene", [""])[0]
+            genes_tipo_gene.append({
+                "locus_tag": locus,
+                "nombre": nombre,
+                "inicio": int(feature.location.start),
+                "fin": int(feature.location.end)
+            })
+
+    total_genes_anotados = len(genes_tipo_gene)
+    total_cds = len(genes_cds)
+
+    # Crear set de locus_tag de CDS para comparar
+    locus_cds = set(g["locus_tag"] for g in genes_cds)
+
+    # Encontrar genes que NO son CDS
+    genes_no_codificantes = []
+    for gene in genes_tipo_gene:
+        if gene["locus_tag"] not in locus_cds:
+            genes_no_codificantes.append(gene)
+
+    # Contar otros tipos de RNA
+    conteo_rna = Counter()
+    genes_rna_info = []
+    for feature in registro.features:
+        if feature.type in ["tRNA", "rRNA", "ncRNA", "tmRNA"]:
+            locus = feature.qualifiers.get("locus_tag", [""])[0]
+            producto = feature.qualifiers.get("product", [""])[0]
+            conteo_rna[feature.type] += 1
+            genes_rna_info.append({
+                "tipo": feature.type,
+                "locus_tag": locus,
+                "producto": producto
+            })
+
+    # Pseudogenes
+    pseudogenes = []
+    for feature in registro.features:
+        if feature.type == "gene":
+            if "pseudo" in feature.qualifiers or "pseudogene" in feature.qualifiers:
+                locus = feature.qualifiers.get("locus_tag", [""])[0]
+                pseudogenes.append(locus)
+
+    print(f"\n  CONTEO GENERAL DE GENES:")
+    print(f"  " + "-" * 65)
+    print(f"    Total de genes anotados en GenBank:     {total_genes_anotados:,} genes")
+    print(f"    Genes que codifican proteinas (CDS):   {total_cds:,} genes")
+    print(f"    Diferencia (genes no codificantes):    {total_genes_anotados - total_cds:,} genes")
+
+    print(f"\n  DESGLOSE DE GENES NO CODIFICANTES:")
+    print(f"  " + "-" * 65)
+    print(f"    (Estos genes NO producen proteinas, pero tienen otras funciones)")
+    print(f"")
+
+    for tipo_rna, cantidad in sorted(conteo_rna.items(), key=lambda x: -x[1]):
+        descripcion = {
+            "tRNA": "ARN de transferencia - transportan aminoacidos durante sintesis de proteinas",
+            "rRNA": "ARN ribosomal - componentes estructurales de los ribosomas",
+            "ncRNA": "ARN no codificante - regulan expresion genica",
+            "tmRNA": "ARN de transferencia-mensajero - rescata ribosomas atascados"
+        }.get(tipo_rna, "Otro tipo de ARN")
+        print(f"    {tipo_rna}: {cantidad:,} genes")
+        print(f"         Funcion: {descripcion}")
+        print()
+
+    if pseudogenes:
+        print(f"    Pseudogenes: {len(pseudogenes):,} genes")
+        print(f"         Funcion: Genes inactivos/no funcionales (mutaciones acumuladas)")
+        print()
+
+    print(f"\n  RESUMEN EXPLICATIVO:")
+    print(f"  " + "-" * 65)
+    print(f"    [1] GENES TOTALES ({total_genes_anotados:,}):")
+    print(f"        Todos los segmentos de ADN identificados como 'genes' en el GenBank.")
+    print(f"        Incluye tanto genes codificantes como no codificantes.")
+    print(f"")
+    print(f"    [2] GENES CODIFICANTES - CDS ({total_cds:,}):")
+    print(f"        Solo los genes que producen proteinas (Coding DNA Sequences).")
+    print(f"        Estos son los ~4,300 genes que se reportan en la literatura.")
+    print(f"        Cada uno tiene: codon de inicio (ATG), codones, codon de parada.")
+    print(f"")
+    print(f"    [3] GENES NO CODIFICANTES ({total_genes_anotados - total_cds:,}):")
+    print(f"        Genes que producen ARN funcional pero NO proteinas:")
+    total_rna = sum(conteo_rna.values())
+    print(f"        - ARN funcionales (tRNA, rRNA, etc.): {total_rna:,} genes")
+    if pseudogenes:
+        print(f"        - Pseudogenes (genes inactivos): {len(pseudogenes):,} genes")
+    print(f"")
+    print(f"    [IMPORTANTE] Los {total_cds:,} CDS son los genes 'utiles' para producir")
+    print(f"    proteinas. Los otros {total_genes_anotados - total_cds:,} genes tienen funciones regulatorias")
+    print(f"    o estructurales (ARN) pero no se 'desechan' - son igualmente importantes.")
+
+    return {
+        "genes_totales_anotados": total_genes_anotados,
+        "genes_codificantes_cds": total_cds,
+        "genes_no_codificantes": total_genes_anotados - total_cds,
+        "desglose_rna": dict(conteo_rna),
+        "pseudogenes": len(pseudogenes),
+        "explicacion": "Los genes no codificantes producen ARN funcional (tRNA, rRNA) necesarios para la vida celular"
+    }
+
+
 # FUNCIONES DE ANALISIS
 # =============================================================================
 
@@ -174,7 +418,7 @@ def analizar_estadisticas_genes(genes, longitud_genoma):
     """
     print("\n" + "=" * 60)
     print("ESTADISTICAS GENERALES DE GENES")
-    print("=" * 60)
+    print("=" * 70)
 
     total_genes = len(genes)
     longitudes = [g["longitud_pb"] for g in genes]
@@ -226,25 +470,27 @@ def analizar_estadisticas_genes(genes, longitud_genoma):
     }
 
     # Mostrar resultados
-    print(f"\n  Total de genes (CDS):       {total_genes:,}")
-    print(f"  Longitud del genoma:        {longitud_genoma:,} pb")
-    print(f"  Total pb codificantes:      {total_pb_codificante:,} pb")
-    print(f"  Densidad genica:            {densidad_genica:.2f}%")
+    print(f"\n  Total de genes (CDS):       {total_genes:,} secuencias codificantes de proteinas")
+    print(f"  Longitud del genoma:        {longitud_genoma:,} pares de bases (nucleotidos)")
+    print(f"  Total pares de bases que codifican proteinas: {total_pb_codificante:,} pares de bases")
+    print(f"  Densidad genica:            {densidad_genica:.2f}% del genoma codifica proteinas")
 
-    print(f"\n  TAMANO DE GENES:")
-    print(f"    Minimo:     {tamano_min:,} pb")
-    print(f"    Maximo:     {tamano_max:,} pb")
-    print(f"    Promedio:   {tamano_promedio:,.2f} pb")
-    print(f"    Mediana:    {tamano_mediana:,.2f} pb")
-    print(f"    Desv. Std:  {desviacion_std:,.2f} pb")
+    print(f"\n  TAMANO DE GENES (en pares de bases - cada 3 pares = 1 aminoacido):")
+    print(f"    Gen mas corto:      {tamano_min:,} pares de bases ({tamano_min//3} aminoacidos)")
+    print(f"    Gen mas largo:      {tamano_max:,} pares de bases ({tamano_max//3} aminoacidos)")
+    print(f"    Tamano promedio:    {tamano_promedio:,.2f} pares de bases ({tamano_promedio/3:.0f} aminoacidos)")
+    print(f"    Tamano mediana:     {tamano_mediana:,.2f} pares de bases (valor central)")
+    print(f"    Desviacion estandar: {desviacion_std:,.2f} pares de bases (variabilidad)")
 
-    print(f"\n  CONTENIDO GC EN CDS:")
-    print(f"    Promedio:   {gc_promedio:.2f}%")
-    print(f"    Rango:      {gc_min:.2f}% - {gc_max:.2f}%")
+    print(f"\n  CONTENIDO GC EN REGIONES CODIFICANTES (CDS):")
+    print(f"    (GC = porcentaje de Guanina + Citosina en el ADN)")
+    print(f"    Promedio:   {gc_promedio:.2f}% de G+C")
+    print(f"    Rango:      {gc_min:.2f}% (minimo) - {gc_max:.2f}% (maximo)")
 
-    print(f"\n  DISTRIBUCION POR HEBRA:")
-    print(f"    Forward (+): {genes_forward:,} ({(genes_forward/total_genes)*100:.1f}%)")
-    print(f"    Reverse (-): {genes_reverse:,} ({(genes_reverse/total_genes)*100:.1f}%)")
+    print(f"\n  DISTRIBUCION POR HEBRA DEL ADN:")
+    print(f"    (El ADN tiene dos hebras: forward 5'->3' y reverse 3'->5')")
+    print(f"    Hebra Forward (+): {genes_forward:,} genes ({(genes_forward/total_genes)*100:.1f}%)")
+    print(f"    Hebra Reverse (-): {genes_reverse:,} genes ({(genes_reverse/total_genes)*100:.1f}%)")
 
     return resultados
 
@@ -261,35 +507,38 @@ def analizar_distribucion_tamanos(genes):
     """
     print("\n" + "=" * 60)
     print("DISTRIBUCION DE TAMANOS DE GENES")
-    print("=" * 60)
+    print("=" * 70)
+    print("  (Clasificacion de genes segun su longitud en pares de bases)")
+    print("  (Recordar: 3 pares de bases = 1 codon = 1 aminoacido)")
 
-    # Definir rangos de tamano
+    # Definir rangos de tamano con descripciones detalladas
     rangos = [
-        (0, 300, "0-300 pb (muy cortos)"),
-        (301, 600, "301-600 pb (cortos)"),
-        (601, 900, "601-900 pb (medianos)"),
-        (901, 1500, "901-1500 pb (largos)"),
-        (1501, 3000, "1501-3000 pb (muy largos)"),
-        (3001, float('inf'), ">3000 pb (extra largos)")
+        (0, 300, "0-300 pares de bases", "muy cortos, <100 aminoacidos"),
+        (301, 600, "301-600 pares de bases", "cortos, 100-200 aminoacidos"),
+        (601, 900, "601-900 pares de bases", "medianos, 200-300 aminoacidos"),
+        (901, 1500, "901-1500 pares de bases", "largos, 300-500 aminoacidos"),
+        (1501, 3000, "1501-3000 pares de bases", "muy largos, 500-1000 aminoacidos"),
+        (3001, float('inf'), ">3000 pares de bases", "extra largos, >1000 aminoacidos")
     ]
 
     distribucion = {}
     total = len(genes)
 
-    print(f"\n  {'Rango':<30} {'Cantidad':>10} {'Porcentaje':>12}")
-    print("  " + "-" * 55)
+    print(f"\n  {'Rango de tamano':<28} {'Descripcion':<30} {'Genes':>8} {'%':>8}")
+    print("  " + "-" * 78)
 
-    for min_val, max_val, etiqueta in rangos:
+    for min_val, max_val, etiqueta, descripcion in rangos:
         cantidad = sum(1 for g in genes if min_val <= g["longitud_pb"] <= max_val)
         porcentaje = (cantidad / total) * 100
         distribucion[etiqueta] = {
             "cantidad": cantidad,
-            "porcentaje": round(porcentaje, 2)
+            "porcentaje": round(porcentaje, 2),
+            "descripcion": descripcion
         }
-        print(f"  {etiqueta:<30} {cantidad:>10,} {porcentaje:>11.2f}%")
+        print(f"  {etiqueta:<28} {descripcion:<30} {cantidad:>8,} {porcentaje:>7.2f}%")
 
-    print("  " + "-" * 55)
-    print(f"  {'TOTAL':<30} {total:>10,} {'100.00':>11}%")
+    print("  " + "-" * 78)
+    print(f"  {'TOTAL DE GENES':<58} {total:>8,} {'100.00':>7}%")
 
     return distribucion
 
@@ -306,7 +555,9 @@ def comparar_con_literatura(estadisticas):
     """
     print("\n" + "=" * 60)
     print("COMPARACION CON LITERATURA CIENTIFICA")
-    print("=" * 60)
+    print("=" * 70)
+    print("  (Validacion de resultados comparando con valores publicados)")
+    print("  (Fuente: NCBI, EcoCyc, publicaciones de E. coli K-12)")
 
     comparaciones = {}
 
@@ -314,11 +565,11 @@ def comparar_con_literatura(estadisticas):
         ("Total genes", estadisticas["total_genes"], VALORES_LITERATURA["genes_totales"], "genes"),
         ("Densidad genica", estadisticas["densidad_genica_porcentaje"], VALORES_LITERATURA["densidad_genica"], "%"),
         ("GC en CDS", estadisticas["contenido_gc_cds"]["promedio"], VALORES_LITERATURA["contenido_gc_cds"], "%"),
-        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA["tamano_promedio_gen"], "pb"),
+        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA["tamano_promedio_gen"], "pares de bases"),
     ]
 
-    print(f"\n  {'Metrica':<20} {'Observado':>12} {'Literatura':>12} {'Diferencia':>12}")
-    print("  " + "-" * 60)
+    print(f"\n  {'Metrica':<20} {'Nuestro analisis':>18} {'Literatura':>18} {'Diferencia':>14}")
+    print("  " + "-" * 74)
 
     for nombre, observado, literatura, unidad in metricas:
         diferencia = observado - literatura
@@ -332,9 +583,9 @@ def comparar_con_literatura(estadisticas):
             "diferencia_porcentaje": round(diferencia_pct, 2)
         }
 
-        print(f"  {nombre:<20} {observado:>10.2f} {unidad} {literatura:>10.2f} {unidad} {signo}{diferencia:>10.2f}")
+        print(f"  {nombre:<20} {observado:>12.2f} {unidad:<5} {literatura:>12.2f} {unidad:<5} {signo}{diferencia:>10.2f}")
 
-    print("\n  [INTERPRETACION]")
+    print("\n  [INTERPRETACION DE RESULTADOS]")
 
     # Evaluar diferencias
     dif_genes = abs(estadisticas["total_genes"] - VALORES_LITERATURA["genes_totales"])
@@ -362,12 +613,14 @@ def exportar_json(datos, nombre_archivo):
     with open(ruta, 'w', encoding='utf-8') as archivo:
         json.dump(datos, archivo, indent=2, ensure_ascii=False)
 
-    print(f"[OK] Exportado: {ruta}")
+    print(f"       [OK] Guardado: {nombre_archivo}.json")
+    print(f"           Contiene: estadisticas, distribuciones y comparaciones")
 
 
 def exportar_genes_csv(genes, nombre_archivo):
     """
     Exporta la lista de genes a formato CSV.
+    Nota: Se excluye la secuencia completa para reducir el tamano del archivo.
 
     Args:
         genes: Lista de genes
@@ -375,13 +628,17 @@ def exportar_genes_csv(genes, nombre_archivo):
     """
     ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
 
+    # Excluir la secuencia completa del CSV (muy grande)
+    campos = [k for k in genes[0].keys() if k != "secuencia"]
+
     with open(ruta, 'w', newline='', encoding='utf-8') as archivo:
         if genes:
-            escritor = csv.DictWriter(archivo, fieldnames=genes[0].keys())
+            escritor = csv.DictWriter(archivo, fieldnames=campos, extrasaction='ignore')
             escritor.writeheader()
             escritor.writerows(genes)
 
-    print(f"[OK] Exportado: {ruta}")
+    print(f"       [OK] Guardado: {nombre_archivo}.csv")
+    print(f"           Contiene: {len(genes):,} genes con locus_tag, nombre, posicion, tamano, GC, producto")
 
 
 def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
@@ -430,7 +687,8 @@ def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
         for fila in filas:
             escritor.writerow(fila)
 
-    print(f"[OK] Exportado: {ruta}")
+    print(f"       [OK] Guardado: {nombre_archivo}.csv")
+    print(f"           Contiene: metricas principales comparadas con literatura cientifica")
 
 
 # FUNCION PRINCIPAL
@@ -439,10 +697,13 @@ def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
 def main():
     """Funcion principal que ejecuta todo el analisis de genes."""
 
-    print("\n" + "=" * 60)
-    print("ANALISIS DE GENES - E. coli K-12 MG1655")
-    print("=" * 60)
-    print(f"Fecha de analisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("\n" + "=" * 70)
+    print("ANALISIS DE GENES DEL GENOMA DE Escherichia coli K-12 MG1655")
+    print("=" * 70)
+    print(f"\n  Fecha de analisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Objetivo: Extraer y analizar todos los genes codificantes del genoma")
+    print(f"  Metodo: Lectura del archivo GenBank y extraccion de CDS (coding sequences)")
+    print("")
 
     # Crear directorios
     crear_directorios()
@@ -462,9 +723,29 @@ def main():
 
     # Contar otros features
     otros_features = extraer_otros_features(registro)
-    print(f"\n[INFO] Tipos de features en el GenBank:")
+    print(f"\n[INFO] Tipos de elementos anotados en el archivo GenBank:")
+    print(f"       (Features = elementos biologicos identificados en el genoma)")
     for tipo, cantidad in sorted(otros_features.items(), key=lambda x: -x[1])[:10]:
-        print(f"       {tipo}: {cantidad:,}")
+        descripcion_tipo = {
+            "CDS": "secuencias codificantes de proteinas",
+            "gene": "genes identificados",
+            "source": "fuente del genoma",
+            "rRNA": "ARN ribosomal",
+            "tRNA": "ARN de transferencia",
+            "misc_feature": "otras caracteristicas",
+            "repeat_region": "regiones repetitivas",
+            "mobile_element": "elementos moviles (transposones)"
+        }.get(tipo, "")
+        if descripcion_tipo:
+            print(f"       {tipo}: {cantidad:,} ({descripcion_tipo})")
+        else:
+            print(f"       {tipo}: {cantidad:,}")
+
+    # Analizar genes totales vs CDS (codificantes vs no codificantes)
+    analisis_genes_cds = analizar_genes_vs_cds(registro, genes)
+
+    # Analizar genes extremos (mas largo y mas corto)
+    genes_extremos = analizar_genes_extremos(genes)
 
     # Analizar estadisticas
     estadisticas = analizar_estadisticas_genes(genes, longitud_genoma)
@@ -475,7 +756,7 @@ def main():
     # Comparar con literatura
     comparaciones = comparar_con_literatura(estadisticas)
 
-    # Compilar todos los resultados
+    # Compilar todos los resultados (sin incluir secuencias completas para reducir tamano)
     todos_resultados = {
         "fecha_analisis": datetime.now().isoformat(),
         "archivo_fuente": ARCHIVO_GENBANK,
@@ -483,31 +764,60 @@ def main():
         "distribucion_tamanos": distribucion,
         "comparacion_literatura": comparaciones,
         "tipos_features": otros_features,
-        "valores_literatura": VALORES_LITERATURA
+        "valores_literatura": VALORES_LITERATURA,
+        "analisis_genes_vs_cds": analisis_genes_cds,
+        "genes_extremos": genes_extremos,
+        "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
     }
 
     # Exportar resultados
     print("\n" + "=" * 60)
-    print("EXPORTANDO RESULTADOS")
-    print("=" * 60)
+    print("EXPORTANDO RESULTADOS A ARCHIVOS")
+    print("=" * 70)
+    print("  (Los archivos se guardan en la carpeta resultados/tablas/)\n")
 
+    print("  [1/3] Exportando analisis completo en formato JSON...")
     exportar_json(todos_resultados, "analisis_genes_completo")
+
+    print("  [2/3] Exportando lista de genes en formato CSV...")
     exportar_genes_csv(genes, "lista_genes")
+
+    print("  [3/3] Exportando estadisticas en formato CSV...")
     exportar_estadisticas_csv(estadisticas, comparaciones, "estadisticas_genes")
 
     # Resumen final
-    print("\n" + "=" * 60)
-    print("RESUMEN FINAL")
-    print("=" * 60)
-    print(f"  Genoma analizado:       E. coli K-12 MG1655")
-    print(f"  Total genes (CDS):      {estadisticas['total_genes']:,}")
-    print(f"  Genes esperados:        ~{VALORES_LITERATURA['genes_totales']:,}")
-    print(f"  Densidad genica:        {estadisticas['densidad_genica_porcentaje']:.2f}%")
-    print(f"  GC en CDS:              {estadisticas['contenido_gc_cds']['promedio']:.2f}%")
-    print(f"  Tamano promedio gen:    {estadisticas['tamano_gen']['promedio_pb']:,.0f} pb")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("RESUMEN FINAL DEL ANALISIS")
+    print("=" * 70)
+    print(f"\n  ORGANISMO ANALIZADO:")
+    print(f"    Especie:              Escherichia coli")
+    print(f"    Cepa:                 K-12 MG1655 (cepa de laboratorio de referencia)")
 
-    print("\n[OK] Analisis completado exitosamente\n")
+    print(f"\n  CONTEO DE GENES:")
+    print(f"    Genes totales anotados:       {analisis_genes_cds['genes_totales_anotados']:,} genes en el GenBank")
+    print(f"    Genes codificantes (CDS):     {analisis_genes_cds['genes_codificantes_cds']:,} genes que producen proteinas")
+    print(f"    Genes no codificantes:        {analisis_genes_cds['genes_no_codificantes']:,} genes (ARN funcional)")
+    print(f"    Genes esperados (literatura): ~{VALORES_LITERATURA['genes_totales']:,} CDS")
+
+    print(f"\n  GENES EXTREMOS:")
+    print(f"    Gen mas largo:  {genes_extremos['gen_mas_largo']['locus_tag']} ({genes_extremos['gen_mas_largo']['longitud_pb']:,} pares de bases)")
+    print(f"                    Proteina: {genes_extremos['gen_mas_largo']['producto'][:50]}...")
+    print(f"    Gen mas corto:  {genes_extremos['gen_mas_corto']['locus_tag']} ({genes_extremos['gen_mas_corto']['longitud_pb']:,} pares de bases)")
+    print(f"                    Proteina: {genes_extremos['gen_mas_corto']['producto']}")
+
+    print(f"\n  METRICAS PRINCIPALES:")
+    print(f"    Densidad genica:              {estadisticas['densidad_genica_porcentaje']:.2f}% del genoma codifica proteinas")
+    print(f"    Contenido GC en genes:        {estadisticas['contenido_gc_cds']['promedio']:.2f}% de Guanina+Citosina")
+    print(f"    Tamano promedio de genes:     {estadisticas['tamano_gen']['promedio_pb']:,.0f} pares de bases ({estadisticas['tamano_gen']['promedio_pb']/3:.0f} aminoacidos)")
+
+    print(f"\n  ARCHIVOS GENERADOS:")
+    print(f"    - lista_genes.csv:            Lista completa de {estadisticas['total_genes']:,} genes con sus propiedades")
+    print(f"    - estadisticas_genes.csv:     Metricas resumidas del analisis")
+    print(f"    - analisis_genes_completo.json: Todos los datos en formato estructurado")
+
+    print("\n" + "=" * 70)
+    print("[OK] Analisis de genes completado exitosamente")
+    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
