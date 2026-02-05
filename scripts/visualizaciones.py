@@ -914,35 +914,55 @@ def graficar_resumen_comparacion(datos_comparacion):
     for i, v in enumerate(vir):
         ax3.text(i, v + 2, f'{v}', ha='center', fontweight='bold')
 
-    # --- Grafico 4: Cuadro comparativo (texto) ---
+    # --- Grafico 4: Cuadro comparativo (tabla simple) ---
     ax4 = fig.add_subplot(gs[1, :])
     ax4.axis('off')
 
-    # Crear tabla de diferencias
+    # Crear tabla de diferencias usando una tabla real de matplotlib
     diferencias = metricas['diferencias']
 
-    tabla_texto = (
-        "DIFERENCIAS CLAVE ENTRE E. coli K-12 (COMENSAL) Y Salmonella LT2 (PATOGENO)\n"
-        "=" * 80 + "\n\n"
-        f"  TAMANO DEL GENOMA:      Salmonella tiene {diferencias['longitud_pb']:,} pb adicionales ({diferencias['longitud_porcentaje']:.1f}% mas)\n"
-        f"  GENES CODIFICANTES:     Salmonella tiene {diferencias['total_genes']:+,} genes CDS\n"
-        f"  GENES DE VIRULENCIA:    Salmonella tiene {virulencia['diferencia_total']:+} genes relacionados con patogenicidad\n\n"
-        "  POR QUE SALMONELLA ES PATOGENA:\n"
-        "  - Posee sistemas de secrecion tipo III (T3SS) para inyectar efectores en celulas humanas\n"
-        "  - Tiene islas de patogenicidad (SPIs) con genes de invasion y supervivencia\n"
-        "  - Puede sobrevivir dentro de macrofagos y evadir el sistema inmune\n"
-        "  - Induce su propia fagocitosis para invadir celulas epiteliales del intestino\n\n"
-        "  POR QUE E. coli K-12 NO ES PATOGENA:\n"
-        "  - Cepa de laboratorio domesticada desde 1922\n"
-        "  - Ha perdido genes de virulencia por adaptacion al laboratorio\n"
-        "  - No tiene sistemas de secrecion tipo III funcionales\n"
-        "  - Es el organismo modelo mas seguro para investigacion genetica"
+    # Datos para la tabla
+    tabla_data = [
+        ['TAMANO DEL GENOMA', f'Salmonella tiene {diferencias["longitud_pb"]:,} pb adicionales ({diferencias["longitud_porcentaje"]:.1f}% mas)'],
+        ['GENES CODIFICANTES', f'Salmonella tiene +{diferencias["total_genes"]} genes CDS'],
+        ['GENES DE VIRULENCIA', f'Salmonella tiene +{virulencia["diferencia_total"]} genes de patogenicidad'],
+    ]
+
+    tabla = ax4.table(cellText=tabla_data,
+                      colLabels=['Metrica', 'Diferencia'],
+                      loc='upper center',
+                      cellLoc='left',
+                      colWidths=[0.3, 0.6])
+
+    tabla.auto_set_font_size(False)
+    tabla.set_fontsize(9)
+    tabla.scale(1, 1.8)
+
+    # Estilo de la tabla
+    for i in range(len(tabla_data) + 1):
+        for j in range(2):
+            cell = tabla[(i, j)]
+            if i == 0:  # Header
+                cell.set_facecolor('#2E86AB')
+                cell.set_text_props(color='white', fontweight='bold')
+            else:
+                cell.set_facecolor('#f8f9fa' if i % 2 == 0 else 'white')
+
+    # Texto explicativo debajo
+    explicacion = (
+        "POR QUE SALMONELLA ES PATOGENA:\n"
+        "- Posee sistemas de secrecion tipo III (T3SS)\n"
+        "- Tiene islas de patogenicidad (SPIs)\n"
+        "- Puede sobrevivir dentro de macrofagos\n\n"
+        "POR QUE E. coli K-12 NO ES PATOGENA:\n"
+        "- Cepa de laboratorio domesticada desde 1922\n"
+        "- Ha perdido genes de virulencia\n"
+        "- Es el organismo modelo mas seguro"
     )
 
-    ax4.text(0.5, 0.5, tabla_texto, transform=ax4.transAxes,
-            fontsize=10, verticalalignment='center', horizontalalignment='center',
-            family='monospace',
-            bbox=dict(boxstyle='round', facecolor='white', edgecolor='gray', alpha=0.9))
+    ax4.text(0.5, 0.15, explicacion, transform=ax4.transAxes,
+            fontsize=8, verticalalignment='center', horizontalalignment='center',
+            bbox=dict(boxstyle='round', facecolor='lightyellow', edgecolor='orange', alpha=0.8))
 
     plt.suptitle('Resumen Comparativo: E. coli K-12 vs Salmonella LT2\n'
                  'Entendiendo las diferencias entre comensal y patogeno',
