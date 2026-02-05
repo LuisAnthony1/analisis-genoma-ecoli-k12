@@ -1074,8 +1074,13 @@ def main():
         datos_genes = cargar_datos_json(ARCHIVO_ANALISIS_GENES)
         print(f"[OK] Datos de genes cargados")
     except FileNotFoundError:
-        print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_GENES}")
-        print("       Ejecuta analisis_genes.py para generar graficos de genes")
+        # Fallback: usar archivo de E. coli si existe
+        try:
+            datos_genes = cargar_datos_json(ARCHIVO_ANALISIS_ECOLI)
+            print(f"[OK] Datos de genes cargados (desde analisis E. coli)")
+        except FileNotFoundError:
+            print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_GENES}")
+            print("       Ejecuta analisis_genes.py para generar graficos de genes")
 
     # Cargar datos de comparacion (si existen)
     try:
