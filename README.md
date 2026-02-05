@@ -275,6 +275,7 @@ Los resultados fueron validados mediante:
 | Aracely Llancaya Tapia | 220549@unsaac.edu.pe | UNSAAC |
 | Medaly Lozano Llacctahuaman | 195050@unsaac.edu.pe | UNSAAC |
 
+
 **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 **Curso**: Bioinformática
 **Fecha**: 2026
