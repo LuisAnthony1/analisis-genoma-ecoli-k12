@@ -273,6 +273,7 @@ Los resultados fueron validados mediante:
 | Tirssa Ivonne Guevara D | 192420@unsaac.edu.pe | UNSAAC |
 | Lino Zeynt Huaracallo Arenas | 204798@unsaac.edu.pe | UNSAAC |
 | Aracely Llancaya Tapia | 220549@unsaac.edu.pe | UNSAAC |
+| Medaly Lozano Llacctahuaman | 195050@unsaac.edu.pe | UNSAAC |
 
 **Universidad**: Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)
 **Curso**: Bioinformática
