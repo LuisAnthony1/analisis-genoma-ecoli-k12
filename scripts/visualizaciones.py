@@ -18,11 +18,14 @@ Fecha: 2026
 Proyecto: Analisis comparativo de genomas bacterianos
 """
 
+import matplotlib
+matplotlib.use('Agg')  # Backend sin GUI (necesario para AWS)
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 import json
 import os
+import gc
 from datetime import datetime
 
 
@@ -43,8 +46,14 @@ ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, "comparacion_ecoli_vs
 ARCHIVO_ANALISIS_ECOLI = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_ecoli_k12.json")
 ARCHIVO_ANALISIS_SALMONELLA = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_salmonella_lt2.json")
 
-# Configuracion de estilo
-plt.style.use('seaborn-v0_8-whitegrid')
+# Configuracion de estilo (con fallback para diferentes versiones)
+try:
+    plt.style.use('seaborn-v0_8-whitegrid')
+except OSError:
+    try:
+        plt.style.use('seaborn-whitegrid')
+    except OSError:
+        plt.style.use('ggplot')
 sns.set_palette("husl")
 
 # Colores personalizados
@@ -97,6 +106,9 @@ def guardar_figura(figura, nombre_archivo):
     figura.savefig(ruta, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"[OK] Figura guardada: {ruta}")
     plt.close(figura)
+    # Limpiar memoria (importante para AWS con poca RAM)
+    plt.close('all')
+    gc.collect()
 
 
 # FUNCIONES DE VISUALIZACION - CODONES
@@ -303,13 +315,26 @@ def graficar_distribucion_tamanos(datos_genes):
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Preparar datos
-    rangos = list(distribucion.keys())
-    cantidades = [distribucion[r]['cantidad'] for r in rangos]
-    porcentajes = [distribucion[r]['porcentaje'] for r in rangos]
+    # Preparar datos - ordenar las claves correctamente
+    orden_rangos = ['0-300', '301-600', '601-900', '901-1500', '1501-3000', '>3000']
 
-    # Simplificar etiquetas
-    etiquetas = ['0-300', '301-600', '601-900', '901-1500', '1501-3000', '>3000']
+    # Buscar las claves correctas en el diccionario (pueden variar el formato)
+    rangos_ordenados = []
+    for patron in orden_rangos:
+        for clave in distribucion.keys():
+            if patron in clave or clave.startswith(patron):
+                rangos_ordenados.append(clave)
+                break
+
+    # Si no encontramos todas, usar las claves tal cual vienen
+    if len(rangos_ordenados) != len(orden_rangos):
+        rangos_ordenados = list(distribucion.keys())
+
+    cantidades = [distribucion[r]['cantidad'] for r in rangos_ordenados]
+    porcentajes = [distribucion[r]['porcentaje'] for r in rangos_ordenados]
+
+    # Etiquetas simplificadas para el eje X
+    etiquetas = orden_rangos[:len(cantidades)]
     colores = sns.color_palette("Blues_d", len(etiquetas))
 
     barras = ax.bar(etiquetas, cantidades, color=colores, edgecolor='black', linewidth=0.5)
@@ -979,10 +1004,21 @@ def graficar_resumen_general(datos_codones, datos_genes):
 
     distribucion = datos_genes['distribucion_tamanos']
     etiquetas_dist = ['0-300', '301-600', '601-900', '901-1500', '1501-3000', '>3000']
-    rangos_keys = list(distribucion.keys())
-    cantidades = [distribucion[r]['cantidad'] for r in rangos_keys]
 
-    ax3.bar(etiquetas_dist, cantidades, color=sns.color_palette("Blues_d", 6))
+    # Ordenar claves correctamente
+    rangos_ordenados = []
+    for patron in etiquetas_dist:
+        for clave in distribucion.keys():
+            if patron in clave or clave.startswith(patron):
+                rangos_ordenados.append(clave)
+                break
+
+    if len(rangos_ordenados) != len(etiquetas_dist):
+        rangos_ordenados = list(distribucion.keys())
+
+    cantidades = [distribucion[r]['cantidad'] for r in rangos_ordenados]
+
+    ax3.bar(etiquetas_dist[:len(cantidades)], cantidades, color=sns.color_palette("Blues_d", len(cantidades)))
     ax3.set_xlabel('Tamano (pb)', fontsize=10)
     ax3.set_ylabel('Genes', fontsize=10)
     ax3.set_title('Distribucion de Tamanos', fontsize=12, fontweight='bold')
@@ -1064,47 +1100,50 @@ def main():
 
     figuras_generadas = []
 
+    # Funcion auxiliar para ejecutar graficos con manejo de errores
+    def ejecutar_grafico(funcion, nombre_archivo, *args):
+        """Ejecuta una funcion de grafico con manejo de errores."""
+        try:
+            funcion(*args)
+            figuras_generadas.append(nombre_archivo)
+            return True
+        except Exception as e:
+            print(f"[ERROR] Fallo al generar {nombre_archivo}: {e}")
+            errores.append((nombre_archivo, str(e)))
+            plt.close('all')
+            gc.collect()
+            return False
+
+    errores = []
+
     # Graficos de codones (si hay datos)
     if datos_codones:
         print("\n[SECCION] Graficos de analisis de codones...")
-        graficar_codones_parada(datos_codones)
-        figuras_generadas.append("codones_parada.png")
-        graficar_codones_inicio(datos_codones)
-        figuras_generadas.append("codones_inicio_atg.png")
-        graficar_contenido_gc(datos_codones)
-        figuras_generadas.append("contenido_gc.png")
+        ejecutar_grafico(graficar_codones_parada, "codones_parada.png", datos_codones)
+        ejecutar_grafico(graficar_codones_inicio, "codones_inicio_atg.png", datos_codones)
+        ejecutar_grafico(graficar_contenido_gc, "contenido_gc.png", datos_codones)
 
     # Graficos de genes (si hay datos)
     if datos_genes:
         print("\n[SECCION] Graficos de analisis de genes...")
-        graficar_distribucion_tamanos(datos_genes)
-        figuras_generadas.append("distribucion_tamanos_genes.png")
-        graficar_distribucion_hebras(datos_genes)
-        figuras_generadas.append("distribucion_hebras.png")
-        graficar_comparacion_literatura(datos_genes)
-        figuras_generadas.append("comparacion_literatura.png")
-        graficar_genes_vs_cds(datos_genes)
-        figuras_generadas.append("genes_vs_cds.png")
-        graficar_genes_extremos(datos_genes)
-        figuras_generadas.append("genes_extremos.png")
+        ejecutar_grafico(graficar_distribucion_tamanos, "distribucion_tamanos_genes.png", datos_genes)
+        ejecutar_grafico(graficar_distribucion_hebras, "distribucion_hebras.png", datos_genes)
+        ejecutar_grafico(graficar_comparacion_literatura, "comparacion_literatura.png", datos_genes)
+        ejecutar_grafico(graficar_genes_vs_cds, "genes_vs_cds.png", datos_genes)
+        ejecutar_grafico(graficar_genes_extremos, "genes_extremos.png", datos_genes)
 
     # Grafico resumen (si hay ambos datos)
     if datos_codones and datos_genes:
         print("\n[SECCION] Grafico resumen general...")
-        graficar_resumen_general(datos_codones, datos_genes)
-        figuras_generadas.append("resumen_general.png")
+        ejecutar_grafico(graficar_resumen_general, "resumen_general.png", datos_codones, datos_genes)
 
     # Graficos de comparacion E. coli vs Salmonella (si hay datos)
     if datos_comparacion:
         print("\n[SECCION] Graficos de comparacion E. coli vs Salmonella...")
-        graficar_comparacion_genomas(datos_comparacion)
-        figuras_generadas.append("comparacion_genomas_metricas.png")
-        graficar_genes_virulencia(datos_comparacion)
-        figuras_generadas.append("comparacion_virulencia.png")
-        graficar_distancias_intergenicas(datos_comparacion)
-        figuras_generadas.append("comparacion_distancias_intergenicas.png")
-        graficar_resumen_comparacion(datos_comparacion)
-        figuras_generadas.append("resumen_comparacion_ecoli_salmonella.png")
+        ejecutar_grafico(graficar_comparacion_genomas, "comparacion_genomas_metricas.png", datos_comparacion)
+        ejecutar_grafico(graficar_genes_virulencia, "comparacion_virulencia.png", datos_comparacion)
+        ejecutar_grafico(graficar_distancias_intergenicas, "comparacion_distancias_intergenicas.png", datos_comparacion)
+        ejecutar_grafico(graficar_resumen_comparacion, "resumen_comparacion_ecoli_salmonella.png", datos_comparacion)
 
     # Resumen
     print("\n" + "=" * 70)
@@ -1140,8 +1179,17 @@ def main():
         print("    - comparacion_distancias_intergenicas.png (islas genomicas)")
         print("    - resumen_comparacion_ecoli_salmonella.png (resumen comparativo)")
 
+    # Mostrar errores si los hubo
+    if errores:
+        print("\n  [ERRORES]")
+        for archivo, error in errores:
+            print(f"    - {archivo}: {error}")
+
     print("\n" + "=" * 70)
-    print(f"[OK] {len(figuras_generadas)} visualizaciones generadas exitosamente")
+    if errores:
+        print(f"[WARN] {len(figuras_generadas)} visualizaciones generadas, {len(errores)} con errores")
+    else:
+        print(f"[OK] {len(figuras_generadas)} visualizaciones generadas exitosamente")
     print("=" * 70 + "\n")
 
 
