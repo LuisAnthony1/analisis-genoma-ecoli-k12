@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Visualizaciones del Analisis del Genoma de E. coli K-12 MG1655
+Visualizaciones del Analisis de Genomas Bacterianos
 
 Este script genera graficos profesionales para ilustrar los resultados
-del analisis del genoma de E. coli K-12 MG1655.
+del analisis de genomas bacterianos, incluyendo comparaciones entre
+E. coli K-12 MG1655 y Salmonella enterica LT2.
 
 Graficos generados:
 - Distribucion de tamanos de genes (histograma)
@@ -11,9 +12,10 @@ Graficos generados:
 - Contenido GC por gen (histograma)
 - Distribucion de genes por hebra (barras)
 - Comparacion de resultados con literatura cientifica
+- NUEVO: Comparacion E. coli vs Salmonella (metricas, virulencia, distancias)
 
 Fecha: 2026
-Proyecto: Analisis del genoma de E. coli K-12 MG1655
+Proyecto: Analisis comparativo de genomas bacterianos
 """
 
 import matplotlib.pyplot as plt
@@ -35,6 +37,11 @@ RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", "figuras")
 # Archivos de entrada (generados por los scripts de analisis)
 ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_codones_completo.json")
 ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_completo.json")
+
+# Archivos de comparacion entre organismos
+ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, "comparacion_ecoli_vs_salmonella.json")
+ARCHIVO_ANALISIS_ECOLI = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_ecoli_k12.json")
+ARCHIVO_ANALISIS_SALMONELLA = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_salmonella_lt2.json")
 
 # Configuracion de estilo
 plt.style.use('seaborn-v0_8-whitegrid')
@@ -592,6 +599,332 @@ def graficar_genes_extremos(datos_genes):
     guardar_figura(fig, "genes_extremos")
 
 
+# FUNCIONES DE VISUALIZACION - COMPARACION DE GENOMAS
+# =============================================================================
+
+def graficar_comparacion_genomas(datos_comparacion):
+    """
+    Genera grafico comparando metricas principales entre E. coli y Salmonella.
+
+    Args:
+        datos_comparacion: Diccionario con datos de comparacion
+    """
+    print("[INFO] Generando grafico de comparacion de genomas...")
+
+    metricas = datos_comparacion['metricas_generales']
+    ec = metricas['ecoli']
+    sal = metricas['salmonella']
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+    # --- Grafico 1: Tamano del genoma ---
+    ax1 = axes[0, 0]
+    organismos = ['E. coli K-12', 'Salmonella LT2']
+    tamanos = [ec['longitud_genoma_pb'] / 1e6, sal['longitud_genoma_pb'] / 1e6]
+    colores = [COLORES['primario'], COLORES['cuaternario']]
+
+    barras = ax1.bar(organismos, tamanos, color=colores, edgecolor='black')
+    for barra, tam in zip(barras, tamanos):
+        ax1.annotate(f'{tam:.2f} Mb',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    ax1.set_ylabel('Megabases (Mb)', fontsize=11)
+    ax1.set_title('Tamano del Genoma', fontsize=12, fontweight='bold')
+
+    dif_tamano = sal['longitud_genoma_pb'] - ec['longitud_genoma_pb']
+    ax1.text(0.5, 0.02, f'Diferencia: {dif_tamano:,} pb ({dif_tamano/1000:.1f} kb)',
+            transform=ax1.transAxes, ha='center', fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+    # --- Grafico 2: Total de genes CDS ---
+    ax2 = axes[0, 1]
+    genes = [ec['total_genes_cds'], sal['total_genes_cds']]
+
+    barras = ax2.bar(organismos, genes, color=colores, edgecolor='black')
+    for barra, gen in zip(barras, genes):
+        ax2.annotate(f'{gen:,}',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    ax2.set_ylabel('Numero de genes CDS', fontsize=11)
+    ax2.set_title('Total de Genes Codificantes', fontsize=12, fontweight='bold')
+
+    dif_genes = sal['total_genes_cds'] - ec['total_genes_cds']
+    ax2.text(0.5, 0.02, f'Diferencia: {dif_genes:+,} genes',
+            transform=ax2.transAxes, ha='center', fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+    # --- Grafico 3: Contenido GC ---
+    ax3 = axes[1, 0]
+    gc = [ec['contenido_gc_porcentaje'], sal['contenido_gc_porcentaje']]
+
+    barras = ax3.bar(organismos, gc, color=colores, edgecolor='black')
+    for barra, g in zip(barras, gc):
+        ax3.annotate(f'{g:.2f}%',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    ax3.set_ylabel('Contenido GC (%)', fontsize=11)
+    ax3.set_title('Contenido de Guanina + Citosina', fontsize=12, fontweight='bold')
+    ax3.set_ylim(0, 60)
+
+    # --- Grafico 4: Densidad genica ---
+    ax4 = axes[1, 1]
+    densidad = [ec['densidad_genica_porcentaje'], sal['densidad_genica_porcentaje']]
+
+    barras = ax4.bar(organismos, densidad, color=colores, edgecolor='black')
+    for barra, d in zip(barras, densidad):
+        ax4.annotate(f'{d:.1f}%',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+    ax4.set_ylabel('Densidad genica (%)', fontsize=11)
+    ax4.set_title('Porcentaje del Genoma que Codifica', fontsize=12, fontweight='bold')
+    ax4.set_ylim(0, 100)
+
+    plt.suptitle('Comparacion de Genomas: E. coli K-12 vs Salmonella LT2',
+                fontsize=16, fontweight='bold', y=1.02)
+    plt.tight_layout()
+
+    guardar_figura(fig, "comparacion_genomas_metricas")
+
+
+def graficar_genes_virulencia(datos_comparacion):
+    """
+    Genera grafico comparando genes de virulencia entre ambos organismos.
+
+    Args:
+        datos_comparacion: Diccionario con datos de comparacion
+    """
+    print("[INFO] Generando grafico de genes de virulencia...")
+
+    virulencia = datos_comparacion['genes_virulencia']
+    ec_vir = virulencia['ecoli']
+    sal_vir = virulencia['salmonella']
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- Grafico 1: Total de genes de virulencia ---
+    ax1 = axes[0]
+    organismos = ['E. coli K-12\n(no patogena)', 'Salmonella LT2\n(patogena)']
+    totales = [ec_vir['total'], sal_vir['total']]
+    colores = [COLORES['verde'], COLORES['cuaternario']]
+
+    barras = ax1.bar(organismos, totales, color=colores, edgecolor='black', width=0.5)
+    for barra, total in zip(barras, totales):
+        ax1.annotate(f'{total:,}',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=14, fontweight='bold')
+
+    ax1.set_ylabel('Numero de genes', fontsize=11)
+    ax1.set_title('Total de Genes Relacionados con Virulencia',
+                 fontsize=12, fontweight='bold')
+
+    diferencia = sal_vir['total'] - ec_vir['total']
+    ax1.text(0.5, 0.95, f'Salmonella tiene {diferencia:+} genes de virulencia mas',
+            transform=ax1.transAxes, ha='center', fontsize=10,
+            bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+
+    # --- Grafico 2: Categorias de virulencia en Salmonella ---
+    ax2 = axes[1]
+    categorias = sal_vir['categorias']
+
+    if categorias:
+        nombres = list(categorias.keys())
+        valores = list(categorias.values())
+        colores_cat = sns.color_palette("Reds_r", len(nombres))
+
+        # Ordenar por cantidad
+        sorted_data = sorted(zip(valores, nombres, colores_cat), reverse=True)
+        valores_ord = [x[0] for x in sorted_data]
+        nombres_ord = [x[1] for x in sorted_data]
+
+        barras = ax2.barh(nombres_ord, valores_ord, color=sns.color_palette("Reds_r", len(nombres_ord)))
+
+        for barra, val in zip(barras, valores_ord):
+            ax2.annotate(f'{val}',
+                        xy=(barra.get_width(), barra.get_y() + barra.get_height()/2),
+                        xytext=(3, 0), textcoords="offset points",
+                        ha='left', va='center', fontsize=10, fontweight='bold')
+
+        ax2.set_xlabel('Numero de genes', fontsize=11)
+        ax2.set_title('Categorias de Genes de Virulencia\nen Salmonella LT2',
+                     fontsize=12, fontweight='bold')
+
+    plt.suptitle('Analisis de Genes de Virulencia: E. coli vs Salmonella',
+                fontsize=14, fontweight='bold', y=1.02)
+    plt.tight_layout()
+
+    guardar_figura(fig, "comparacion_virulencia")
+
+
+def graficar_distancias_intergenicas(datos_comparacion):
+    """
+    Genera grafico comparando distancias intergenicas (indicador de islas genomicas).
+
+    Args:
+        datos_comparacion: Diccionario con datos de comparacion
+    """
+    print("[INFO] Generando grafico de distancias intergenicas...")
+
+    distancias = datos_comparacion['distancias_intergenicas']
+    ec_dist = distancias['ecoli']
+    sal_dist = distancias['salmonella']
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- Grafico 1: Estadisticas de distancias ---
+    ax1 = axes[0]
+
+    metricas = ['Promedio', 'Mediana', 'Maxima']
+    ec_vals = [ec_dist['promedio_pb'], ec_dist['mediana_pb'], ec_dist['maxima_pb']]
+    sal_vals = [sal_dist['promedio_pb'], sal_dist['mediana_pb'], sal_dist['maxima_pb']]
+
+    x = range(len(metricas))
+    ancho = 0.35
+
+    barras_ec = ax1.bar([i - ancho/2 for i in x], ec_vals, ancho,
+                        label='E. coli K-12', color=COLORES['primario'])
+    barras_sal = ax1.bar([i + ancho/2 for i in x], sal_vals, ancho,
+                         label='Salmonella LT2', color=COLORES['cuaternario'])
+
+    ax1.set_ylabel('Distancia (pares de bases)', fontsize=11)
+    ax1.set_title('Distancias Intergenicas', fontsize=12, fontweight='bold')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(metricas)
+    ax1.legend()
+
+    # Escala logaritmica para la maxima
+    ax1.set_yscale('log')
+
+    # --- Grafico 2: Regiones grandes (posibles islas) ---
+    ax2 = axes[1]
+
+    organismos = ['E. coli K-12', 'Salmonella LT2']
+    regiones_grandes = [ec_dist['regiones_grandes_5kb'], sal_dist['regiones_grandes_5kb']]
+    colores = [COLORES['primario'], COLORES['cuaternario']]
+
+    barras = ax2.bar(organismos, regiones_grandes, color=colores, edgecolor='black', width=0.5)
+
+    for barra, reg in zip(barras, regiones_grandes):
+        ax2.annotate(f'{reg}',
+                    xy=(barra.get_x() + barra.get_width() / 2, barra.get_height()),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=14, fontweight='bold')
+
+    ax2.set_ylabel('Numero de regiones', fontsize=11)
+    ax2.set_title('Regiones Intergenicas > 5 kb\n(Posibles Islas de Patogenicidad)',
+                 fontsize=12, fontweight='bold')
+
+    # Anotacion explicativa
+    dif_islas = sal_dist['regiones_grandes_5kb'] - ec_dist['regiones_grandes_5kb']
+    if dif_islas > 0:
+        texto = f'Salmonella tiene {dif_islas} regiones grandes adicionales\n(pueden contener islas de patogenicidad - SPIs)'
+    else:
+        texto = 'Distribucion similar de regiones intergenicas'
+
+    ax2.text(0.5, 0.02, texto,
+            transform=ax2.transAxes, ha='center', fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+
+    plt.suptitle('Distancias Intergenicas: Indicador de Islas Genomicas',
+                fontsize=14, fontweight='bold', y=1.02)
+    plt.tight_layout()
+
+    guardar_figura(fig, "comparacion_distancias_intergenicas")
+
+
+def graficar_resumen_comparacion(datos_comparacion):
+    """
+    Genera un grafico resumen de la comparacion E. coli vs Salmonella.
+
+    Args:
+        datos_comparacion: Diccionario con datos de comparacion
+    """
+    print("[INFO] Generando grafico resumen de comparacion...")
+
+    metricas = datos_comparacion['metricas_generales']
+    virulencia = datos_comparacion['genes_virulencia']
+    resumen = datos_comparacion.get('resumen_interpretativo', {})
+
+    fig = plt.figure(figsize=(16, 10))
+
+    # Crear grid de subplots
+    gs = fig.add_gridspec(2, 3, hspace=0.3, wspace=0.3)
+
+    # --- Grafico 1: Comparacion de tamano ---
+    ax1 = fig.add_subplot(gs[0, 0])
+    organismos = ['E. coli\nK-12', 'Salmonella\nLT2']
+    tamanos = [metricas['ecoli']['longitud_genoma_pb']/1e6,
+               metricas['salmonella']['longitud_genoma_pb']/1e6]
+    colores = [COLORES['primario'], COLORES['cuaternario']]
+
+    ax1.bar(organismos, tamanos, color=colores, edgecolor='black')
+    ax1.set_ylabel('Tamano (Mb)')
+    ax1.set_title('Tamano del Genoma', fontweight='bold')
+    for i, t in enumerate(tamanos):
+        ax1.text(i, t + 0.05, f'{t:.2f}', ha='center', fontweight='bold')
+
+    # --- Grafico 2: Comparacion de genes ---
+    ax2 = fig.add_subplot(gs[0, 1])
+    genes = [metricas['ecoli']['total_genes_cds'],
+             metricas['salmonella']['total_genes_cds']]
+
+    ax2.bar(organismos, genes, color=colores, edgecolor='black')
+    ax2.set_ylabel('Genes CDS')
+    ax2.set_title('Total Genes Codificantes', fontweight='bold')
+    for i, g in enumerate(genes):
+        ax2.text(i, g + 50, f'{g:,}', ha='center', fontweight='bold')
+
+    # --- Grafico 3: Genes de virulencia ---
+    ax3 = fig.add_subplot(gs[0, 2])
+    vir = [virulencia['ecoli']['total'], virulencia['salmonella']['total']]
+
+    ax3.bar(organismos, vir, color=[COLORES['verde'], COLORES['cuaternario']], edgecolor='black')
+    ax3.set_ylabel('Genes de virulencia')
+    ax3.set_title('Factores de Patogenicidad', fontweight='bold')
+    for i, v in enumerate(vir):
+        ax3.text(i, v + 2, f'{v}', ha='center', fontweight='bold')
+
+    # --- Grafico 4: Cuadro comparativo (texto) ---
+    ax4 = fig.add_subplot(gs[1, :])
+    ax4.axis('off')
+
+    # Crear tabla de diferencias
+    diferencias = metricas['diferencias']
+
+    tabla_texto = (
+        "DIFERENCIAS CLAVE ENTRE E. coli K-12 (COMENSAL) Y Salmonella LT2 (PATOGENO)\n"
+        "=" * 80 + "\n\n"
+        f"  TAMANO DEL GENOMA:      Salmonella tiene {diferencias['longitud_pb']:,} pb adicionales ({diferencias['longitud_porcentaje']:.1f}% mas)\n"
+        f"  GENES CODIFICANTES:     Salmonella tiene {diferencias['total_genes']:+,} genes CDS\n"
+        f"  GENES DE VIRULENCIA:    Salmonella tiene {virulencia['diferencia_total']:+} genes relacionados con patogenicidad\n\n"
+        "  POR QUE SALMONELLA ES PATOGENA:\n"
+        "  - Posee sistemas de secrecion tipo III (T3SS) para inyectar efectores en celulas humanas\n"
+        "  - Tiene islas de patogenicidad (SPIs) con genes de invasion y supervivencia\n"
+        "  - Puede sobrevivir dentro de macrofagos y evadir el sistema inmune\n"
+        "  - Induce su propia fagocitosis para invadir celulas epiteliales del intestino\n\n"
+        "  POR QUE E. coli K-12 NO ES PATOGENA:\n"
+        "  - Cepa de laboratorio domesticada desde 1922\n"
+        "  - Ha perdido genes de virulencia por adaptacion al laboratorio\n"
+        "  - No tiene sistemas de secrecion tipo III funcionales\n"
+        "  - Es el organismo modelo mas seguro para investigacion genetica"
+    )
+
+    ax4.text(0.5, 0.5, tabla_texto, transform=ax4.transAxes,
+            fontsize=10, verticalalignment='center', horizontalalignment='center',
+            family='monospace',
+            bbox=dict(boxstyle='round', facecolor='white', edgecolor='gray', alpha=0.9))
+
+    plt.suptitle('Resumen Comparativo: E. coli K-12 vs Salmonella LT2\n'
+                 'Entendiendo las diferencias entre comensal y patogeno',
+                fontsize=14, fontweight='bold', y=0.98)
+
+    guardar_figura(fig, "resumen_comparacion_ecoli_salmonella")
+
+
 def graficar_resumen_general(datos_codones, datos_genes):
     """
     Genera un grafico resumen con las metricas principales.
@@ -678,9 +1011,9 @@ def graficar_resumen_general(datos_codones, datos_genes):
 def main():
     """Funcion principal que genera todas las visualizaciones."""
 
-    print("\n" + "=" * 60)
-    print("GENERACION DE VISUALIZACIONES - E. coli K-12 MG1655")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("GENERACION DE VISUALIZACIONES - GENOMAS BACTERIANOS")
+    print("=" * 70)
     print(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Crear directorios
@@ -689,60 +1022,127 @@ def main():
     # Cargar datos
     print("\n[INFO] Cargando datos de analisis...")
 
+    datos_codones = None
+    datos_genes = None
+    datos_comparacion = None
+
     try:
         datos_codones = cargar_datos_json(ARCHIVO_ANALISIS_CODONES)
         print(f"[OK] Datos de codones cargados")
     except FileNotFoundError:
-        print(f"[ERROR] No se encontro: {ARCHIVO_ANALISIS_CODONES}")
-        print("[INFO] Ejecuta primero analisis_codones.py")
-        return
+        print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_CODONES}")
+        print("       Ejecuta analisis_codones.py para generar graficos de codones")
 
     try:
         datos_genes = cargar_datos_json(ARCHIVO_ANALISIS_GENES)
         print(f"[OK] Datos de genes cargados")
     except FileNotFoundError:
-        print(f"[ERROR] No se encontro: {ARCHIVO_ANALISIS_GENES}")
-        print("[INFO] Ejecuta primero analisis_genes.py")
+        print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_GENES}")
+        print("       Ejecuta analisis_genes.py para generar graficos de genes")
+
+    # Cargar datos de comparacion (si existen)
+    try:
+        datos_comparacion = cargar_datos_json(ARCHIVO_COMPARACION)
+        print(f"[OK] Datos de comparacion E. coli vs Salmonella cargados")
+    except FileNotFoundError:
+        print(f"[INFO] No se encontro archivo de comparacion")
+        print("       Ejecuta comparar_genomas.py para generar graficos comparativos")
+
+    # Verificar que hay al menos algunos datos
+    if datos_codones is None and datos_genes is None and datos_comparacion is None:
+        print("\n[ERROR] No se encontraron datos para generar visualizaciones")
+        print("        Ejecuta primero los scripts de analisis:")
+        print("        - python analisis_codones.py")
+        print("        - python analisis_genes.py")
+        print("        - python comparar_genomas.py")
         return
 
     # Generar visualizaciones
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("GENERANDO GRAFICOS")
-    print("=" * 60)
+    print("=" * 70)
 
-    # Graficos de codones
-    graficar_codones_parada(datos_codones)
-    graficar_codones_inicio(datos_codones)
-    graficar_contenido_gc(datos_codones)
+    figuras_generadas = []
 
-    # Graficos de genes
-    graficar_distribucion_tamanos(datos_genes)
-    graficar_distribucion_hebras(datos_genes)
-    graficar_comparacion_literatura(datos_genes)
-    graficar_genes_vs_cds(datos_genes)
-    graficar_genes_extremos(datos_genes)
+    # Graficos de codones (si hay datos)
+    if datos_codones:
+        print("\n[SECCION] Graficos de analisis de codones...")
+        graficar_codones_parada(datos_codones)
+        figuras_generadas.append("codones_parada.png")
+        graficar_codones_inicio(datos_codones)
+        figuras_generadas.append("codones_inicio_atg.png")
+        graficar_contenido_gc(datos_codones)
+        figuras_generadas.append("contenido_gc.png")
 
-    # Grafico resumen
-    graficar_resumen_general(datos_codones, datos_genes)
+    # Graficos de genes (si hay datos)
+    if datos_genes:
+        print("\n[SECCION] Graficos de analisis de genes...")
+        graficar_distribucion_tamanos(datos_genes)
+        figuras_generadas.append("distribucion_tamanos_genes.png")
+        graficar_distribucion_hebras(datos_genes)
+        figuras_generadas.append("distribucion_hebras.png")
+        graficar_comparacion_literatura(datos_genes)
+        figuras_generadas.append("comparacion_literatura.png")
+        graficar_genes_vs_cds(datos_genes)
+        figuras_generadas.append("genes_vs_cds.png")
+        graficar_genes_extremos(datos_genes)
+        figuras_generadas.append("genes_extremos.png")
+
+    # Grafico resumen (si hay ambos datos)
+    if datos_codones and datos_genes:
+        print("\n[SECCION] Grafico resumen general...")
+        graficar_resumen_general(datos_codones, datos_genes)
+        figuras_generadas.append("resumen_general.png")
+
+    # Graficos de comparacion E. coli vs Salmonella (si hay datos)
+    if datos_comparacion:
+        print("\n[SECCION] Graficos de comparacion E. coli vs Salmonella...")
+        graficar_comparacion_genomas(datos_comparacion)
+        figuras_generadas.append("comparacion_genomas_metricas.png")
+        graficar_genes_virulencia(datos_comparacion)
+        figuras_generadas.append("comparacion_virulencia.png")
+        graficar_distancias_intergenicas(datos_comparacion)
+        figuras_generadas.append("comparacion_distancias_intergenicas.png")
+        graficar_resumen_comparacion(datos_comparacion)
+        figuras_generadas.append("resumen_comparacion_ecoli_salmonella.png")
 
     # Resumen
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("FIGURAS GENERADAS")
-    print("=" * 60)
+    print("=" * 70)
     print(f"  Directorio: {RUTA_RESULTADOS_FIGURAS}")
-    print("  Archivos:")
-    print("    - codones_parada.png          (proporciones de codones de parada)")
-    print("    - codones_inicio_atg.png      (codones ATG vs genes)")
-    print("    - contenido_gc.png            (composicion de nucleotidos)")
-    print("    - distribucion_tamanos_genes.png (histograma de tamanos)")
-    print("    - distribucion_hebras.png     (genes por hebra + / -)")
-    print("    - comparacion_literatura.png  (validacion con fuentes)")
-    print("    - genes_vs_cds.png            (codificantes vs no codificantes)")
-    print("    - genes_extremos.png          (gen mas largo y mas corto)")
-    print("    - resumen_general.png         (dashboard completo)")
-    print("=" * 60)
+    print(f"  Total de figuras: {len(figuras_generadas)}")
+    print("\n  Archivos generados:")
 
-    print("\n[OK] Todas las visualizaciones generadas exitosamente\n")
+    # Mostrar figuras por categoria
+    if datos_codones:
+        print("\n  [Analisis de Codones]")
+        print("    - codones_parada.png          (proporciones de codones de parada)")
+        print("    - codones_inicio_atg.png      (codones ATG vs genes)")
+        print("    - contenido_gc.png            (composicion de nucleotidos)")
+
+    if datos_genes:
+        print("\n  [Analisis de Genes]")
+        print("    - distribucion_tamanos_genes.png (histograma de tamanos)")
+        print("    - distribucion_hebras.png     (genes por hebra + / -)")
+        print("    - comparacion_literatura.png  (validacion con fuentes)")
+        print("    - genes_vs_cds.png            (codificantes vs no codificantes)")
+        print("    - genes_extremos.png          (gen mas largo y mas corto)")
+
+    if datos_codones and datos_genes:
+        print("\n  [Resumen]")
+        print("    - resumen_general.png         (dashboard completo)")
+
+    if datos_comparacion:
+        print("\n  [Comparacion E. coli vs Salmonella]")
+        print("    - comparacion_genomas_metricas.png     (metricas lado a lado)")
+        print("    - comparacion_virulencia.png          (genes de patogenicidad)")
+        print("    - comparacion_distancias_intergenicas.png (islas genomicas)")
+        print("    - resumen_comparacion_ecoli_salmonella.png (resumen comparativo)")
+
+    print("\n" + "=" * 70)
+    print(f"[OK] {len(figuras_generadas)} visualizaciones generadas exitosamente")
+    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":

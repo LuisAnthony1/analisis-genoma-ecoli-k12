@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Analisis de Genes del Genoma de E. coli K-12 MG1655
+Analisis de Genes de Genomas Bacterianos
 
 Este script extrae y analiza informacion de los genes anotados
-en el archivo GenBank del genoma de E. coli K-12 MG1655.
+en archivos GenBank de genomas bacterianos.
+
+Organismos soportados:
+1. Escherichia coli K-12 MG1655 (cepa de laboratorio)
+2. Salmonella enterica serovar Typhimurium LT2 (patogeno)
 
 Funcionalidades:
 - Extraer todos los genes y CDS (secuencias codificantes) del GenBank
-- Contar el numero total de genes (~4,300)
+- Contar el numero total de genes
 - Calcular la densidad genica del genoma
 - Analizar la distribucion de tamanos de genes
 - Calcular el contenido GC de las regiones codificantes
@@ -15,7 +19,7 @@ Funcionalidades:
 - Exportar resultados en formato CSV y JSON
 
 Fecha: 2026
-Proyecto: Analisis del genoma de E. coli K-12 MG1655
+Proyecto: Analisis comparativo de genomas bacterianos
 """
 
 from Bio import SeqIO
@@ -35,32 +39,106 @@ import statistics
 DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
-ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.gb")
 
-# Valores de referencia de literatura cientifica para E. coli K-12 MG1655
-# FUENTES OFICIALES:
-# - NCBI RefSeq: NC_000913.3 (https://www.ncbi.nlm.nih.gov/nuccore/NC_000913.3)
-# - EcoCyc: https://ecocyc.org/ (base de datos curada de E. coli K-12)
-# - Blattner et al. 1997 (Science) - Secuenciacion original del genoma
-# NOTA: Los numeros exactos varian ligeramente segun la version de anotacion
-VALORES_LITERATURA = {
-    "longitud_genoma": 4641652,       # pb - NCBI NC_000913.3
-    "genes_totales": 4319,            # CDS segun EcoCyc 2024
-    "genes_codificantes": 4319,       # CDS (Coding DNA Sequences) - EcoCyc
-    "genes_totales_anotados": 4651,   # Incluye ARN y pseudogenes
-    "contenido_gc_genoma": 50.79,     # Porcentaje - NCBI
-    "contenido_gc_cds": 51.06,        # GC en regiones codificantes - calculado
-    "densidad_genica": 87.8,          # Porcentaje del genoma que codifica - EcoCyc
-    "tamano_promedio_gen": 940,       # pb aproximado - EcoCyc
+# Configuracion de organismos disponibles
+ORGANISMOS = {
+    1: {
+        "nombre": "Escherichia coli K-12 MG1655",
+        "nombre_corto": "ecoli_k12",
+        "archivo_genbank": "ecoli_k12.gb",
+        "descripcion": "Cepa de laboratorio de referencia, no patogena",
+        "valores_literatura": {
+            "longitud_genoma": 4641652,       # pb - NCBI NC_000913.3
+            "genes_totales": 4319,            # CDS segun EcoCyc 2024
+            "genes_codificantes": 4319,       # CDS (Coding DNA Sequences) - EcoCyc
+            "genes_totales_anotados": 4651,   # Incluye ARN y pseudogenes
+            "contenido_gc_genoma": 50.79,     # Porcentaje - NCBI
+            "contenido_gc_cds": 51.06,        # GC en regiones codificantes
+            "densidad_genica": 87.8,          # Porcentaje del genoma que codifica
+            "tamano_promedio_gen": 940,       # pb aproximado - EcoCyc
+        },
+        "referencias": {
+            "ncbi_refseq": "NCBI Reference Sequence NC_000913.3",
+            "database": "EcoCyc Database (https://ecocyc.org/)",
+            "paper": "Blattner FR et al. (1997) Science 277:1453-1462",
+        }
+    },
+    2: {
+        "nombre": "Salmonella enterica serovar Typhimurium LT2",
+        "nombre_corto": "salmonella_lt2",
+        "archivo_genbank": "salmonella_lt2.gb",
+        "descripcion": "Patogeno - causa gastroenteritis, cepa de referencia",
+        "valores_literatura": {
+            "longitud_genoma": 4857450,       # pb - NCBI NC_003197.2
+            "genes_totales": 4525,            # CDS aproximados
+            "genes_codificantes": 4525,       # CDS (Coding DNA Sequences)
+            "genes_totales_anotados": 4747,   # Incluye ARN y pseudogenes
+            "contenido_gc_genoma": 52.22,     # Porcentaje - NCBI
+            "contenido_gc_cds": 52.5,         # GC en regiones codificantes
+            "densidad_genica": 86.8,          # Porcentaje del genoma que codifica
+            "tamano_promedio_gen": 945,       # pb aproximado
+        },
+        "referencias": {
+            "ncbi_refseq": "NCBI Reference Sequence NC_003197.2",
+            "database": "SalmonellaDB / KEGG",
+            "paper": "McClelland M et al. (2001) Nature 413:852-856",
+        }
+    }
 }
 
-# Referencias bibliograficas
-REFERENCIAS = {
-    "ncbi_refseq": "NCBI Reference Sequence NC_000913.3",
-    "ecocyc": "EcoCyc Database (https://ecocyc.org/)",
-    "blattner_1997": "Blattner FR et al. (1997) Science 277:1453-1462",
-    "nota": "Los valores pueden variar ligeramente entre versiones de anotacion"
-}
+# Variables globales que se configuran segun el organismo seleccionado
+ORGANISMO_ACTUAL = None
+ARCHIVO_GENBANK = None
+VALORES_LITERATURA = None
+REFERENCIAS = None
+
+
+def seleccionar_organismo():
+    """
+    Muestra menu para seleccionar el organismo a analizar.
+
+    Returns:
+        int: Numero del organismo seleccionado (1 o 2)
+    """
+    print("\n" + "=" * 70)
+    print("ANALISIS DE GENES - SELECCION DE ORGANISMO")
+    print("=" * 70)
+    print("\n  Seleccione el genoma a analizar:\n")
+
+    for num, org in ORGANISMOS.items():
+        print(f"    [{num}] {org['nombre']}")
+        print(f"        {org['descripcion']}")
+        lit = org['valores_literatura']
+        print(f"        Tamano: ~{lit['longitud_genoma']/1e6:.2f} Mb | CDS esperados: ~{lit['genes_codificantes']:,}")
+        print()
+
+    while True:
+        try:
+            opcion = int(input("  Ingrese su opcion (1 o 2): "))
+            if opcion in [1, 2]:
+                return opcion
+            print("  [ERROR] Opcion no valida. Ingrese 1 o 2.")
+        except ValueError:
+            print("  [ERROR] Ingrese un numero valido.")
+
+
+def configurar_organismo(num_organismo):
+    """
+    Configura las variables globales segun el organismo seleccionado.
+
+    Args:
+        num_organismo: Numero del organismo (1 o 2)
+    """
+    global ORGANISMO_ACTUAL, ARCHIVO_GENBANK, VALORES_LITERATURA, REFERENCIAS
+
+    config = ORGANISMOS[num_organismo]
+    ORGANISMO_ACTUAL = config
+    ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
+    VALORES_LITERATURA = config["valores_literatura"]
+    REFERENCIAS = config["referencias"]
+
+    print(f"\n[OK] Organismo configurado: {config['nombre']}")
+    print(f"     Archivo: {config['archivo_genbank']}")
 
 
 # FUNCIONES DE UTILIDAD
@@ -724,8 +802,15 @@ def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
 def main():
     """Funcion principal que ejecuta todo el analisis de genes."""
 
+    # Paso 0: Seleccionar organismo
+    num_organismo = seleccionar_organismo()
+    configurar_organismo(num_organismo)
+
+    nombre_organismo = ORGANISMO_ACTUAL["nombre"]
+    nombre_corto = ORGANISMO_ACTUAL["nombre_corto"]
+
     print("\n" + "=" * 70)
-    print("ANALISIS DE GENES DEL GENOMA DE Escherichia coli K-12 MG1655")
+    print(f"ANALISIS DE GENES DEL GENOMA DE {nombre_organismo}")
     print("=" * 70)
     print(f"\n  Fecha de analisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Objetivo: Extraer y analizar todos los genes codificantes del genoma")
@@ -786,6 +871,8 @@ def main():
     # Compilar todos los resultados (sin incluir secuencias completas para reducir tamano)
     todos_resultados = {
         "fecha_analisis": datetime.now().isoformat(),
+        "organismo": nombre_organismo,
+        "organismo_corto": nombre_corto,
         "archivo_fuente": ARCHIVO_GENBANK,
         "estadisticas_generales": estadisticas,
         "distribucion_tamanos": distribucion,
@@ -798,34 +885,39 @@ def main():
         "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
     }
 
-    # Exportar resultados
+    # Exportar resultados (con nombre del organismo en el archivo)
     print("\n" + "=" * 60)
     print("EXPORTANDO RESULTADOS A ARCHIVOS")
     print("=" * 70)
     print("  (Los archivos se guardan en la carpeta resultados/tablas/)\n")
 
+    # Nombres de archivos con prefijo del organismo
+    archivo_json = f"analisis_genes_{nombre_corto}"
+    archivo_lista = f"lista_genes_{nombre_corto}"
+    archivo_stats = f"estadisticas_genes_{nombre_corto}"
+
     print("  [1/3] Exportando analisis completo en formato JSON...")
-    exportar_json(todos_resultados, "analisis_genes_completo")
+    exportar_json(todos_resultados, archivo_json)
 
     print("  [2/3] Exportando lista de genes en formato CSV...")
-    exportar_genes_csv(genes, "lista_genes")
+    exportar_genes_csv(genes, archivo_lista)
 
     print("  [3/3] Exportando estadisticas en formato CSV...")
-    exportar_estadisticas_csv(estadisticas, comparaciones, "estadisticas_genes")
+    exportar_estadisticas_csv(estadisticas, comparaciones, archivo_stats)
 
     # Resumen final
     print("\n" + "=" * 70)
     print("RESUMEN FINAL DEL ANALISIS")
     print("=" * 70)
     print(f"\n  ORGANISMO ANALIZADO:")
-    print(f"    Especie:              Escherichia coli")
-    print(f"    Cepa:                 K-12 MG1655 (cepa de laboratorio de referencia)")
+    print(f"    Nombre:       {nombre_organismo}")
+    print(f"    Descripcion:  {ORGANISMO_ACTUAL['descripcion']}")
 
     print(f"\n  CONTEO DE GENES:")
     print(f"    Genes totales anotados:       {analisis_genes_cds['genes_totales_anotados']:,} genes en el GenBank")
     print(f"    Genes codificantes (CDS):     {analisis_genes_cds['genes_codificantes_cds']:,} genes que producen proteinas")
     print(f"    Genes no codificantes:        {analisis_genes_cds['genes_no_codificantes']:,} genes (ARN funcional)")
-    print(f"    CDS segun literatura:         {VALORES_LITERATURA['genes_codificantes']:,} CDS (EcoCyc 2024)")
+    print(f"    CDS segun literatura:         {VALORES_LITERATURA['genes_codificantes']:,} CDS")
 
     print(f"\n  GENES EXTREMOS:")
     print(f"    Gen mas largo:  {genes_extremos['gen_mas_largo']['locus_tag']} ({genes_extremos['gen_mas_largo']['longitud_pb']:,} pares de bases)")
@@ -839,12 +931,12 @@ def main():
     print(f"    Tamano promedio de genes:     {estadisticas['tamano_gen']['promedio_pb']:,.0f} pares de bases ({estadisticas['tamano_gen']['promedio_pb']/3:.0f} aminoacidos)")
 
     print(f"\n  ARCHIVOS GENERADOS:")
-    print(f"    - lista_genes.csv:            Lista completa de {estadisticas['total_genes']:,} genes con sus propiedades")
-    print(f"    - estadisticas_genes.csv:     Metricas resumidas del analisis")
-    print(f"    - analisis_genes_completo.json: Todos los datos en formato estructurado")
+    print(f"    - {archivo_lista}.csv:         Lista completa de {estadisticas['total_genes']:,} genes")
+    print(f"    - {archivo_stats}.csv:    Metricas resumidas")
+    print(f"    - {archivo_json}.json: Todos los datos")
 
     print("\n" + "=" * 70)
-    print("[OK] Analisis de genes completado exitosamente")
+    print(f"[OK] Analisis de {nombre_corto} completado exitosamente")
     print("=" * 70 + "\n")
 
 

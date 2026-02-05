@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-Descarga del Genoma de E. coli K-12 MG1655 desde NCBI
+Descarga de Genomas desde NCBI
 
-Este script descarga programaticamente el genoma completo de E. coli K-12 MG1655
-utilizando las APIs de NCBI a traves del modulo Entrez de BioPython.
+Este script descarga programaticamente genomas completos utilizando
+las APIs de NCBI a traves del modulo Entrez de BioPython.
+
+Organismos disponibles:
+1. Escherichia coli K-12 MG1655 (cepa de laboratorio de referencia)
+2. Salmonella enterica serovar Typhimurium LT2 (para comparacion)
 
 Fecha: 2026
-Proyecto: Analisis del genoma de E. coli K-12 MG1655
+Proyecto: Analisis comparativo de genomas bacterianos
 """
 
 from Bio import Entrez, SeqIO
@@ -23,27 +27,71 @@ from datetime import datetime
 CORREO_ELECTRONICO = "194522@unsaac.edu.pe"
 Entrez.email = CORREO_ELECTRONICO
 
-# ID del genoma de E. coli K-12 MG1655 en NCBI
-ID_GENOMA = "U00096.3"  # Accession number en GenBank
-
 # Rutas de archivos
 DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
-ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.gb")
-ARCHIVO_FASTA = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.fasta")
-ARCHIVO_METADATA = os.path.join(RUTA_DATOS_CRUDO, "metadata_descarga.json")
 
-# Valores esperados para validacion
-VALORES_ESPERADOS = {
-    "organismo": "Escherichia coli",
-    "cepa": "K-12",
-    "longitud_aproximada": 4641652,  # pares de bases
-    "tolerancia_longitud": 1000  # margen de error permitido
+# Configuracion de organismos disponibles
+ORGANISMOS = {
+    1: {
+        "nombre": "Escherichia coli K-12 MG1655",
+        "nombre_corto": "ecoli_k12",
+        "id_genoma": "U00096.3",  # Accession number en GenBank
+        "descripcion": "Cepa de laboratorio de referencia, no patogena",
+        "longitud_esperada": 4641652,
+        "tolerancia": 1000,
+        "archivo_gb": "ecoli_k12.gb",
+        "archivo_fasta": "ecoli_k12.fasta",
+        "archivo_metadata": "metadata_ecoli.json"
+    },
+    2: {
+        "nombre": "Salmonella enterica serovar Typhimurium LT2",
+        "nombre_corto": "salmonella_lt2",
+        "id_genoma": "NC_003197.2",  # Genoma de referencia NCBI
+        "descripcion": "Patogeno - causa gastroenteritis, cepa de referencia",
+        "longitud_esperada": 4857450,  # ~4.86 Mb
+        "tolerancia": 5000,
+        "archivo_gb": "salmonella_lt2.gb",
+        "archivo_fasta": "salmonella_lt2.fasta",
+        "archivo_metadata": "metadata_salmonella.json"
+    }
 }
 
 
 # FUNCIONES
 # =============================================================================
+
+def mostrar_menu():
+    """
+    Muestra el menu de seleccion de organismos.
+
+    Returns:
+        int: Opcion seleccionada (1, 2, o 3 para ambos)
+    """
+    print("\n" + "=" * 70)
+    print("DESCARGA DE GENOMAS BACTERIANOS DESDE NCBI")
+    print("=" * 70)
+    print("\n  Seleccione el genoma a descargar:\n")
+
+    for num, org in ORGANISMOS.items():
+        print(f"    [{num}] {org['nombre']}")
+        print(f"        {org['descripcion']}")
+        print(f"        ID: {org['id_genoma']} | Tamano: ~{org['longitud_esperada']/1e6:.2f} Mb")
+        print()
+
+    print(f"    [3] Descargar AMBOS genomas (para comparacion)")
+    print(f"    [0] Salir")
+    print()
+
+    while True:
+        try:
+            opcion = int(input("  Ingrese su opcion (0-3): "))
+            if opcion in [0, 1, 2, 3]:
+                return opcion
+            print("  [ERROR] Opcion no valida. Ingrese 0, 1, 2 o 3.")
+        except ValueError:
+            print("  [ERROR] Ingrese un numero valido.")
+
 
 def crear_directorios():
     """
@@ -54,11 +102,13 @@ def crear_directorios():
         print(f"[INFO] Directorio creado: {RUTA_DATOS_CRUDO}")
 
 
-def descargar_genoma(formato="gb"):
+def descargar_genoma(id_genoma, nombre_organismo, formato="gb"):
     """
     Descarga el genoma desde NCBI en el formato especificado.
 
     Args:
+        id_genoma: ID de acceso del genoma en NCBI
+        nombre_organismo: Nombre del organismo (para mensajes)
         formato: "gb" para GenBank o "fasta" para FASTA
 
     Returns:
@@ -68,13 +118,14 @@ def descargar_genoma(formato="gb"):
         Exception: Si hay errores de conectividad o el genoma no se encuentra
     """
     nombre_formato = "GenBank (incluye anotaciones)" if formato == "gb" else "FASTA (secuencia pura)"
-    print(f"[INFO] Descargando genoma {ID_GENOMA} en formato {nombre_formato}...")
+    print(f"\n[INFO] Descargando {nombre_organismo}")
+    print(f"       ID: {id_genoma} | Formato: {nombre_formato}")
 
     try:
         # Realizar la peticion a NCBI
         manejador = Entrez.efetch(
             db="nucleotide",
-            id=ID_GENOMA,
+            id=id_genoma,
             rettype=formato,
             retmode="text"
         )
@@ -107,22 +158,18 @@ def guardar_archivo(contenido, ruta_archivo):
     print(f"[OK] Archivo guardado ({tamano_mb:.2f} MB)")
 
 
-def validar_genoma(ruta_archivo):
+def validar_genoma(ruta_archivo, config_organismo):
     """
-    Valida que el genoma descargado corresponde a E. coli K-12 MG1655.
-
-    Verifica:
-    - Que el organismo sea Escherichia coli
-    - Que la cepa sea K-12
-    - Que la longitud sea aproximadamente 4.6 millones de pares de bases
+    Valida que el genoma descargado corresponde al organismo esperado.
 
     Args:
         ruta_archivo: Ruta al archivo GenBank descargado
+        config_organismo: Configuracion del organismo
 
     Returns:
         dict: Informacion del genoma validado
     """
-    print("[INFO] Validando integridad del genoma descargado...")
+    print(f"\n[INFO] Validando integridad del genoma...")
 
     # Leer el archivo GenBank
     registro = SeqIO.read(ruta_archivo, "genbank")
@@ -135,71 +182,130 @@ def validar_genoma(ruta_archivo):
         "longitud": len(registro.seq),
         "organismo": registro.annotations.get("organism", "Desconocido"),
         "fecha_actualizacion": registro.annotations.get("date", "Desconocida"),
-        "num_features": len(registro.features)
+        "num_features": len(registro.features),
+        "nombre_corto": config_organismo["nombre_corto"]
     }
 
-    # Validar organismo
-    if VALORES_ESPERADOS["organismo"] not in informacion["organismo"]:
-        print(f"[ADVERTENCIA] Organismo inesperado: {informacion['organismo']}")
-    else:
-        print(f"[OK] Organismo correcto: {informacion['organismo']}")
-
     # Validar longitud
-    diferencia = abs(informacion["longitud"] - VALORES_ESPERADOS["longitud_aproximada"])
-    if diferencia > VALORES_ESPERADOS["tolerancia_longitud"]:
+    diferencia = abs(informacion["longitud"] - config_organismo["longitud_esperada"])
+    if diferencia > config_organismo["tolerancia"]:
         print(f"[ADVERTENCIA] Longitud inesperada: {informacion['longitud']:,} pb")
-        print(f"    Esperado: ~{VALORES_ESPERADOS['longitud_aproximada']:,} pb")
+        print(f"    Esperado: ~{config_organismo['longitud_esperada']:,} pb")
     else:
-        print(f"[OK] Longitud correcta: {informacion['longitud']:,} pares de bases")
-
-    # Validar que tenga anotaciones
-    if informacion["num_features"] > 0:
-        print(f"[OK] Anotaciones encontradas: {informacion['num_features']:,} features")
-    else:
-        print("[ADVERTENCIA] No se encontraron anotaciones en el archivo")
+        print(f"[OK] Organismo: {informacion['organismo']}")
+        print(f"[OK] Longitud: {informacion['longitud']:,} pares de bases")
+        print(f"[OK] Features: {informacion['num_features']:,} anotaciones")
 
     return informacion
 
 
-def guardar_metadata(informacion):
+def guardar_metadata(informacion, ruta_archivo, config_organismo):
     """
     Guarda los metadatos de la descarga en formato JSON.
 
     Args:
         informacion: Diccionario con informacion del genoma
+        ruta_archivo: Ruta donde guardar el JSON
+        config_organismo: Configuracion del organismo
     """
     metadata = {
         "fecha_descarga": datetime.now().isoformat(),
         "fuente": "NCBI",
-        "id_acceso": ID_GENOMA,
+        "id_acceso": config_organismo["id_genoma"],
         "email_usado": CORREO_ELECTRONICO,
+        "organismo_config": config_organismo["nombre"],
         "genoma": informacion
     }
 
-    with open(ARCHIVO_METADATA, "w", encoding="utf-8") as archivo:
+    with open(ruta_archivo, "w", encoding="utf-8") as archivo:
         json.dump(metadata, archivo, indent=2, ensure_ascii=False)
 
-    print(f"[OK] Metadata guardada en: {ARCHIVO_METADATA}")
+    print(f"[OK] Metadata guardada: {os.path.basename(ruta_archivo)}")
 
 
-def mostrar_resumen(informacion):
+def descargar_organismo(num_organismo):
     """
-    Muestra un resumen de la descarga.
+    Descarga un organismo completo (GenBank + FASTA + validacion).
 
     Args:
-        informacion: Diccionario con informacion del genoma
+        num_organismo: Numero del organismo (1 o 2)
+
+    Returns:
+        dict: Informacion del genoma descargado
     """
-    print("\n" + "=" * 60)
-    print("RESUMEN DE LA DESCARGA")
-    print("=" * 60)
-    print(f"  ID:          {informacion['id']}")
-    print(f"  Organismo:   {informacion['organismo']}")
-    print(f"  Descripcion: {informacion['descripcion'][:50]}...")
-    print(f"  Longitud:    {informacion['longitud']:,} pb")
-    print(f"  Features:    {informacion['num_features']:,}")
-    print(f"  GenBank:     {ARCHIVO_GENBANK}")
-    print(f"  FASTA:       {ARCHIVO_FASTA}")
-    print("=" * 60)
+    config = ORGANISMOS[num_organismo]
+
+    print("\n" + "=" * 70)
+    print(f"DESCARGANDO: {config['nombre']}")
+    print("=" * 70)
+
+    # Rutas de archivos
+    archivo_gb = os.path.join(RUTA_DATOS_CRUDO, config["archivo_gb"])
+    archivo_fasta = os.path.join(RUTA_DATOS_CRUDO, config["archivo_fasta"])
+    archivo_metadata = os.path.join(RUTA_DATOS_CRUDO, config["archivo_metadata"])
+
+    # Descargar GenBank
+    try:
+        contenido_genbank = descargar_genoma(
+            config["id_genoma"],
+            config["nombre"],
+            formato="gb"
+        )
+    except Exception as error:
+        print(f"[ERROR] No se pudo descargar GenBank: {error}")
+        return None
+
+    # Descargar FASTA
+    try:
+        contenido_fasta = descargar_genoma(
+            config["id_genoma"],
+            config["nombre"],
+            formato="fasta"
+        )
+    except Exception as error:
+        print(f"[ERROR] No se pudo descargar FASTA: {error}")
+        return None
+
+    # Guardar archivos
+    guardar_archivo(contenido_genbank, archivo_gb)
+    guardar_archivo(contenido_fasta, archivo_fasta)
+
+    # Validar genoma
+    informacion = validar_genoma(archivo_gb, config)
+
+    # Guardar metadata
+    guardar_metadata(informacion, archivo_metadata, config)
+
+    return informacion
+
+
+def mostrar_resumen(organismos_descargados):
+    """
+    Muestra un resumen de las descargas completadas.
+
+    Args:
+        organismos_descargados: Lista de diccionarios con informacion
+    """
+    print("\n" + "=" * 70)
+    print("RESUMEN DE DESCARGAS COMPLETADAS")
+    print("=" * 70)
+
+    for info in organismos_descargados:
+        if info:
+            print(f"\n  {info['organismo']}")
+            print(f"  " + "-" * 50)
+            print(f"    ID:        {info['id']}")
+            print(f"    Longitud:  {info['longitud']:,} pb ({info['longitud']/1e6:.2f} Mb)")
+            print(f"    Features:  {info['num_features']:,}")
+
+    print("\n" + "=" * 70)
+
+    if len(organismos_descargados) == 2:
+        print("\n  [INFO] Ambos genomas descargados. Puedes ejecutar:")
+        print("         - python analisis_genes.py    (para analizar cada genoma)")
+        print("         - python comparar_genomas.py  (para comparar ambos)")
+
+    print()
 
 
 # EJECUCION PRINCIPAL
@@ -209,47 +315,56 @@ def main():
     """
     Funcion principal que ejecuta todo el proceso de descarga.
     """
-    print("\n" + "=" * 60)
-    print("DESCARGA DEL GENOMA DE E. coli K-12 MG1655")
-    print("=" * 60 + "\n")
-
     # Verificar que se haya configurado el email
     if CORREO_ELECTRONICO == "tu_correo@ejemplo.com":
         print("[ERROR] Debes configurar tu correo electronico en CORREO_ELECTRONICO")
         print("        NCBI requiere un email valido para usar sus APIs")
         sys.exit(1)
 
-    # Paso 1: Crear directorios
+    # Mostrar menu y obtener opcion
+    opcion = mostrar_menu()
+
+    if opcion == 0:
+        print("\n[INFO] Saliendo...\n")
+        sys.exit(0)
+
+    # Crear directorios
     crear_directorios()
 
-    # Paso 2: Descargar genoma en formato GenBank
-    try:
-        contenido_genbank = descargar_genoma(formato="gb")
-    except Exception as error:
-        print(f"[ERROR] No se pudo completar la descarga GenBank: {error}")
+    # Descargar segun opcion
+    organismos_descargados = []
+
+    if opcion == 1:
+        # Solo E. coli
+        info = descargar_organismo(1)
+        if info:
+            organismos_descargados.append(info)
+
+    elif opcion == 2:
+        # Solo Salmonella
+        info = descargar_organismo(2)
+        if info:
+            organismos_descargados.append(info)
+
+    elif opcion == 3:
+        # Ambos
+        print("\n[INFO] Descargando ambos genomas para comparacion...")
+
+        info_ecoli = descargar_organismo(1)
+        if info_ecoli:
+            organismos_descargados.append(info_ecoli)
+
+        info_salmonella = descargar_organismo(2)
+        if info_salmonella:
+            organismos_descargados.append(info_salmonella)
+
+    # Mostrar resumen
+    if organismos_descargados:
+        mostrar_resumen(organismos_descargados)
+        print("[OK] Proceso completado exitosamente\n")
+    else:
+        print("\n[ERROR] No se pudieron descargar los genomas\n")
         sys.exit(1)
-
-    # Paso 3: Descargar genoma en formato FASTA
-    try:
-        contenido_fasta = descargar_genoma(formato="fasta")
-    except Exception as error:
-        print(f"[ERROR] No se pudo completar la descarga FASTA: {error}")
-        sys.exit(1)
-
-    # Paso 4: Guardar archivos
-    guardar_archivo(contenido_genbank, ARCHIVO_GENBANK)
-    guardar_archivo(contenido_fasta, ARCHIVO_FASTA)
-
-    # Paso 5: Validar genoma
-    informacion_genoma = validar_genoma(ARCHIVO_GENBANK)
-
-    # Paso 6: Guardar metadata
-    guardar_metadata(informacion_genoma)
-
-    # Paso 7: Mostrar resumen
-    mostrar_resumen(informacion_genoma)
-
-    print("\n[OK] Proceso completado exitosamente\n")
 
 
 if __name__ == "__main__":
