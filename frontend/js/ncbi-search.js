@@ -42,8 +42,16 @@ const NCBISearch = {
 
         try {
             // PASO 1: Buscar IDs en NCBI
-            // Usar wildcard (*) para búsquedas parciales y buscar en todos los campos
-            const searchTerm = `${query}*[Organism] AND (complete genome[Title] OR complete sequence[Title])`;
+            // Detectar si es un accession ID (ej: U00096, NC_000913, CP018008) o nombre de organismo
+            const isAccession = /^[A-Z]{1,2}_?\d{4,}/i.test(query);
+            let searchTerm;
+            if (isAccession) {
+                // Buscar por accession ID directamente
+                searchTerm = `${query}[Accession]`;
+            } else {
+                // Buscar por nombre de organismo con wildcard
+                searchTerm = `${query}*[Organism] AND (complete genome[Title] OR complete sequence[Title])`;
+            }
             const searchUrl = `${NCBI_BASE}/esearch.fcgi?db=nucleotide&term=${encodeURIComponent(searchTerm)}&retmax=${limit}&retmode=json&email=${NCBI_EMAIL}&sort=relevance`;
 
             const searchResp = await fetch(searchUrl);
