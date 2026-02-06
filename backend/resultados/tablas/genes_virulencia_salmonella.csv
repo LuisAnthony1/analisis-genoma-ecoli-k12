@@ -1,0 +1,16 @@
+Locus_tag,Nombre_gen,Producto
+STM0021,bcfA,fimbrial subunit
+STM0022,bcfB,fimbrial chaparone
+STM0023,bcfC,fimbrial usher
+STM0024,bcfD,fimbrial subunit
+STM0025,bcfE,fimbrial subunit
+STM0026,bcfF,fimbrial subunit
+STM0027,bcfG,fimbrial chaparone
+STM0090,ksgA,"S-adenosylmethionine-6-N',N'-adenosyl (rRNA) dimethyltransferase; kasugamycin resistance"
+STM0136,secA,preprotein translocase; secretion protein of IISP family
+STM0142,hofC,putative component in type IV pilin biogenesis
+STM0172,yadG,"putative ABC-type multidrug transport system, ATPase component"
+STM0174,stiH,putative fimbriae
+STM0175,stiC,putative fimbrial usher
+STM0176,stiB,putative fimbrial chaparone
+STM0177,stiA,putative fimbrial subunit

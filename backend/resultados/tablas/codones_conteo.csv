@@ -1,0 +1,5 @@
+Tipo,Codon,Conteo,Densidad_por_kb,Proporcion_porcentaje
+Inicio,ATG,76282,16.4342,100.00
+Parada,TAA,68858,14.8348,38.33
+Parada,TAG,27254,5.8716,15.17
+Parada,TGA,83532,17.9962,46.5

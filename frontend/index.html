@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Análisis Comparativo de Genomas Bacterianos - E. coli vs Salmonella | UNSAAC</title>
+    <meta name="description" content="Análisis bioinformático comparativo de Escherichia coli K-12 y Salmonella enterica LT2 - UNSAAC">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Prism.js para syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-space { font-family: 'Space Grotesk', sans-serif; }
+        body { font-family: 'Space Grotesk', sans-serif; transition: background-color 0.3s, color 0.3s; }
+
+        /* ========================================
+           TEMA CLARO (Mejorado para proyector)
+           ======================================== */
+        body.light { background-color: #e2e8f0; color: #0f172a; }
+        body.light .bg-page { background-color: #e2e8f0; }
+        body.light .bg-card { background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        body.light .bg-sidebar { background-color: #ffffff; }
+        body.light .bg-nav { background-color: rgba(255,255,255,0.95); }
+        body.light .text-primary { color: #0f172a; }
+        body.light .text-secondary { color: #334155; }
+        body.light .grid-bg { opacity: 0.15; }
+        body.light .gradient-overlay { background: linear-gradient(to bottom, #e2e8f0, #d1fae5, #e2e8f0); }
+        body.light .data-table th { background: rgba(16, 185, 129, 0.2); }
+        body.light .data-table td { border-color: rgba(0,0,0,0.08); }
+
+        /* ========================================
+           TEMA OSCURO (Completamente negro)
+           ======================================== */
+        body.dark { background-color: #000000; color: #f1f5f9; }
+        body.dark .bg-page { background-color: #000000; }
+        body.dark .bg-card { background-color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        body.dark .bg-sidebar { background-color: #0d0d0d; }
+        body.dark .bg-nav { background-color: rgba(10,10,10,0.95); }
+        body.dark .text-primary { color: #f8fafc; }
+        body.dark .text-secondary { color: #cbd5e1; }
+        body.dark .grid-bg { opacity: 0.06; }
+        body.dark .gradient-overlay { background: linear-gradient(to bottom, #000000, #052e16, #000000); }
+        body.dark .data-table th { background: rgba(16, 185, 129, 0.25); color: #10b981; }
+        body.dark .data-table td { border-color: rgba(255,255,255,0.08); color: #e2e8f0; }
+        body.dark .data-table tr:hover td { background: rgba(16, 185, 129, 0.1); }
+
+        /* Tema oscuro - contenedores específicos */
+        body.dark .bg-slate-100, body.dark .bg-slate-50 { background-color: #262626 !important; }
+        body.dark .bg-emerald-50, body.dark .bg-emerald-100, body.dark .bg-emerald-500\/5, body.dark .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.2) !important; }
+        body.dark .bg-cyan-50, body.dark .bg-cyan-100, body.dark .bg-cyan-500\/5, body.dark .bg-cyan-500\/10 { background-color: rgba(6, 182, 212, 0.2) !important; }
+        body.dark .bg-red-50, body.dark .bg-red-100, body.dark .bg-red-500\/5, body.dark .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.2) !important; }
+        body.dark .bg-amber-50, body.dark .bg-amber-100, body.dark .bg-amber-500\/5 { background-color: rgba(245, 158, 11, 0.2) !important; }
+        body.dark .bg-purple-50, body.dark .bg-purple-100, body.dark .bg-purple-500\/5, body.dark .bg-purple-500\/10 { background-color: rgba(168, 85, 247, 0.2) !important; }
+        body.dark .bg-green-50, body.dark .bg-green-100, body.dark .bg-green-500\/5 { background-color: rgba(34, 197, 94, 0.2) !important; }
+        body.dark .bg-white { background-color: #1a1a1a !important; }
+
+        /* Tema oscuro - textos */
+        body.dark .text-slate-900, body.dark .text-slate-800, body.dark .text-slate-700 { color: #e2e8f0 !important; }
+        body.dark .text-slate-600, body.dark .text-slate-500 { color: #94a3b8 !important; }
+        body.dark .text-slate-400 { color: #64748b !important; }
+
+        /* Tema oscuro - bordes */
+        body.dark .border-slate-200, body.dark .border-slate-300 { border-color: rgba(255,255,255,0.1) !important; }
+        body.dark .border-emerald-500\/10, body.dark .border-emerald-500\/20 { border-color: rgba(16, 185, 129, 0.3) !important; }
+
+        /* Tema oscuro - headers y contenedores especiales */
+        body.dark .bg-white\/95 { background-color: rgba(26, 26, 26, 0.95) !important; }
+        body.dark .bg-white\/70, body.dark .bg-white\/80 { background-color: rgba(26, 26, 26, 0.8) !important; }
+        body.dark header .bg-white\/95, body.dark .relative.bg-white\/95 { background-color: rgba(26, 26, 26, 0.95) !important; }
+
+        /* Tema oscuro - TOC sidebar links */
+        body.dark .toc-link { color: #94a3b8 !important; border-left-color: rgba(255,255,255,0.1) !important; }
+        body.dark .toc-link:hover { color: #10b981 !important; border-left-color: rgba(16, 185, 129, 0.5) !important; }
+        body.dark .toc-link.active { color: #10b981 !important; border-left-color: #10b981 !important; }
+        body.dark .border-purple-200 { border-color: rgba(168, 85, 247, 0.3) !important; }
+
+        /* Tema oscuro - barras de progreso */
+        body.dark .bg-emerald-500, body.dark .bg-cyan-500, body.dark .bg-red-500, body.dark .bg-orange-500 {
+            opacity: 1;
+        }
+        body.dark .bg-slate-200 { background-color: #374151 !important; }
+
+        /* Tema oscuro - fondos con opacidad fraccionaria */
+        body.dark .bg-red-50\/50 { background-color: rgba(239, 68, 68, 0.15) !important; }
+        body.dark .bg-amber-50\/50 { background-color: rgba(245, 158, 11, 0.15) !important; }
+        body.dark .bg-emerald-50\/50 { background-color: rgba(16, 185, 129, 0.15) !important; }
+
+        /* Tema oscuro - textos de colores específicos */
+        body.dark .text-red-800, body.dark .text-red-700, body.dark .text-red-600 { color: #fca5a5 !important; }
+        body.dark .text-amber-800, body.dark .text-amber-700, body.dark .text-amber-600 { color: #fcd34d !important; }
+        body.dark .text-emerald-800, body.dark .text-emerald-700 { color: #6ee7b7 !important; }
+        body.dark .text-cyan-800, body.dark .text-cyan-700 { color: #67e8f9 !important; }
+        body.dark .text-green-800, body.dark .text-green-700 { color: #86efac !important; }
+        body.dark .text-purple-800, body.dark .text-purple-700 { color: #c4b5fd !important; }
+
+        /* Tema oscuro - bordes de colores */
+        body.dark .border-red-200, body.dark .border-red-300, body.dark .border-red-500 { border-color: rgba(239, 68, 68, 0.4) !important; }
+        body.dark .border-amber-200, body.dark .border-amber-300, body.dark .border-amber-500 { border-color: rgba(245, 158, 11, 0.4) !important; }
+        body.dark .border-cyan-500\/10, body.dark .border-cyan-500\/20 { border-color: rgba(6, 182, 212, 0.3) !important; }
+        body.dark .border-green-500\/10, body.dark .border-green-500\/20 { border-color: rgba(34, 197, 94, 0.3) !important; }
+        body.dark .border-purple-500\/10, body.dark .border-purple-500\/20 { border-color: rgba(168, 85, 247, 0.3) !important; }
+        body.dark .border-emerald-200, body.dark .border-emerald-300 { border-color: rgba(16, 185, 129, 0.4) !important; }
+        body.dark .border-slate-500 { border-color: rgba(100, 116, 139, 0.5) !important; }
+
+        /* Tema oscuro - GitHub link y otros enlaces */
+        body.dark a.text-slate-800:hover { color: #10b981 !important; }
+        body.dark svg[fill="currentColor"] { fill: currentColor; }
+
+        /* Tema oscuro - código y terminal */
+        body.dark pre, body.dark code { background-color: #0d0d0d !important; color: #e2e8f0 !important; }
+        body.dark .token.comment { color: #6b7280 !important; }
+        body.dark .token.keyword { color: #f472b6 !important; }
+        body.dark .token.string { color: #a5f3fc !important; }
+        body.dark .token.function { color: #fcd34d !important; }
+
+        /* Tema oscuro - GRADIENTES de fondo (E. coli y Salmonella) */
+        body.dark .bg-gradient-to-br.from-emerald-50.to-cyan-50,
+        body.dark .bg-gradient-to-br.from-emerald-50,
+        body.dark [class*="from-emerald-50"][class*="to-cyan-50"] {
+            background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2)) !important;
+        }
+        body.dark .bg-gradient-to-br.from-red-50.to-orange-50,
+        body.dark .bg-gradient-to-br.from-red-50,
+        body.dark [class*="from-red-50"][class*="to-orange-50"] {
+            background: linear-gradient(to bottom right, rgba(239, 68, 68, 0.2), rgba(249, 115, 22, 0.2)) !important;
+        }
+        body.dark .bg-gradient-to-br.from-green-50.to-emerald-50,
+        body.dark [class*="from-green-50"][class*="to-emerald-50"] {
+            background: linear-gradient(to bottom right, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2)) !important;
+        }
+        body.dark .bg-gradient-to-br.from-emerald-500\/5.to-cyan-500\/5,
+        body.dark [class*="from-emerald-500/5"][class*="to-cyan-500/5"] {
+            background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)) !important;
+        }
+
+        /* Tema oscuro - textos de colores más específicos */
+        body.dark .text-emerald-600 { color: #6ee7b7 !important; }
+        body.dark .text-cyan-600 { color: #67e8f9 !important; }
+        body.dark .text-orange-600 { color: #fdba74 !important; }
+        body.dark .text-green-600 { color: #86efac !important; }
+        body.dark .text-blue-600 { color: #93c5fd !important; }
+
+        /* Tema oscuro - fondos de orange */
+        body.dark .bg-orange-50, body.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.2) !important; }
+
+        /* Tema oscuro - bordes adicionales */
+        body.dark .border-orange-200, body.dark .border-orange-300 { border-color: rgba(249, 115, 22, 0.4) !important; }
+        body.dark .border-red-100 { border-color: rgba(239, 68, 68, 0.3) !important; }
+        body.dark .border-emerald-100 { border-color: rgba(16, 185, 129, 0.3) !important; }
+
+        /* Tema oscuro - botones y enlaces de acción */
+        body.dark .bg-white.text-black, body.dark a.bg-white.text-black {
+            background-color: #262626 !important;
+            color: #e2e8f0 !important;
+        }
+        body.dark .bg-white.text-black:hover, body.dark a.bg-white.text-black:hover {
+            background-color: #374151 !important;
+        }
+
+        /* Tema oscuro - textos de color para encabezados de figuras */
+        body.dark .text-red-400 { color: #f87171 !important; }
+        body.dark .text-emerald-400 { color: #34d399 !important; }
+        body.dark .text-cyan-400 { color: #22d3ee !important; }
+        body.dark .text-purple-400 { color: #a78bfa !important; }
+        body.dark .text-green-400 { color: #4ade80 !important; }
+        body.dark .text-amber-400 { color: #fbbf24 !important; }
+
+        /* Switch de tema */
+        .theme-switch {
+            position: relative; width: 60px; height: 30px;
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border-radius: 15px; cursor: pointer; transition: all 0.3s;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+        }
+        .theme-switch.light { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .theme-switch .slider {
+            position: absolute; top: 2px; left: 2px; width: 22px; height: 22px;
+            background: white; border-radius: 50%; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .theme-switch.light .slider { left: calc(100% - 26px); }
+        .theme-switch .icon { font-size: 12px; }
+
+        /* Glow effects */
+        .glow-emerald { box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
+        .glow-cyan { box-shadow: 0 0 30px rgba(6, 182, 212, 0.3); }
+        .glow-red { box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        body.light ::-webkit-scrollbar-track { background: #e2e8f0; }
+        body.dark ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
+
+        /* Table styles */
+        .data-table { border-collapse: separate; border-spacing: 0; }
+        .data-table tr:hover td { background: rgba(16, 185, 129, 0.08); }
+
+        /* Image zoom */
+        .img-zoom { transition: transform 0.3s ease; cursor: zoom-in; }
+        .img-zoom:hover { transform: scale(1.02); }
+
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+
+        /* TOC active state */
+        .toc-link.active { color: #10b981 !important; border-left-color: #10b981 !important; font-weight: 600; }
+        .toc-sublink.active { color: #10b981 !important; font-weight: 500; }
+
+        /* TOC expandible */
+        .toc-section { margin-bottom: 2px; }
+        .toc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toc-header .toc-arrow {
+            transition: transform 0.2s ease;
+            font-size: 10px;
+            opacity: 0.5;
+        }
+        .toc-header:hover .toc-arrow { opacity: 1; }
+        .toc-section.expanded .toc-arrow { transform: rotate(90deg); }
+        .toc-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .toc-section.expanded .toc-submenu { max-height: 500px; }
+        .toc-sublink {
+            display: block;
+            padding: 4px 8px 4px 20px;
+            font-size: 11px;
+            border-left: 1px solid transparent;
+            margin-left: 12px;
+            transition: all 0.2s ease;
+        }
+        body.light .toc-sublink { color: #64748b; }
+        body.light .toc-sublink:hover { color: #10b981; border-left-color: rgba(16, 185, 129, 0.5); }
+        body.dark .toc-sublink { color: #94a3b8; }
+        body.dark .toc-sublink:hover { color: #10b981; border-left-color: rgba(16, 185, 129, 0.5); }
+
+        /* Current section indicator */
+        .current-section-badge {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 50;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .current-section-badge.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        body.light .current-section-badge {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        body.dark .current-section-badge {
+            background: rgba(26,26,26,0.9);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #f1f5f9;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Organism badges */
+        .badge-ecoli { background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); }
+        .badge-salmonella { background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); }
+
+        /* GitHub Link Box - Tema Claro */
+        body.light .github-link-box {
+            background: linear-gradient(to right, #f1f5f9, #e2e8f0);
+            border-color: #cbd5e1;
+        }
+        body.light .github-icon-bg { background-color: #e2e8f0; }
+        body.light .github-icon { color: #0f172a; }
+        body.light .github-title { color: #0f172a; }
+        body.light .github-subtitle { color: #334155; }
+        body.light .github-btn {
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+        body.light .github-btn:hover { background-color: #f1f5f9; }
+
+        /* GitHub Link Box - Tema Oscuro */
+        body.dark .github-link-box {
+            background: linear-gradient(to right, #1a1a1a, #262626);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        body.dark .github-icon-bg { background-color: #262626; }
+        body.dark .github-icon { color: #f1f5f9; }
+        body.dark .github-title { color: #f1f5f9; }
+        body.dark .github-subtitle { color: #94a3b8; }
+        body.dark .github-btn {
+            background-color: #10b981;
+            color: #0f172a;
+        }
+        body.dark .github-btn:hover { background-color: #34d399; }
+    </style>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = savedTheme;
+        })();
+    </script>
+</head>
+<body class="light min-h-screen transition-all">
+
+    <!-- Theme Switch Floating -->
+    <div class="fixed top-4 right-4 z-[100] flex items-center gap-3">
+        <span class="text-secondary font-mono text-xs hidden sm:inline">tema</span>
+        <div id="themeSwitch" class="theme-switch light" onclick="toggleTheme()">
+            <div class="slider"><span class="icon">☀️</span></div>
+        </div>
+    </div>
+
+    <!-- Background Grid -->
+    <div class="grid-bg fixed inset-0 pointer-events-none" style="background-image: linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px); background-size: 40px 40px;"></div>
+    <div class="gradient-overlay fixed inset-0 pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-xl border-b border-emerald-500/30">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <a href="index.php" class="flex items-center gap-2 text-primary hover:text-emerald-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span class="font-mono text-sm">Dashboard</span>
+                    </a>
+                    <span class="text-secondary">/</span>
+                    <span class="text-emerald-400 font-mono text-sm">ecoli_analysis</span>
+                </div>
+                <div class="flex items-center gap-2 mr-20">
+                    <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <span class="text-emerald-400 font-mono text-[10px] hidden md:inline">PROYECTO COMPLETADO</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative z-10 pt-16">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 py-12">
+            <div class="flex gap-8">
+
+                <!-- Sidebar TOC (Desktop) -->
+                <aside class="hidden lg:block w-64 flex-shrink-0">
+                    <div class="sticky top-24">
+                        <div class="bg-card rounded-2xl border border-emerald-500/20 p-4">
+                            <p class="text-emerald-400 font-mono text-xs mb-4">$ cat toc.md</p>
+                            <nav class="text-sm" id="toc-nav">
+                                <!-- 1. Introducción -->
+                                <div class="toc-section" data-section="intro">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-slate-200 hover:border-emerald-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#intro" class="toc-link text-slate-800 hover:text-emerald-400 flex-1" onclick="event.stopPropagation()">1. Introducción</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#intro-contexto" class="toc-sublink">1.1 Contexto Biológico</a>
+                                        <a href="#intro-objetivos" class="toc-sublink">1.2 Objetivos</a>
+                                    </div>
+                                </div>
+                                <!-- 2. Materiales y Métodos -->
+                                <div class="toc-section" data-section="metodos">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-slate-200 hover:border-emerald-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#metodos" class="toc-link text-slate-800 hover:text-emerald-400 flex-1" onclick="event.stopPropagation()">2. Materiales y Métodos</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#metodos-datos" class="toc-sublink">2.1 Obtención de Datos</a>
+                                        <a href="#metodos-herramientas" class="toc-sublink">2.2 Herramientas</a>
+                                        <a href="#metodos-aws" class="toc-sublink">2.3 Infraestructura AWS</a>
+                                    </div>
+                                </div>
+                                <!-- 3. Resultados E. coli -->
+                                <div class="toc-section" data-section="resultados">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-emerald-200 hover:border-emerald-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#resultados" class="toc-link text-slate-800 hover:text-emerald-400 flex-1" onclick="event.stopPropagation()">3. Resultados E. coli</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#res-caracteristicas" class="toc-sublink">3.1 Características Generales</a>
+                                        <a href="#res-genes" class="toc-sublink">3.2 Desglose de Genes</a>
+                                        <a href="#res-extremos" class="toc-sublink">3.3 Genes Extremos</a>
+                                        <a href="#res-atg" class="toc-sublink">3.4 Codones de Inicio</a>
+                                        <a href="#res-parada" class="toc-sublink">3.5 Codones de Parada</a>
+                                        <a href="#res-gc" class="toc-sublink">3.6 Contenido GC</a>
+                                        <a href="#res-tamanos" class="toc-sublink">3.7 Tamaños de Genes</a>
+                                        <a href="#res-hebras" class="toc-sublink">3.8 Distribución Hebras</a>
+                                        <a href="#res-dashboard" class="toc-sublink">3.9 Dashboard Resumen</a>
+                                    </div>
+                                </div>
+                                <!-- 4. Análisis Comparativo -->
+                                <div class="toc-section" data-section="comparativo">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-red-200 hover:border-red-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#comparativo" class="toc-link text-slate-800 hover:text-red-400 flex-1" onclick="event.stopPropagation()">4. Análisis Comparativo</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#comp-genomas" class="toc-sublink">4.1 Genomas Analizados</a>
+                                        <a href="#comp-metricas" class="toc-sublink">4.2 Métricas Generales</a>
+                                        <a href="#comp-extremos" class="toc-sublink">4.3 Genes Extremos</a>
+                                        <a href="#comp-hebras" class="toc-sublink">4.4 Distribución Hebras</a>
+                                        <a href="#comp-virulencia" class="toc-sublink">4.5 Genes de Virulencia</a>
+                                        <a href="#comp-intergenicas" class="toc-sublink">4.6 Distancias Intergénicas</a>
+                                        <a href="#comp-patogena" class="toc-sublink">4.7 Patogenicidad</a>
+                                        <a href="#comp-dashboard" class="toc-sublink">4.8 Dashboard Resumen</a>
+                                    </div>
+                                </div>
+                                <!-- 5. Visualizaciones -->
+                                <div class="toc-section" data-section="visualizaciones">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-purple-200 hover:border-purple-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#visualizaciones" class="toc-link text-slate-800 hover:text-purple-400 flex-1" onclick="event.stopPropagation()">5. Índice Figuras <span class="text-xs text-purple-400">(13)</span></a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#vis-ecoli" class="toc-sublink">5.1 E. coli K-12</a>
+                                        <a href="#vis-comparativo" class="toc-sublink">5.2 Comparativo</a>
+                                    </div>
+                                </div>
+                                <!-- 6. Discusión -->
+                                <div class="toc-section" data-section="discusion">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-amber-200 hover:border-amber-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#discusion" class="toc-link text-slate-800 hover:text-amber-400 flex-1" onclick="event.stopPropagation()">6. Discusión</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#disc-validacion" class="toc-sublink">6.1 Validación</a>
+                                        <a href="#disc-codones" class="toc-sublink">6.2 Codones de Parada</a>
+                                    </div>
+                                </div>
+                                <!-- 7. Conclusiones (sin subtítulos) -->
+                                <a href="#conclusiones" class="toc-link block py-1.5 px-3 border-l-2 border-pink-200 text-slate-800 hover:text-pink-400 hover:border-pink-500/50 transition-all">7. Conclusiones</a>
+                                <!-- 8. Código -->
+                                <div class="toc-section" data-section="codigo">
+                                    <div class="toc-header py-1.5 px-3 border-l-2 border-blue-200 hover:border-blue-500/50 transition-all" onclick="toggleSection(this)">
+                                        <a href="#codigo" class="toc-link text-slate-800 hover:text-blue-400 flex-1" onclick="event.stopPropagation()">8. Código</a>
+                                        <span class="toc-arrow text-slate-400">▶</span>
+                                    </div>
+                                    <div class="toc-submenu">
+                                        <a href="#codigo-scripts" class="toc-sublink">8.1 Scripts</a>
+                                    </div>
+                                </div>
+                                <!-- 9. Referencias (sin subtítulos) -->
+                                <a href="#referencias" class="toc-link block py-1.5 px-3 border-l-2 border-red-200 text-slate-800 hover:text-red-400 hover:border-red-500/50 transition-all">9. Referencias</a>
+                            </nav>
+
+                            <div class="mt-6 pt-4 border-t border-slate-200">
+                                <a href="https://github.com/LuisAnthony1/analisis-genoma-ecoli-k12" target="_blank" class="flex items-center gap-2 text-slate-800 hover:text-slate-800 transition-colors text-sm">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                    Ver en GitHub
+                                </a>
+                            </div>
+
+                            <!-- Autores -->
+                            <div class="mt-6 pt-4 border-t border-slate-200">
+                                <p class="text-emerald-400 font-mono text-xs mb-3">$ cat autores.md</p>
+                                <div class="space-y-3 text-xs">
+                                    <div class="bg-slate-100 rounded-lg p-3 border border-emerald-500/10">
+                                        <p class="text-slate-900 font-semibold">Luis Anthony Mamani Mescco</p>
+                                        <p class="text-slate-500 font-mono">194522@unsaac.edu.pe</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-3 border border-cyan-500/10">
+                                        <p class="text-slate-900 font-semibold">Tirssa Ivonne Guevara D</p>
+                                        <p class="text-slate-500 font-mono">192420@unsaac.edu.pe</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-3 border border-green-500/10">
+                                        <p class="text-slate-900 font-semibold">Lino Zeynt Huaracallo Arenas</p>
+                                        <p class="text-slate-500 font-mono">204798@unsaac.edu.pe</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-3 border border-purple-500/10">
+                                        <p class="text-slate-900 font-semibold">Aracely Llancaya Tapia</p>
+                                        <p class="text-slate-500 font-mono">220549@unsaac.edu.pe</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-3 border border-rose-500/10">
+                                        <p class="text-slate-900 font-semibold">Medaly Lozano Llacctahuaman</p>
+                                        <p class="text-slate-500 font-mono">195050@unsaac.edu.pe</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Article -->
+                <main class="flex-1 min-w-0">
+
+                    <!-- Header -->
+                    <header class="mb-12">
+                        <div class="relative">
+                            <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-500 rounded-3xl blur-lg opacity-20"></div>
+                            <div class="relative bg-white/95 rounded-3xl border border-emerald-500/30 overflow-hidden">
+                                <!-- Terminal Header -->
+                                <div class="bg-slate-100 px-6 py-4 flex items-center gap-3 border-b border-emerald-500/20">
+                                    <div class="flex gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <span class="text-emerald-400/60 font-mono text-xs">informe_cientifico.md</span>
+                                </div>
+
+                                <div class="p-8 md:p-12">
+                                    <!-- DNA Icon -->
+                                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center mb-6 glow-emerald">
+                                        <svg class="w-8 h-8 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M2 15c6.667-6 13.333 0 20-6"></path>
+                                            <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"></path>
+                                            <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"></path>
+                                        </svg>
+                                    </div>
+
+                                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 font-space">
+                                        Análisis Comparativo de Genomas:<br>
+                                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">E. coli</span> K-12 vs
+                                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">Salmonella</span> LT2
+                                    </h1>
+
+                                    <p class="text-slate-800 text-lg mb-6 max-w-2xl">
+                                        Análisis bioinformático comparativo de genomas bacterianos: cepa de laboratorio vs patógeno.
+                                    </p>
+
+                                    <div class="flex flex-wrap gap-3">
+                                        <span class="badge-ecoli text-white px-4 py-2 rounded-full text-sm font-semibold">E. coli K-12 MG1655 (No patógena)</span>
+                                        <span class="badge-salmonella text-white px-4 py-2 rounded-full text-sm font-semibold">Salmonella LT2 (Patógena)</span>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Section 1: Introducción -->
+                    <section id="intro" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-emerald-400 font-mono text-sm">01</span>
+                            <h2 class="text-2xl font-bold font-space">Introducción</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-emerald-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="bg-card rounded-2xl border border-emerald-500/10 p-6 md:p-8 space-y-6">
+                            <div>
+                                <h3 id="intro-contexto" class="text-emerald-400 font-semibold mb-3 scroll-mt-24">1.1 Contexto Biológico</h3>
+                                <p class="text-slate-800 leading-relaxed">
+                                    <em class="text-cyan-400">Escherichia coli</em> es una bacteria gram-negativa que habita en el tracto intestinal de mamíferos. La cepa <strong class="text-slate-900">K-12 MG1655</strong> es una de las más estudiadas en biología molecular y se considera el organismo modelo por excelencia para estudios genéticos bacterianos.
+                                </p>
+                                <p class="text-slate-800 leading-relaxed mt-4">
+                                    El genoma de E. coli K-12 fue completamente secuenciado por <span class="text-emerald-400">Blattner et al. en 1997</span>, marcando un hito en la genómica bacteriana. Este genoma sirve como referencia para estudios comparativos y funcionales.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 id="intro-objetivos" class="text-emerald-400 font-semibold mb-3 scroll-mt-24">1.2 Objetivos</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div class="flex items-start gap-3 bg-emerald-500/5 rounded-xl p-4 border border-emerald-500/10">
+                                        <span class="text-emerald-400 font-mono text-sm">01</span>
+                                        <p class="text-slate-800 text-sm">Descargar programáticamente el genoma completo desde NCBI</p>
+                                    </div>
+                                    <div class="flex items-start gap-3 bg-cyan-500/5 rounded-xl p-4 border border-cyan-500/10">
+                                        <span class="text-cyan-400 font-mono text-sm">02</span>
+                                        <p class="text-slate-800 text-sm">Analizar la distribución de codones de inicio (ATG) y parada</p>
+                                    </div>
+                                    <div class="flex items-start gap-3 bg-green-500/5 rounded-xl p-4 border border-green-500/10">
+                                        <span class="text-green-400 font-mono text-sm">03</span>
+                                        <p class="text-slate-800 text-sm">Extraer y caracterizar los genes anotados</p>
+                                    </div>
+                                    <div class="flex items-start gap-3 bg-purple-500/5 rounded-xl p-4 border border-purple-500/10">
+                                        <span class="text-purple-400 font-mono text-sm">04</span>
+                                        <p class="text-slate-800 text-sm">Comparar resultados con literatura científica</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 2: Materiales y Métodos -->
+                    <section id="metodos" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-cyan-400 font-mono text-sm">02</span>
+                            <h2 class="text-2xl font-bold font-space">Materiales y Métodos</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Datos -->
+                            <div class="bg-card rounded-2xl border border-cyan-500/10 p-6">
+                                <h3 id="metodos-datos" class="text-cyan-400 font-semibold mb-4 scroll-mt-24">2.1 Obtención de Datos</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div class="bg-slate-100 rounded-xl p-4">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Fuente</p>
+                                        <p class="text-slate-900 font-mono text-sm">NCBI GenBank</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Accession</p>
+                                        <p class="text-cyan-400 font-mono text-sm">U00096.3</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Formato</p>
+                                        <p class="text-slate-900 font-mono text-sm">GenBank, FASTA</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Herramienta</p>
+                                        <p class="text-slate-900 font-mono text-sm">BioPython</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Herramientas -->
+                            <div class="bg-card rounded-2xl border border-cyan-500/10 p-6">
+                                <h3 id="metodos-herramientas" class="text-cyan-400 font-semibold mb-4 scroll-mt-24">2.2 Herramientas Computacionales</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tl-lg">Herramienta</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Versión</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tr-lg">Propósito</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">Python</td>
+                                                <td class="py-3 px-4 font-mono">3.12</td>
+                                                <td class="py-3 px-4">Lenguaje de programación</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">BioPython</td>
+                                                <td class="py-3 px-4 font-mono">1.86</td>
+                                                <td class="py-3 px-4">Manejo de secuencias biológicas</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">Pandas</td>
+                                                <td class="py-3 px-4 font-mono">3.0.0</td>
+                                                <td class="py-3 px-4">Análisis de datos</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">Matplotlib</td>
+                                                <td class="py-3 px-4 font-mono">3.10.8</td>
+                                                <td class="py-3 px-4">Visualizaciones</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">NumPy</td>
+                                                <td class="py-3 px-4 font-mono">2.4.1</td>
+                                                <td class="py-3 px-4">Cálculos numéricos</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Infraestructura -->
+                            <div class="bg-card rounded-2xl border border-cyan-500/10 p-6">
+                                <h3 id="metodos-aws" class="text-cyan-400 font-semibold mb-4 scroll-mt-24">2.3 Infraestructura AWS</h3>
+                                <div class="flex flex-wrap gap-3">
+                                    <span class="bg-orange-500/10 text-orange-400 px-4 py-2 rounded-full text-sm font-mono border border-orange-500/20">EC2 t3.micro</span>
+                                    <span class="bg-blue-500/10 text-blue-400 px-4 py-2 rounded-full text-sm font-mono border border-blue-500/20">Ubuntu 24.04 LTS</span>
+                                    <span class="bg-purple-500/10 text-purple-400 px-4 py-2 rounded-full text-sm font-mono border border-purple-500/20">Kernel 6.14.0-1018-aws</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 3: Resultados -->
+                    <section id="resultados" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-green-400 font-mono text-sm">03</span>
+                            <h2 class="text-2xl font-bold font-space">Resultados</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-green-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Características Generales -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-caracteristicas" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.1 Características Generales del Genoma</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tl-lg">Métrica</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Valor Obtenido</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Literatura</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Diferencia</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tr-lg">Fuente</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4">Longitud del genoma</td>
+                                                <td class="py-3 px-4 font-mono text-slate-900">4,641,652 pb</td>
+                                                <td class="py-3 px-4 font-mono">4,641,652 pb</td>
+                                                <td class="py-3 px-4"><span class="text-emerald-400">✓ Exacto</span></td>
+                                                <td class="py-3 px-4 font-mono text-xs">NCBI</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4">Total de genes (CDS)</td>
+                                                <td class="py-3 px-4 font-mono text-slate-900">4,318</td>
+                                                <td class="py-3 px-4 font-mono">4,319</td>
+                                                <td class="py-3 px-4"><span class="text-emerald-400">-1 gen</span></td>
+                                                <td class="py-3 px-4 font-mono text-xs">EcoCyc 2024</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4">Contenido GC en CDS</td>
+                                                <td class="py-3 px-4 font-mono text-slate-900">50.79%</td>
+                                                <td class="py-3 px-4 font-mono">51.06%</td>
+                                                <td class="py-3 px-4"><span class="text-emerald-400">-0.27%</span></td>
+                                                <td class="py-3 px-4 font-mono text-xs">NCBI</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4">Densidad génica</td>
+                                                <td class="py-3 px-4 font-mono text-slate-900">87.23%</td>
+                                                <td class="py-3 px-4 font-mono">87.80%</td>
+                                                <td class="py-3 px-4"><span class="text-emerald-400">-0.57%</span></td>
+                                                <td class="py-3 px-4 font-mono text-xs">EcoCyc</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4">Tamaño promedio de genes</td>
+                                                <td class="py-3 px-4 font-mono text-slate-900">937.64 pb</td>
+                                                <td class="py-3 px-4 font-mono">940.00 pb</td>
+                                                <td class="py-3 px-4"><span class="text-emerald-400">-2.36 pb</span></td>
+                                                <td class="py-3 px-4 font-mono text-xs">EcoCyc</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-4 bg-emerald-500/5 rounded-xl p-4 border-l-4 border-emerald-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-emerald-400">Validación:</strong> Todos los valores obtenidos coinciden con la literatura científica con diferencias mínimas (&lt;1%), confirmando la precisión del análisis.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Comparación con Literatura -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-emerald-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-emerald-500/10 flex items-center justify-between">
+                                        <p class="text-emerald-400 font-mono text-xs">📊 Figura 3.1: Validación con Literatura Científica</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/comparacion_literatura.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/comparacion_literatura.png" alt="Comparación con Literatura" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Conteo de Genes -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-genes" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.2 Desglose de Genes del Genoma</h3>
+                                <p class="text-slate-800 text-sm mb-4">El archivo GenBank contiene <strong class="text-slate-900">9,285 features</strong> (elementos anotados). De estos, 4,651 están clasificados como genes.</p>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div class="bg-emerald-500/10 rounded-xl p-5 text-center border border-emerald-500/20">
+                                        <p class="text-emerald-400 text-4xl font-bold font-mono">4,651</p>
+                                        <p class="text-slate-800 text-sm mt-2">Genes totales anotados</p>
+                                    </div>
+                                    <div class="bg-cyan-500/10 rounded-xl p-5 text-center border border-cyan-500/20">
+                                        <p class="text-cyan-400 text-4xl font-bold font-mono">4,318</p>
+                                        <p class="text-slate-800 text-sm mt-2">Genes codificantes (CDS)</p>
+                                    </div>
+                                    <div class="bg-purple-500/10 rounded-xl p-5 text-center border border-purple-500/20">
+                                        <p class="text-purple-400 text-4xl font-bold font-mono">333</p>
+                                        <p class="text-slate-800 text-sm mt-2">Genes no codificantes</p>
+                                    </div>
+                                </div>
+
+                                <h4 class="text-slate-800 font-semibold mb-3">Desglose de Genes No Codificantes (333)</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div class="bg-slate-100 rounded-lg p-4 border border-slate-200">
+                                        <p class="text-slate-900 font-mono font-bold text-lg">145</p>
+                                        <p class="text-slate-500 text-xs font-semibold uppercase">Pseudogenes</p>
+                                        <p class="text-slate-400 text-[10px] mt-1">Genes inactivos/no funcionales</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-4 border border-slate-200">
+                                        <p class="text-slate-900 font-mono font-bold text-lg">108</p>
+                                        <p class="text-slate-500 text-xs font-semibold uppercase">ncRNA</p>
+                                        <p class="text-slate-400 text-[10px] mt-1">ARN regulador</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-4 border border-slate-200">
+                                        <p class="text-slate-900 font-mono font-bold text-lg">86</p>
+                                        <p class="text-slate-500 text-xs font-semibold uppercase">tRNA</p>
+                                        <p class="text-slate-400 text-[10px] mt-1">ARN de transferencia</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-lg p-4 border border-slate-200">
+                                        <p class="text-slate-900 font-mono font-bold text-lg">22</p>
+                                        <p class="text-slate-500 text-xs font-semibold uppercase">rRNA</p>
+                                        <p class="text-slate-400 text-[10px] mt-1">ARN ribosomal</p>
+                                    </div>
+                                </div>
+
+                                <!-- Figura: Genes CDS vs No Codificantes -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-cyan-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-cyan-500/10 flex items-center justify-between">
+                                        <p class="text-cyan-400 font-mono text-xs">📊 Figura 3.2: Genes Codificantes vs No Codificantes</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/genes_vs_cds.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/genes_vs_cds.png" alt="Genes CDS vs No Codificantes" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Genes Extremos -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-extremos" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.3 Genes Extremos del Genoma</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Gen más largo -->
+                                    <div class="bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 rounded-xl p-5 border border-emerald-500/20">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <span class="bg-emerald-500 text-white text-xs px-2 py-1 rounded font-mono">GEN MÁS LARGO</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Locus / Nombre</p>
+                                                <p class="text-slate-900 font-mono font-bold">b4492 / ydbA</p>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <p class="text-slate-500 text-xs uppercase">Longitud</p>
+                                                    <p class="text-emerald-400 font-mono font-bold text-xl">8,622 pb</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-slate-500 text-xs uppercase">Aminoácidos</p>
+                                                    <p class="text-slate-900 font-mono font-bold text-xl">2,874 aa</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Posición</p>
+                                                <p class="text-slate-800 font-mono text-sm">1,465,391 → 1,474,013 (hebra +)</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Contenido GC</p>
+                                                <p class="text-slate-800 font-mono text-sm">49.58%</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Producto</p>
+                                                <p class="text-slate-800 text-sm">Putative outer membrane protein (N-terminal fragment)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gen más corto -->
+                                    <div class="bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-xl p-5 border border-purple-500/20">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded font-mono">GEN MÁS CORTO</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Locus / Nombre</p>
+                                                <p class="text-slate-900 font-mono font-bold">b4794 / baxL</p>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <p class="text-slate-500 text-xs uppercase">Longitud</p>
+                                                    <p class="text-purple-400 font-mono font-bold text-xl">27 pb</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-slate-500 text-xs uppercase">Aminoácidos</p>
+                                                    <p class="text-slate-900 font-mono font-bold text-xl">9 aa</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Posición</p>
+                                                <p class="text-slate-800 font-mono text-sm">3,737,176 → 3,737,203 (hebra -)</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Contenido GC</p>
+                                                <p class="text-slate-800 font-mono text-sm">44.44%</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase">Producto</p>
+                                                <p class="text-slate-800 text-sm">Putative translational regulatory protein BaxL</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 bg-slate-100 rounded-xl p-4 border-l-4 border-purple-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-purple-400">Dato interesante:</strong> El gen más largo (ydbA) es <strong class="text-slate-900">319 veces más grande</strong> que el gen más corto (baxL), mostrando la enorme variabilidad en tamaños génicos.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Genes Extremos -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-purple-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-purple-500/10 flex items-center justify-between">
+                                        <p class="text-purple-400 font-mono text-xs">📊 Figura 3.3: Comparación de Genes Extremos</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/genes_extremos.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/genes_extremos.png" alt="Genes Extremos" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Codones ATG -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-atg" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.4 Análisis de Codones de Inicio (ATG)</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                    <div class="bg-emerald-500/5 rounded-xl p-4 text-center border border-emerald-500/10">
+                                        <p class="text-emerald-400 text-3xl font-bold font-mono">76,282</p>
+                                        <p class="text-slate-500 text-xs mt-1">Total ATG</p>
+                                    </div>
+                                    <div class="bg-cyan-500/5 rounded-xl p-4 text-center border border-cyan-500/10">
+                                        <p class="text-cyan-400 text-3xl font-bold font-mono">16.43</p>
+                                        <p class="text-slate-500 text-xs mt-1">ATG/kb</p>
+                                    </div>
+                                    <div class="bg-green-500/5 rounded-xl p-4 text-center border border-green-500/10">
+                                        <p class="text-green-400 text-3xl font-bold font-mono">4,318</p>
+                                        <p class="text-slate-500 text-xs mt-1">Genes anotados</p>
+                                    </div>
+                                    <div class="bg-purple-500/5 rounded-xl p-4 text-center border border-purple-500/10">
+                                        <p class="text-purple-400 text-3xl font-bold font-mono">17.74</p>
+                                        <p class="text-slate-500 text-xs mt-1">Ratio ATG/gen</p>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-100 rounded-xl p-4 border-l-4 border-emerald-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-emerald-400">Interpretación:</strong> Por cada gen anotado existen aproximadamente 18 codones ATG. Esto demuestra que no todos los ATG funcionan como codones de inicio reales, ya que ATG también codifica metionina y aparece en regiones no codificantes.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Codones ATG -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-green-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-green-500/10 flex items-center justify-between">
+                                        <p class="text-green-400 font-mono text-xs">📊 Figura 3.4: Análisis de Codones de Inicio ATG</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/codones_inicio_atg.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/codones_inicio_atg.png" alt="Codones ATG" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Codones de Parada -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-parada" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.5 Análisis de Codones de Parada</h3>
+                                <div class="overflow-x-auto mb-6">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tl-lg">Codón</th>
+                                                <th class="text-right py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Conteo</th>
+                                                <th class="text-right py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Densidad/kb</th>
+                                                <th class="text-right py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tr-lg">Proporción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-red-400">TAA</td>
+                                                <td class="py-3 px-4 font-mono text-right">68,858</td>
+                                                <td class="py-3 px-4 font-mono text-right">14.83</td>
+                                                <td class="py-3 px-4 font-mono text-right">38.33%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-yellow-400">TAG</td>
+                                                <td class="py-3 px-4 font-mono text-right">27,254</td>
+                                                <td class="py-3 px-4 font-mono text-right">5.87</td>
+                                                <td class="py-3 px-4 font-mono text-right">15.17%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-orange-400">TGA</td>
+                                                <td class="py-3 px-4 font-mono text-right">83,532</td>
+                                                <td class="py-3 px-4 font-mono text-right">18.00</td>
+                                                <td class="py-3 px-4 font-mono text-right">46.50%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-emerald-500/5">
+                                                <td class="py-3 px-4 font-bold">TOTAL</td>
+                                                <td class="py-3 px-4 font-mono text-right font-bold text-slate-900">179,644</td>
+                                                <td class="py-3 px-4 font-mono text-right">-</td>
+                                                <td class="py-3 px-4 font-mono text-right font-bold">100%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Figura: Codones de Parada -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                    <div class="bg-slate-50 rounded-xl border border-red-500/20 overflow-hidden">
+                                        <div class="bg-slate-100 px-4 py-2 border-b border-red-500/10 flex items-center justify-between">
+                                            <p class="text-red-400 font-mono text-xs">📊 Figura 3.5a: Proporción de Codones</p>
+                                            <span class="text-xs text-secondary">Click para ampliar</span>
+                                        </div>
+                                        <a href="resultados_ecoli/figuras/codones_parada.png" target="_blank">
+                                            <img src="resultados_ecoli/figuras/codones_parada.png" alt="Codones de Parada" class="w-full img-zoom">
+                                        </a>
+                                    </div>
+                                    <div class="bg-slate-50 rounded-xl border border-red-500/20 overflow-hidden">
+                                        <div class="bg-slate-100 px-4 py-2 border-b border-red-500/10 flex items-center justify-between">
+                                            <p class="text-red-400 font-mono text-xs">📊 Figura 3.5b: Distribución Stop Codons</p>
+                                            <span class="text-xs text-secondary">Click para ampliar</span>
+                                        </div>
+                                        <a href="resultados_ecoli/figuras/stop_codons.png" target="_blank">
+                                            <img src="resultados_ecoli/figuras/stop_codons.png" alt="Stop Codons" class="w-full img-zoom">
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estadísticas de Genes -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-gc" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.6 Estadísticas de Genes</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Mínimo</p>
+                                        <p class="text-slate-900 font-mono font-bold">27 pb</p>
+                                        <p class="text-slate-400 text-[10px]">9 aminoácidos</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Máximo</p>
+                                        <p class="text-slate-900 font-mono font-bold">8,622 pb</p>
+                                        <p class="text-slate-400 text-[10px]">2,874 aminoácidos</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Promedio</p>
+                                        <p class="text-emerald-400 font-mono font-bold">937.64 pb</p>
+                                        <p class="text-slate-400 text-[10px]">~313 aminoácidos</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Mediana</p>
+                                        <p class="text-slate-900 font-mono font-bold">825 pb</p>
+                                        <p class="text-slate-400 text-[10px]">valor central</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Desv. Est.</p>
+                                        <p class="text-slate-900 font-mono font-bold">649.08 pb</p>
+                                        <p class="text-slate-400 text-[10px]">variabilidad</p>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 text-center">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Features</p>
+                                        <p class="text-cyan-400 font-mono font-bold">9,285</p>
+                                        <p class="text-slate-400 text-[10px]">elementos anotados</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                    <div class="bg-emerald-500/5 rounded-xl p-4 text-center border border-emerald-500/10">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Total pares de bases codificantes</p>
+                                        <p class="text-emerald-400 font-mono font-bold text-lg">4,048,751 pb</p>
+                                    </div>
+                                    <div class="bg-cyan-500/5 rounded-xl p-4 text-center border border-cyan-500/10">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Densidad génica</p>
+                                        <p class="text-cyan-400 font-mono font-bold text-lg">87.23%</p>
+                                    </div>
+                                    <div class="bg-purple-500/5 rounded-xl p-4 text-center border border-purple-500/10">
+                                        <p class="text-slate-500 text-[10px] font-mono uppercase mb-1">Contenido GC en CDS</p>
+                                        <p class="text-purple-400 font-mono font-bold text-lg">50.79%</p>
+                                        <p class="text-slate-400 text-[10px]">rango: 13.64% - 66.72%</p>
+                                    </div>
+                                </div>
+
+                                <!-- Figura: Contenido GC -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-purple-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-purple-500/10 flex items-center justify-between">
+                                        <p class="text-purple-400 font-mono text-xs">📊 Figura 3.6: Composición Nucleotídica (Contenido GC)</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/contenido_gc.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/contenido_gc.png" alt="Contenido GC" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Distribución de Tamaños -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-tamanos" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.7 Distribución de Tamaños de Genes</h3>
+                                <p class="text-slate-800 text-sm mb-4">Clasificación de los 4,318 genes según su longitud en pares de bases (recordar: 3 pb = 1 codón = 1 aminoácido)</p>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tl-lg">Rango</th>
+                                                <th class="text-left py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Descripción</th>
+                                                <th class="text-right py-3 px-4 text-emerald-400 font-mono text-xs uppercase">Genes</th>
+                                                <th class="text-right py-3 px-4 text-emerald-400 font-mono text-xs uppercase rounded-tr-lg">%</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-cyan-400">0-300 pb</td>
+                                                <td class="py-3 px-4">Muy cortos (&lt;100 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right">532</td>
+                                                <td class="py-3 px-4 font-mono text-right">12.32%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-green-400">301-600 pb</td>
+                                                <td class="py-3 px-4">Cortos (100-200 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right">900</td>
+                                                <td class="py-3 px-4 font-mono text-right">20.84%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-emerald-400">601-900 pb</td>
+                                                <td class="py-3 px-4">Medianos (200-300 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right">957</td>
+                                                <td class="py-3 px-4 font-mono text-right">22.16%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-emerald-500/5">
+                                                <td class="py-3 px-4 font-mono text-emerald-400 font-bold">901-1500 pb</td>
+                                                <td class="py-3 px-4 font-bold">Largos (300-500 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right font-bold">1,337</td>
+                                                <td class="py-3 px-4 font-mono text-right font-bold">30.96%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-amber-400">1501-3000 pb</td>
+                                                <td class="py-3 px-4">Muy largos (500-1000 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right">533</td>
+                                                <td class="py-3 px-4 font-mono text-right">12.34%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-mono text-red-400">&gt;3000 pb</td>
+                                                <td class="py-3 px-4">Extra largos (&gt;1000 aminoácidos)</td>
+                                                <td class="py-3 px-4 font-mono text-right">59</td>
+                                                <td class="py-3 px-4 font-mono text-right">1.37%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-4 bg-emerald-500/5 rounded-xl p-4 border-l-4 border-emerald-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-emerald-400">Observación:</strong> La mayoría de los genes (30.96%) tienen entre 901-1500 pb, codificando proteínas de tamaño mediano-largo (300-500 aminoácidos).
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Distribución de Tamaños -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                    <div class="bg-slate-50 rounded-xl border border-amber-500/20 overflow-hidden">
+                                        <div class="bg-slate-100 px-4 py-2 border-b border-amber-500/10 flex items-center justify-between">
+                                            <p class="text-amber-400 font-mono text-xs">📊 Figura 3.7a: Distribución de Tamaños</p>
+                                            <span class="text-xs text-secondary">Click para ampliar</span>
+                                        </div>
+                                        <a href="resultados_ecoli/figuras/distribucion_tamanos_genes.png" target="_blank">
+                                            <img src="resultados_ecoli/figuras/distribucion_tamanos_genes.png" alt="Distribución de Tamaños" class="w-full img-zoom">
+                                        </a>
+                                    </div>
+                                    <div class="bg-slate-50 rounded-xl border border-amber-500/20 overflow-hidden">
+                                        <div class="bg-slate-100 px-4 py-2 border-b border-amber-500/10 flex items-center justify-between">
+                                            <p class="text-amber-400 font-mono text-xs">📊 Figura 3.7b: Histograma Tamaño Genes</p>
+                                            <span class="text-xs text-secondary">Click para ampliar</span>
+                                        </div>
+                                        <a href="resultados_ecoli/figuras/gene_size_hist.png" target="_blank">
+                                            <img src="resultados_ecoli/figuras/gene_size_hist.png" alt="Histograma Tamaño Genes" class="w-full img-zoom">
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Distribución por Hebra -->
+                            <div class="bg-card rounded-2xl border border-green-500/10 p-6">
+                                <h3 id="res-hebras" class="text-green-400 font-semibold mb-4 scroll-mt-24">3.8 Distribución por Hebra del ADN</h3>
+                                <p class="text-slate-800 text-sm mb-4">El ADN tiene dos hebras complementarias: forward (5'→3') y reverse (3'→5')</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-xl p-6 border border-emerald-500/20">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase font-semibold">Hebra Forward (+)</p>
+                                                <p class="text-slate-900 font-mono font-bold text-3xl">2,103</p>
+                                                <p class="text-slate-800 text-sm">genes</p>
+                                            </div>
+                                            <div class="text-emerald-400 text-4xl font-bold font-mono">48.7%</div>
+                                        </div>
+                                        <div class="w-full bg-slate-200 rounded-full h-3">
+                                            <div class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full" style="width: 48.7%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-6 border border-purple-500/20">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div>
+                                                <p class="text-slate-500 text-xs uppercase font-semibold">Hebra Reverse (-)</p>
+                                                <p class="text-slate-900 font-mono font-bold text-3xl">2,215</p>
+                                                <p class="text-slate-800 text-sm">genes</p>
+                                            </div>
+                                            <div class="text-purple-400 text-4xl font-bold font-mono">51.3%</div>
+                                        </div>
+                                        <div class="w-full bg-slate-200 rounded-full h-3">
+                                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full" style="width: 51.3%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 bg-slate-100 rounded-xl p-4 border-l-4 border-cyan-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-cyan-400">Significado biológico:</strong> La distribución casi equitativa (~50/50) indica ausencia de sesgo replicativo significativo, característica típica de genomas bacterianos bien conservados.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Distribución por Hebra -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-cyan-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-cyan-500/10 flex items-center justify-between">
+                                        <p class="text-cyan-400 font-mono text-xs">📊 Figura 3.8: Distribución de Genes por Hebra (+/-)</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/distribucion_hebras.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/distribucion_hebras.png" alt="Distribución por Hebras" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Resumen General E. coli -->
+                            <div class="bg-card rounded-2xl border border-emerald-500/20 p-6 mt-6">
+                                <h3 id="res-dashboard" class="text-emerald-400 font-semibold mb-4 scroll-mt-24">3.9 Dashboard Resumen: E. coli K-12 MG1655</h3>
+                                <p class="text-secondary text-sm mb-4">Vista consolidada de todos los análisis realizados sobre el genoma de <em>Escherichia coli</em> K-12.</p>
+                                <div class="bg-slate-50 rounded-xl border border-emerald-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-3 border-b border-emerald-500/10 flex items-center justify-between">
+                                        <p class="text-emerald-400 font-mono text-sm">📊 Figura 3.9: Resumen General del Análisis E. coli K-12</p>
+                                        <span class="text-xs text-secondary">Click para ver en tamaño completo</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/resumen_general.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/resumen_general.png" alt="Resumen General E. coli" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 4: Análisis Comparativo -->
+                    <section id="comparativo" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-red-400 font-mono text-sm">04</span>
+                            <h2 class="text-2xl font-bold font-space">Análisis Comparativo: E. coli vs Salmonella</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-red-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Introducción Comparativa -->
+                            <div class="bg-gradient-to-r from-emerald-500/5 via-slate-50 to-red-500/5 rounded-2xl border border-slate-200 p-6">
+                                <h3 class="text-slate-900 font-semibold mb-4">¿Por qué comparar estos dos genomas?</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-white rounded-xl p-5 border-l-4 border-emerald-500 shadow-sm">
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <span class="badge-ecoli text-white text-xs px-3 py-1 rounded-full font-mono">E. coli K-12</span>
+                                        </div>
+                                        <p class="text-slate-800 text-sm leading-relaxed">
+                                            <strong class="text-emerald-600">Cepa de laboratorio de referencia.</strong> No patógena, utilizada mundialmente para investigación genética y biotecnología. Genoma completamente secuenciado en 1997.
+                                        </p>
+                                    </div>
+                                    <div class="bg-white rounded-xl p-5 border-l-4 border-red-500 shadow-sm">
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <span class="badge-salmonella text-white text-xs px-3 py-1 rounded-full font-mono">Salmonella LT2</span>
+                                        </div>
+                                        <p class="text-slate-800 text-sm leading-relaxed">
+                                            <strong class="text-red-600">Patógeno que causa gastroenteritis.</strong> Cepa de referencia para estudios de patogenicidad. Posee genes de virulencia ausentes en E. coli K-12.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Organismos Descargados -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-genomas" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.1 Genomas Analizados</h3>
+                                <p class="text-slate-800 text-sm mb-4">Ambos genomas fueron descargados programáticamente desde NCBI GenBank usando BioPython:</p>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- E. coli Card -->
+                                    <div class="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl p-5 border border-emerald-200">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <span class="badge-ecoli text-white text-xs px-3 py-1 rounded-full font-mono">E. coli K-12 MG1655</span>
+                                            <span class="text-emerald-600 font-mono text-xs">U00096.3</span>
+                                        </div>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Longitud:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">4,641,652 pb</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Features anotados:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">9,285</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Genes CDS:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">4,318</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Patogenicidad:</span>
+                                                <span class="text-emerald-600 font-semibold">No patógena</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Salmonella Card -->
+                                    <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-5 border border-red-200">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <span class="badge-salmonella text-white text-xs px-3 py-1 rounded-full font-mono">Salmonella LT2</span>
+                                            <span class="text-red-600 font-mono text-xs">NC_003197.2</span>
+                                        </div>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Longitud:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">4,857,450 pb</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Features anotados:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">14,062</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Archivo GenBank:</span>
+                                                <span class="text-slate-900 font-mono font-semibold">11.96 MB</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600">Patogenicidad:</span>
+                                                <span class="text-red-600 font-semibold">Patógena</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 bg-amber-50 rounded-xl p-4 border-l-4 border-amber-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-amber-600">Observación:</strong> Salmonella tiene un genoma <strong>4.65% más grande</strong> que E. coli K-12 (+215,798 pares de bases). Este ADN adicional incluye islas de patogenicidad y genes de virulencia.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Comparación de Métricas -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-metricas" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.2 Comparación de Métricas Generales</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-3 px-4 text-slate-700 font-mono text-xs uppercase rounded-tl-lg">Métrica</th>
+                                                <th class="text-center py-3 px-4 text-emerald-500 font-mono text-xs uppercase">E. coli K-12</th>
+                                                <th class="text-center py-3 px-4 text-red-500 font-mono text-xs uppercase">Salmonella LT2</th>
+                                                <th class="text-center py-3 px-4 text-slate-700 font-mono text-xs uppercase rounded-tr-lg">Diferencia</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-semibold">Longitud del genoma</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,641,652 pb</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,857,450 pb</td>
+                                                <td class="py-3 px-4 font-mono text-center text-red-500">+215,798 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-slate-50">
+                                                <td class="py-3 px-4 font-semibold">Features anotados</td>
+                                                <td class="py-3 px-4 font-mono text-center">9,285</td>
+                                                <td class="py-3 px-4 font-mono text-center">14,062</td>
+                                                <td class="py-3 px-4 font-mono text-center text-red-500">+4,777</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-semibold">Genes totales</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,651</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,608</td>
+                                                <td class="py-3 px-4 font-mono text-center text-emerald-500">-43</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-slate-50">
+                                                <td class="py-3 px-4 font-semibold">Genes codificantes (CDS)</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,318</td>
+                                                <td class="py-3 px-4 font-mono text-center">4,452</td>
+                                                <td class="py-3 px-4 font-mono text-center text-red-500">+134</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-semibold">Densidad génica</td>
+                                                <td class="py-3 px-4 font-mono text-center">87.23%</td>
+                                                <td class="py-3 px-4 font-mono text-center">86.89%</td>
+                                                <td class="py-3 px-4 font-mono text-center text-emerald-500">-0.34%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-slate-50">
+                                                <td class="py-3 px-4 font-semibold">Contenido GC en CDS</td>
+                                                <td class="py-3 px-4 font-mono text-center">50.79%</td>
+                                                <td class="py-3 px-4 font-mono text-center">52.22%</td>
+                                                <td class="py-3 px-4 font-mono text-center text-red-500">+1.43%</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-3 px-4 font-semibold">Tamaño promedio genes</td>
+                                                <td class="py-3 px-4 font-mono text-center">937.64 pb</td>
+                                                <td class="py-3 px-4 font-mono text-center">948.05 pb</td>
+                                                <td class="py-3 px-4 font-mono text-center text-red-500">+10.41 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-slate-50">
+                                                <td class="py-3 px-4 font-semibold">Pseudogenes</td>
+                                                <td class="py-3 px-4 font-mono text-center">145</td>
+                                                <td class="py-3 px-4 font-mono text-center">39</td>
+                                                <td class="py-3 px-4 font-mono text-center text-emerald-500">-106</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mt-4 bg-red-50 rounded-xl p-4 border-l-4 border-red-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-red-600">Hallazgo clave:</strong> Salmonella tiene <strong>+4,777 features adicionales</strong> (incluyendo 4,477 elementos regulatorios) que no están presentes en E. coli K-12. Esto refleja la complejidad adicional necesaria para la patogenicidad.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Comparación de Métricas -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-red-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-red-500/10 flex items-center justify-between">
+                                        <p class="text-red-400 font-mono text-xs">📊 Figura 4.1: Comparación de Métricas - E. coli vs Salmonella</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/comparacion_genomas_metricas.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/comparacion_genomas_metricas.png" alt="Comparación Métricas Genomas" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Genes Extremos Comparados -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-extremos" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.3 Genes Extremos: Comparación</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Gen más largo -->
+                                    <div>
+                                        <h4 class="text-slate-700 font-semibold mb-3 text-sm uppercase">Gen más largo</h4>
+                                        <div class="space-y-3">
+                                            <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="badge-ecoli text-white text-[10px] px-2 py-0.5 rounded font-mono">E. coli</span>
+                                                    <span class="font-mono text-sm text-slate-900">b4492 / ydbA</span>
+                                                </div>
+                                                <p class="text-emerald-600 font-mono font-bold text-xl">8,622 pb</p>
+                                                <p class="text-slate-600 text-xs">2,874 aminoácidos - outer membrane protein</p>
+                                            </div>
+                                            <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="badge-salmonella text-white text-[10px] px-2 py-0.5 rounded font-mono">Salmonella</span>
+                                                    <span class="font-mono text-sm text-slate-900">STM4261</span>
+                                                </div>
+                                                <p class="text-red-600 font-mono font-bold text-xl">16,680 pb</p>
+                                                <p class="text-slate-600 text-xs">5,560 aminoácidos - inner membrane protein</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-slate-500 text-xs mt-2 text-center">Salmonella: <strong class="text-red-500">+93.5% más largo</strong></p>
+                                    </div>
+
+                                    <!-- Gen más corto -->
+                                    <div>
+                                        <h4 class="text-slate-700 font-semibold mb-3 text-sm uppercase">Gen más corto</h4>
+                                        <div class="space-y-3">
+                                            <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="badge-ecoli text-white text-[10px] px-2 py-0.5 rounded font-mono">E. coli</span>
+                                                    <span class="font-mono text-sm text-slate-900">b4794 / baxL</span>
+                                                </div>
+                                                <p class="text-emerald-600 font-mono font-bold text-xl">27 pb</p>
+                                                <p class="text-slate-600 text-xs">9 aminoácidos - regulatory protein</p>
+                                            </div>
+                                            <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="badge-salmonella text-white text-[10px] px-2 py-0.5 rounded font-mono">Salmonella</span>
+                                                    <span class="font-mono text-sm text-slate-900">STM1722 / trpL</span>
+                                                </div>
+                                                <p class="text-red-600 font-mono font-bold text-xl">45 pb</p>
+                                                <p class="text-slate-600 text-xs">15 aminoácidos - trp operon leader peptide</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-slate-500 text-xs mt-2 text-center">E. coli tiene el gen más pequeño</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Distribución por Hebra Comparada -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-hebras" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.4 Distribución por Hebra del ADN</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- E. coli -->
+                                    <div class="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl p-5 border border-emerald-200">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <span class="badge-ecoli text-white text-xs px-3 py-1 rounded font-mono">E. coli K-12</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-slate-600">Forward (+)</span>
+                                                    <span class="font-mono text-slate-900">2,103 <span class="text-emerald-600">(48.7%)</span></span>
+                                                </div>
+                                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                                    <div class="bg-emerald-500 h-2 rounded-full" style="width: 48.7%"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-slate-600">Reverse (-)</span>
+                                                    <span class="font-mono text-slate-900">2,215 <span class="text-cyan-600">(51.3%)</span></span>
+                                                </div>
+                                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                                    <div class="bg-cyan-500 h-2 rounded-full" style="width: 51.3%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Salmonella -->
+                                    <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-5 border border-red-200">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <span class="badge-salmonella text-white text-xs px-3 py-1 rounded font-mono">Salmonella LT2</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-slate-600">Forward (+)</span>
+                                                    <span class="font-mono text-slate-900">2,133 <span class="text-red-600">(47.9%)</span></span>
+                                                </div>
+                                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                                    <div class="bg-red-500 h-2 rounded-full" style="width: 47.9%"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-slate-600">Reverse (-)</span>
+                                                    <span class="font-mono text-slate-900">2,319 <span class="text-orange-600">(52.1%)</span></span>
+                                                </div>
+                                                <div class="w-full bg-slate-200 rounded-full h-2">
+                                                    <div class="bg-orange-500 h-2 rounded-full" style="width: 52.1%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 bg-slate-100 rounded-xl p-4 border-l-4 border-slate-400">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-slate-700">Observación:</strong> Ambos organismos muestran una distribución casi equitativa (~50/50) entre hebras, indicando ausencia de sesgo replicativo significativo. Esta es una característica conservada en enterobacterias.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Genes de Virulencia - Datos Reales -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-virulencia" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.5 Genes de Virulencia</h3>
+
+                                <!-- Conteo Total -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div class="bg-emerald-50 rounded-xl p-5 text-center border border-emerald-200">
+                                        <p class="text-emerald-600 text-4xl font-bold font-mono">227</p>
+                                        <p class="text-slate-700 text-sm mt-2">E. coli K-12</p>
+                                        <p class="text-slate-500 text-xs">(residuales/inactivos)</p>
+                                    </div>
+                                    <div class="bg-red-50 rounded-xl p-5 text-center border border-red-200">
+                                        <p class="text-red-600 text-4xl font-bold font-mono">236</p>
+                                        <p class="text-slate-700 text-sm mt-2">Salmonella LT2</p>
+                                        <p class="text-slate-500 text-xs">(activos/funcionales)</p>
+                                    </div>
+                                    <div class="bg-amber-50 rounded-xl p-5 text-center border border-amber-200">
+                                        <p class="text-amber-600 text-4xl font-bold font-mono">+9</p>
+                                        <p class="text-slate-700 text-sm mt-2">Diferencia</p>
+                                        <p class="text-slate-500 text-xs">genes adicionales</p>
+                                    </div>
+                                </div>
+
+                                <!-- Desglose por Categoría -->
+                                <h4 class="text-slate-800 font-semibold mb-3">Desglose por Categoría</h4>
+                                <div class="overflow-x-auto mb-6">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-2 px-3 text-slate-700 font-mono text-xs uppercase rounded-tl-lg">Categoría</th>
+                                                <th class="text-center py-2 px-3 text-emerald-600 font-mono text-xs uppercase">E. coli</th>
+                                                <th class="text-center py-2 px-3 text-red-600 font-mono text-xs uppercase">Salmonella</th>
+                                                <th class="text-center py-2 px-3 text-slate-700 font-mono text-xs uppercase rounded-tr-lg">Diff</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3">Adhesión/Fimbrias</td>
+                                                <td class="py-2 px-3 font-mono text-center">68</td>
+                                                <td class="py-2 px-3 font-mono text-center">51</td>
+                                                <td class="py-2 px-3 font-mono text-center text-emerald-500">-17</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-red-50">
+                                                <td class="py-2 px-3 font-semibold">Invasión celular</td>
+                                                <td class="py-2 px-3 font-mono text-center">1</td>
+                                                <td class="py-2 px-3 font-mono text-center font-bold text-red-600">22</td>
+                                                <td class="py-2 px-3 font-mono text-center text-red-500 font-bold">+21</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-red-50">
+                                                <td class="py-2 px-3 font-semibold">Sistema de secreción</td>
+                                                <td class="py-2 px-3 font-mono text-center">21</td>
+                                                <td class="py-2 px-3 font-mono text-center font-bold text-red-600">38</td>
+                                                <td class="py-2 px-3 font-mono text-center text-red-500 font-bold">+17</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-red-50">
+                                                <td class="py-2 px-3 font-semibold">Resistencia</td>
+                                                <td class="py-2 px-3 font-mono text-center">11</td>
+                                                <td class="py-2 px-3 font-mono text-center font-bold text-red-600">28</td>
+                                                <td class="py-2 px-3 font-mono text-center text-red-500 font-bold">+17</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200 bg-red-50">
+                                                <td class="py-2 px-3 font-semibold">Captación de hierro</td>
+                                                <td class="py-2 px-3 font-mono text-center">8</td>
+                                                <td class="py-2 px-3 font-mono text-center font-bold text-red-600">22</td>
+                                                <td class="py-2 px-3 font-mono text-center text-red-500 font-bold">+14</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3">Motilidad/Flagelos</td>
+                                                <td class="py-2 px-3 font-mono text-center">37</td>
+                                                <td class="py-2 px-3 font-mono text-center">33</td>
+                                                <td class="py-2 px-3 font-mono text-center text-emerald-500">-4</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3">Toxinas</td>
+                                                <td class="py-2 px-3 font-mono text-center">43</td>
+                                                <td class="py-2 px-3 font-mono text-center">1</td>
+                                                <td class="py-2 px-3 font-mono text-center text-emerald-500">-42</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3">Otros factores</td>
+                                                <td class="py-2 px-3 font-mono text-center">38</td>
+                                                <td class="py-2 px-3 font-mono text-center">41</td>
+                                                <td class="py-2 px-3 font-mono text-center text-red-500">+3</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="bg-red-100 rounded-xl p-4 border-l-4 border-red-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-red-700">Hallazgo clave:</strong> Salmonella tiene <strong>22 genes de invasión celular</strong> vs solo 1 en E. coli, y <strong>38 genes de sistema de secreción</strong> (T3SS) que le permiten inyectar proteínas efectoras directamente en las células del huésped.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Comparación de Virulencia -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-red-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-red-500/10 flex items-center justify-between">
+                                        <p class="text-red-400 font-mono text-xs">📊 Figura 4.2: Genes de Virulencia por Categoría</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/comparacion_virulencia.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/comparacion_virulencia.png" alt="Comparación Virulencia" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Distancias Intergénicas -->
+                            <div class="bg-card rounded-2xl border border-red-500/10 p-6">
+                                <h3 id="comp-intergenicas" class="text-red-400 font-semibold mb-4 scroll-mt-24">4.6 Distancias Intergénicas y Posibles Islas de Patogenicidad</h3>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                                        <p class="text-emerald-600 font-semibold mb-2">E. coli K-12</p>
+                                        <div class="space-y-1 text-sm">
+                                            <div class="flex justify-between"><span class="text-slate-600">Promedio:</span><span class="font-mono">185.78 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Mediana:</span><span class="font-mono">104 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Máxima:</span><span class="font-mono">6,174 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Regiones &gt;5kb:</span><span class="font-mono">8</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-red-50 rounded-xl p-4 border border-red-200">
+                                        <p class="text-red-600 font-semibold mb-2">Salmonella LT2</p>
+                                        <div class="space-y-1 text-sm">
+                                            <div class="flex justify-between"><span class="text-slate-600">Promedio:</span><span class="font-mono">178.78 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Mediana:</span><span class="font-mono">101 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Máxima:</span><span class="font-mono text-red-600 font-bold">12,152 pb</span></div>
+                                            <div class="flex justify-between"><span class="text-slate-600">Regiones &gt;5kb:</span><span class="font-mono">8</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h4 class="text-slate-800 font-semibold mb-3">Regiones Intergénicas Grandes en Salmonella (Posibles SPIs)</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table w-full text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-2 px-3 text-slate-700 font-mono text-xs uppercase">#</th>
+                                                <th class="text-left py-2 px-3 text-slate-700 font-mono text-xs uppercase">Genes</th>
+                                                <th class="text-left py-2 px-3 text-slate-700 font-mono text-xs uppercase">Posición</th>
+                                                <th class="text-right py-2 px-3 text-slate-700 font-mono text-xs uppercase">Tamaño</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-slate-800">
+                                            <tr class="border-t border-slate-200 bg-red-50">
+                                                <td class="py-2 px-3 font-mono">1</td>
+                                                <td class="py-2 px-3 font-mono text-red-600">STM2688 → STM2690</td>
+                                                <td class="py-2 px-3 font-mono text-xs">2,826,969 - 2,839,121</td>
+                                                <td class="py-2 px-3 font-mono text-right font-bold text-red-600">12,152 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3 font-mono">2</td>
+                                                <td class="py-2 px-3 font-mono">STM3392 → STM3399</td>
+                                                <td class="py-2 px-3 font-mono text-xs">3,565,850 - 3,572,488</td>
+                                                <td class="py-2 px-3 font-mono text-right">6,638 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3 font-mono">3</td>
+                                                <td class="py-2 px-3 font-mono">STM0248 → STM0255</td>
+                                                <td class="py-2 px-3 font-mono text-xs">288,811 - 295,069</td>
+                                                <td class="py-2 px-3 font-mono text-right">6,258 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3 font-mono">4</td>
+                                                <td class="py-2 px-3 font-mono">STM3888 → STM3897</td>
+                                                <td class="py-2 px-3 font-mono text-xs">4,099,664 - 4,105,557</td>
+                                                <td class="py-2 px-3 font-mono text-right">5,893 pb</td>
+                                            </tr>
+                                            <tr class="border-t border-slate-200">
+                                                <td class="py-2 px-3 font-mono">5</td>
+                                                <td class="py-2 px-3 font-mono">STM2655 → STM2660</td>
+                                                <td class="py-2 px-3 font-mono text-xs">2,796,238 - 2,802,118</td>
+                                                <td class="py-2 px-3 font-mono text-right">5,880 pb</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-4 bg-amber-50 rounded-xl p-4 border-l-4 border-amber-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-amber-700">Nota:</strong> Las regiones intergénicas grandes (&gt;5kb) pueden indicar <strong>Islas de Patogenicidad de Salmonella (SPIs)</strong>, que contienen genes adquiridos horizontalmente para virulencia.
+                                    </p>
+                                </div>
+
+                                <!-- Figura: Distancias Intergénicas -->
+                                <div class="mt-6 bg-slate-50 rounded-xl border border-amber-500/20 overflow-hidden">
+                                    <div class="bg-slate-100 px-4 py-2 border-b border-amber-500/10 flex items-center justify-between">
+                                        <p class="text-amber-500 font-mono text-xs">📊 Figura 4.3: Comparación de Distancias Intergénicas</p>
+                                        <span class="text-xs text-secondary">Click para ampliar</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/comparacion_distancias_intergenicas.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/comparacion_distancias_intergenicas.png" alt="Distancias Intergénicas" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Por qué Salmonella es Patógena -->
+                            <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl border border-red-200 p-6">
+                                <h3 id="comp-patogena" class="text-red-600 font-semibold mb-4 scroll-mt-24">4.7 ¿Por qué Salmonella es Patógena y E. coli K-12 No?</h3>
+
+                                <div class="space-y-4">
+                                    <div class="bg-white rounded-xl p-4 border border-red-100">
+                                        <h4 class="text-red-500 font-semibold mb-2 flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">1</span>
+                                            Tamaño del Genoma
+                                        </h4>
+                                        <p class="text-slate-700 text-sm">Salmonella tiene <strong>215,798 pb adicionales</strong> que contienen genes de virulencia y adaptación al huésped.</p>
+                                    </div>
+
+                                    <div class="bg-white rounded-xl p-4 border border-red-100">
+                                        <h4 class="text-red-500 font-semibold mb-2 flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">2</span>
+                                            Sistema de Secreción Tipo III (T3SS)
+                                        </h4>
+                                        <p class="text-slate-700 text-sm">Salmonella posee <strong>38 genes de sistemas de secreción</strong> que actúan como "jeringas moleculares" para inyectar proteínas efectoras directamente en células del intestino.</p>
+                                    </div>
+
+                                    <div class="bg-white rounded-xl p-4 border border-red-100">
+                                        <h4 class="text-red-500 font-semibold mb-2 flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">3</span>
+                                            Genes de Invasión
+                                        </h4>
+                                        <p class="text-slate-700 text-sm">Con <strong>22 genes de invasión celular</strong> (vs 1 en E. coli), Salmonella puede inducir su propia fagocitosis por células epiteliales.</p>
+                                    </div>
+
+                                    <div class="bg-white rounded-xl p-4 border border-red-100">
+                                        <h4 class="text-red-500 font-semibold mb-2 flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">4</span>
+                                            Captación de Hierro
+                                        </h4>
+                                        <p class="text-slate-700 text-sm"><strong>22 genes de captación de hierro</strong> (vs 8 en E. coli) permiten a Salmonella competir por nutrientes dentro del huésped.</p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                                    <h4 class="text-emerald-700 font-semibold mb-2">¿Por qué E. coli K-12 NO es patógena?</h4>
+                                    <ul class="text-slate-700 text-sm space-y-1">
+                                        <li>• Cepa de laboratorio derivada de un aislado fecal de <strong>1922</strong></li>
+                                        <li>• Ha perdido genes de virulencia por <strong>domesticación</strong></li>
+                                        <li>• No tiene sistemas de secreción tipo III <strong>funcionales</strong></li>
+                                        <li>• Es la cepa modelo más <strong>segura</strong> para investigación</li>
+                                    </ul>
+                                </div>
+
+                                <div class="mt-4 bg-slate-100 rounded-xl p-4 border-l-4 border-slate-500">
+                                    <p class="text-slate-800 text-sm">
+                                        <strong class="text-slate-700">Conclusión evolutiva:</strong> E. coli y Salmonella divergieron hace ~100-160 millones de años y comparten ~70% de sus genes. Las diferencias clave (~5-10% del genoma) determinan si un organismo es comensal o patógeno.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Dashboard Resumen Comparativo -->
+                            <div id="comp-dashboard" class="bg-card rounded-2xl border border-gradient-to-r from-emerald-500/20 to-red-500/20 p-6 mt-6 scroll-mt-24">
+                                <h3 class="font-semibold mb-4 flex items-center gap-3">
+                                    <span class="text-emerald-400">4.8</span>
+                                    <span>Dashboard Resumen:</span>
+                                    <span class="badge-ecoli text-white text-xs px-2 py-1 rounded">E. coli</span>
+                                    <span class="text-secondary">vs</span>
+                                    <span class="badge-salmonella text-white text-xs px-2 py-1 rounded">Salmonella</span>
+                                </h3>
+                                <p class="text-secondary text-sm mb-4">Vista consolidada de todas las métricas comparativas entre ambos genomas bacterianos.</p>
+                                <div class="bg-slate-50 rounded-xl border border-emerald-500/20 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-emerald-100 to-red-100 px-4 py-3 border-b border-emerald-500/10 flex items-center justify-between">
+                                        <p class="font-mono text-sm">
+                                            <span class="text-emerald-600">📊</span>
+                                            <span class="text-slate-700">Figura 4.4: Resumen Comparativo Completo</span>
+                                        </p>
+                                        <span class="text-xs text-secondary">Click para ver en tamaño completo</span>
+                                    </div>
+                                    <a href="resultados_ecoli/figuras/resumen_comparacion_ecoli_salmonella.png" target="_blank">
+                                        <img src="resultados_ecoli/figuras/resumen_comparacion_ecoli_salmonella.png" alt="Resumen Comparativo E. coli vs Salmonella" class="w-full img-zoom">
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 5: Visualizaciones -->
+                    <section id="visualizaciones" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-purple-400 font-mono text-sm">05</span>
+                            <h2 class="text-2xl font-bold font-space">Índice de Figuras</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="bg-card rounded-2xl border border-purple-500/10 p-6">
+                            <p class="text-secondary mb-6">13 figuras generadas con Python (matplotlib/seaborn) integradas en cada sección del informe.</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Figuras E. coli -->
+                                <div>
+                                    <h3 id="vis-ecoli" class="text-emerald-400 font-semibold mb-3 flex items-center gap-2 scroll-mt-24">
+                                        <span class="badge-ecoli text-white text-xs px-2 py-1 rounded">E. coli K-12</span>
+                                        5.1 Análisis Individual
+                                    </h3>
+                                    <ul class="space-y-2 text-sm">
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.1</span>
+                                            <span class="text-secondary">comparacion_literatura.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.2</span>
+                                            <span class="text-secondary">genes_vs_cds.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.3</span>
+                                            <span class="text-secondary">genes_extremos.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.4</span>
+                                            <span class="text-secondary">codones_inicio_atg.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.5</span>
+                                            <span class="text-secondary">codones_parada.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.6</span>
+                                            <span class="text-secondary">contenido_gc.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.7</span>
+                                            <span class="text-secondary">distribucion_tamanos_genes.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.8</span>
+                                            <span class="text-secondary">distribucion_hebras.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-emerald-400">3.9</span>
+                                            <span class="text-secondary">resumen_general.png</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Figuras Comparativas -->
+                                <div>
+                                    <h3 id="vis-comparativo" class="text-red-400 font-semibold mb-3 flex items-center gap-2 scroll-mt-24">
+                                        <span class="badge-salmonella text-white text-xs px-2 py-1 rounded">Comparativo</span>
+                                        5.2 E. coli vs Salmonella
+                                    </h3>
+                                    <ul class="space-y-2 text-sm">
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-red-400">4.1</span>
+                                            <span class="text-secondary">comparacion_genomas_metricas.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-red-400">4.2</span>
+                                            <span class="text-secondary">comparacion_virulencia.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-red-400">4.3</span>
+                                            <span class="text-secondary">comparacion_distancias_intergenicas.png</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="text-red-400">4.4</span>
+                                            <span class="text-secondary">resumen_comparacion_ecoli_salmonella.png</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/20">
+                                <p class="text-sm text-secondary">
+                                    <span class="text-emerald-400 font-semibold">💡 Nota:</span>
+                                    Todas las figuras están integradas en su sección correspondiente y son clickeables para ver en tamaño completo.
+                                    Generadas con <code class="text-cyan-400">matplotlib</code> y <code class="text-cyan-400">seaborn</code>.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 6: Discusión -->
+                    <section id="discusion" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-amber-400 font-mono text-sm">06</span>
+                            <h2 class="text-2xl font-bold font-space">Discusión</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-amber-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="bg-card rounded-2xl border border-amber-500/10 p-6 md:p-8 space-y-6">
+                            <div>
+                                <h3 id="disc-validacion" class="text-amber-400 font-semibold mb-3 scroll-mt-24">6.1 Validación de Resultados</h3>
+                                <p class="text-slate-800 leading-relaxed mb-4">
+                                    Los resultados obtenidos son <strong class="text-emerald-400">consistentes con la literatura científica</strong>. La longitud del genoma coincide exactamente (4,641,652 pb), el número de CDS (4,318) difiere en solo 1 gen respecto a EcoCyc (4,319), y el contenido GC es virtualmente idéntico al reportado.
+                                </p>
+                                <div class="bg-emerald-500/5 rounded-xl p-4 border border-emerald-500/10">
+                                    <p class="text-slate-800 text-sm"><strong class="text-emerald-400">Nota:</strong> Las pequeñas variaciones son normales debido a actualizaciones periódicas en la anotación del genoma por NCBI y diferentes criterios para clasificar genes/pseudogenes.</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 id="disc-codones" class="text-amber-400 font-semibold mb-3 scroll-mt-24">6.2 Diferencias en Codones de Parada</h3>
+                                <p class="text-slate-800 leading-relaxed mb-4">
+                                    La principal discrepancia observada fue en las proporciones de codones de parada. Esto se explica porque:
+                                </p>
+                                <ul class="space-y-2 text-slate-800">
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-amber-400 mt-1">→</span>
+                                        <span><strong class="text-slate-900">Presión selectiva:</strong> Los genes funcionales están bajo selección para usar TAA (más eficiente)</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-amber-400 mt-1">→</span>
+                                        <span><strong class="text-slate-900">Regiones no codificantes:</strong> No tienen preferencia por ningún codón de parada</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-amber-400 mt-1">→</span>
+                                        <span><strong class="text-slate-900">Contexto de medición:</strong> Literatura mide en genes; nosotros medimos en genoma completo</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-amber-400 font-semibold mb-3">5.3 Significado Biológico</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-amber-500/5 rounded-xl p-4 border border-amber-500/10">
+                                        <p class="text-amber-400 font-mono text-xs mb-2">Densidad génica 87%</p>
+                                        <p class="text-slate-800 text-sm">Típica de procariotas, refleja genomas compactos y eficientes</p>
+                                    </div>
+                                    <div class="bg-amber-500/5 rounded-xl p-4 border border-amber-500/10">
+                                        <p class="text-amber-400 font-mono text-xs mb-2">Distribución 50/50</p>
+                                        <p class="text-slate-800 text-sm">Indica ausencia de sesgo replicativo significativo</p>
+                                    </div>
+                                    <div class="bg-amber-500/5 rounded-xl p-4 border border-amber-500/10">
+                                        <p class="text-amber-400 font-mono text-xs mb-2">Ratio ATG/gen: 18</p>
+                                        <p class="text-slate-800 text-sm">Demuestra la importancia del contexto Shine-Dalgarno</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 7: Conclusiones -->
+                    <section id="conclusiones" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-pink-400 font-mono text-sm">07</span>
+                            <h2 class="text-2xl font-bold font-space">Conclusiones</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-pink-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="bg-card rounded-2xl border border-pink-500/10 p-6">
+                            <div class="space-y-4">
+                                <div class="flex items-start gap-4 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                                    <span class="text-emerald-400 font-mono font-bold">01</span>
+                                    <p class="text-slate-800">Se descargó y analizó exitosamente el genoma completo de E. coli K-12 MG1655</p>
+                                </div>
+                                <div class="flex items-start gap-4 p-4 bg-cyan-500/5 rounded-xl border border-cyan-500/10">
+                                    <span class="text-cyan-400 font-mono font-bold">02</span>
+                                    <p class="text-slate-800">Los valores obtenidos coinciden con la literatura científica establecida</p>
+                                </div>
+                                <div class="flex items-start gap-4 p-4 bg-green-500/5 rounded-xl border border-green-500/10">
+                                    <span class="text-green-400 font-mono font-bold">03</span>
+                                    <p class="text-slate-800">Se identificaron <strong class="text-slate-900">4,318 genes</strong> codificantes con una densidad génica del <strong class="text-slate-900">87.23%</strong></p>
+                                </div>
+                                <div class="flex items-start gap-4 p-4 bg-purple-500/5 rounded-xl border border-purple-500/10">
+                                    <span class="text-purple-400 font-mono font-bold">04</span>
+                                    <p class="text-slate-800">El contenido GC de <strong class="text-slate-900">50.79%</strong> confirma la composición equilibrada del genoma</p>
+                                </div>
+                                <div class="flex items-start gap-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
+                                    <span class="text-amber-400 font-mono font-bold">05</span>
+                                    <p class="text-slate-800">Las diferencias en proporciones de codones de parada se explican por el contexto de medición</p>
+                                </div>
+                                <div class="flex items-start gap-4 p-4 bg-pink-500/5 rounded-xl border border-pink-500/10">
+                                    <span class="text-pink-400 font-mono font-bold">06</span>
+                                    <p class="text-slate-800">El proyecto demuestra la aplicación práctica de herramientas bioinformáticas en AWS</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 8: Código -->
+                    <section id="codigo" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-blue-400 font-mono text-sm">08</span>
+                            <h2 class="text-2xl font-bold font-space">Código y Ejecución</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Scripts -->
+                            <div class="bg-card rounded-2xl border border-blue-500/10 p-6">
+                                <h3 id="codigo-scripts" class="text-blue-400 font-semibold mb-4 scroll-mt-24">8.1 Scripts Desarrollados</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-emerald-500/20">
+                                        <p class="text-emerald-500 font-mono text-sm mb-1">descargar_genoma.py</p>
+                                        <p class="text-slate-600 text-xs">Descarga E. coli, Salmonella o ambos</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">11.3 KB</span>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-blue-500/20">
+                                        <p class="text-blue-500 font-mono text-sm mb-1">analisis_codones.py</p>
+                                        <p class="text-slate-600 text-xs">Análisis de ATG, TAA, TAG, TGA</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">15.5 KB</span>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-cyan-500/20">
+                                        <p class="text-cyan-500 font-mono text-sm mb-1">analisis_genes.py</p>
+                                        <p class="text-slate-600 text-xs">Extracción y estadísticas de genes</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded">38.5 KB</span>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-red-500/20">
+                                        <p class="text-red-500 font-mono text-sm mb-1">comparar_genomas.py</p>
+                                        <p class="text-slate-600 text-xs">Comparación E. coli vs Salmonella</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded">26.7 KB</span>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-orange-500/20">
+                                        <p class="text-orange-500 font-mono text-sm mb-1">analisis_distancias_intergenicas.py</p>
+                                        <p class="text-slate-600 text-xs">Detecta islas de patogenicidad</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded">19.6 KB</span>
+                                    </div>
+                                    <div class="bg-slate-100 rounded-xl p-4 border border-purple-500/20">
+                                        <p class="text-purple-500 font-mono text-sm mb-1">visualizaciones.py</p>
+                                        <p class="text-slate-600 text-xs">Gráficos + comparaciones</p>
+                                        <span class="inline-block mt-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded">45.6 KB</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GitHub Link -->
+                            <div class="github-link-box rounded-2xl border p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl github-icon-bg flex items-center justify-center">
+                                        <svg class="w-6 h-6 github-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="github-title font-semibold">Repositorio en GitHub</p>
+                                        <p class="github-subtitle text-sm">Código fuente completo y resultados</p>
+                                    </div>
+                                </div>
+                                <a href="https://github.com/LuisAnthony1/analisis-genoma-ecoli-k12" target="_blank" class="github-btn px-6 py-3 rounded-xl font-bold text-sm transition-colors flex items-center gap-2">
+                                    Ver Repositorio
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 9: Referencias -->
+                    <section id="referencias" class="mb-12 scroll-mt-24">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-red-400 font-mono text-sm">09</span>
+                            <h2 class="text-2xl font-bold font-space">Referencias</h2>
+                            <div class="flex-1 h-px bg-gradient-to-r from-red-500/50 to-transparent"></div>
+                        </div>
+
+                        <div class="bg-card rounded-2xl border border-red-500/10 p-6 space-y-4">
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[1]</span>
+                                <p class="text-slate-800">Blattner, F. R., et al. (1997). The complete genome sequence of Escherichia coli K-12. <em class="text-slate-800">Science</em>, 277(5331), 1453-1462.</p>
+                            </div>
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[2]</span>
+                                <p class="text-slate-800">NCBI Reference Sequence: NC_000913.3 / U00096.3</p>
+                            </div>
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[3]</span>
+                                <p class="text-slate-800">EcoCyc Database (2024): <a href="https://ecocyc.org/" target="_blank" class="text-cyan-400 hover:underline">https://ecocyc.org/</a> - Base de datos curada de E. coli K-12 MG1655</p>
+                            </div>
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[4]</span>
+                                <p class="text-slate-800">EcoGene Database: <a href="https://ecogene.org/" target="_blank" class="text-cyan-400 hover:underline">https://ecogene.org/</a></p>
+                            </div>
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[5]</span>
+                                <p class="text-slate-800">Codon Usage Database (Kazusa): <a href="https://www.kazusa.or.jp/codon/" target="_blank" class="text-cyan-400 hover:underline">https://www.kazusa.or.jp/codon/</a></p>
+                            </div>
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-red-400 font-mono">[6]</span>
+                                <p class="text-slate-800">BioPython Documentation: <a href="https://biopython.org/" target="_blank" class="text-cyan-400 hover:underline">https://biopython.org/</a></p>
+                            </div>
+                        </div>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="border-t border-emerald-500/10 py-12 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-800 font-mono text-sm">Bioinformática 2025-2V // UNSAAC</p>
+                        <p class="text-slate-500 font-mono text-xs mt-1">Facultad de Ing. Eléctrica, Electrónica, Informática y Mecánica</p>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <p class="text-emerald-400 font-semibold">Luis Anthony Mamani Mescco</p>
+                        <p class="text-slate-500 font-mono text-xs">194522@unsaac.edu.pe</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Current Section Badge (Floating) -->
+    <div class="current-section-badge">
+        <span class="text-emerald-500">§</span> Sección actual
+    </div>
+
+    <!-- Back to top button -->
+    <button id="backToTop" class="fixed bottom-6 right-6 z-50 w-12 h-12 bg-emerald-500 text-slate-950 rounded-full shadow-lg opacity-0 pointer-events-none transition-all hover:bg-emerald-400 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <script>
+        // Back to top button
+        const backToTop = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                backToTop.classList.remove('opacity-0', 'pointer-events-none');
+                backToTop.classList.add('opacity-100');
+            } else {
+                backToTop.classList.add('opacity-0', 'pointer-events-none');
+                backToTop.classList.remove('opacity-100');
+            }
+        });
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // ========================================
+        // TOC EXPANDIBLE Y SCROLL TRACKING
+        // ========================================
+
+        // Toggle section expand/collapse
+        function toggleSection(headerEl) {
+            const section = headerEl.closest('.toc-section');
+            section.classList.toggle('expanded');
+        }
+
+        // Collect all sections and subsections with IDs
+        const allSections = document.querySelectorAll('section[id], h3[id], h4[id]');
+        const tocLinks = document.querySelectorAll('.toc-link');
+        const tocSublinks = document.querySelectorAll('.toc-sublink');
+        const currentBadge = document.querySelector('.current-section-badge');
+
+        // Section name mapping for badge display
+        const sectionNames = {
+            // Sección 1
+            'intro': '1. Introducción',
+            'intro-contexto': '1.1 Contexto Biológico',
+            'intro-objetivos': '1.2 Objetivos',
+            // Sección 2
+            'metodos': '2. Materiales y Métodos',
+            'metodos-datos': '2.1 Obtención de Datos',
+            'metodos-herramientas': '2.2 Herramientas',
+            'metodos-aws': '2.3 Infraestructura AWS',
+            // Sección 3
+            'resultados': '3. Resultados E. coli',
+            'res-caracteristicas': '3.1 Características Generales',
+            'res-genes': '3.2 Desglose de Genes',
+            'res-extremos': '3.3 Genes Extremos',
+            'res-atg': '3.4 Codones de Inicio',
+            'res-parada': '3.5 Codones de Parada',
+            'res-gc': '3.6 Contenido GC',
+            'res-tamanos': '3.7 Tamaños de Genes',
+            'res-hebras': '3.8 Distribución Hebras',
+            'res-dashboard': '3.9 Dashboard Resumen',
+            // Sección 4
+            'comparativo': '4. Análisis Comparativo',
+            'comp-genomas': '4.1 Genomas Analizados',
+            'comp-metricas': '4.2 Métricas Generales',
+            'comp-extremos': '4.3 Genes Extremos',
+            'comp-hebras': '4.4 Distribución Hebras',
+            'comp-virulencia': '4.5 Genes de Virulencia',
+            'comp-intergenicas': '4.6 Distancias Intergénicas',
+            'comp-patogena': '4.7 Patogenicidad',
+            'comp-dashboard': '4.8 Dashboard Resumen',
+            // Sección 5
+            'visualizaciones': '5. Índice de Figuras',
+            'vis-ecoli': '5.1 E. coli K-12',
+            'vis-comparativo': '5.2 Comparativo',
+            // Sección 6
+            'discusion': '6. Discusión',
+            'disc-validacion': '6.1 Validación',
+            'disc-codones': '6.2 Codones de Parada',
+            // Sección 7
+            'conclusiones': '7. Conclusiones',
+            // Sección 8
+            'codigo': '8. Código',
+            'codigo-scripts': '8.1 Scripts',
+            // Sección 9
+            'referencias': '9. Referencias'
+        };
+
+        // Map subsections to their parent section
+        const subsectionParents = {
+            // Sección 1
+            'intro-contexto': 'intro', 'intro-objetivos': 'intro',
+            // Sección 2
+            'metodos-datos': 'metodos', 'metodos-herramientas': 'metodos', 'metodos-aws': 'metodos',
+            // Sección 3
+            'res-caracteristicas': 'resultados', 'res-genes': 'resultados', 'res-extremos': 'resultados',
+            'res-atg': 'resultados', 'res-parada': 'resultados', 'res-gc': 'resultados',
+            'res-tamanos': 'resultados', 'res-hebras': 'resultados', 'res-dashboard': 'resultados',
+            // Sección 4
+            'comp-genomas': 'comparativo', 'comp-metricas': 'comparativo', 'comp-extremos': 'comparativo',
+            'comp-hebras': 'comparativo', 'comp-virulencia': 'comparativo', 'comp-intergenicas': 'comparativo',
+            'comp-patogena': 'comparativo', 'comp-dashboard': 'comparativo',
+            // Sección 5
+            'vis-ecoli': 'visualizaciones', 'vis-comparativo': 'visualizaciones',
+            // Sección 6
+            'disc-validacion': 'discusion', 'disc-codones': 'discusion',
+            // Sección 8
+            'codigo-scripts': 'codigo'
+        };
+
+        let lastCurrentId = '';
+
+        window.addEventListener('scroll', () => {
+            let currentId = '';
+
+            // Find current section/subsection based on scroll position
+            allSections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 250) {
+                    currentId = section.getAttribute('id');
+                }
+            });
+
+            // Only update if changed
+            if (currentId !== lastCurrentId) {
+                lastCurrentId = currentId;
+
+                // Remove all active states
+                tocLinks.forEach(link => link.classList.remove('active'));
+                tocSublinks.forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.toc-section').forEach(s => s.classList.remove('expanded'));
+
+                // Activate current link
+                const activeLink = document.querySelector(`a[href="#${currentId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                    activeLink.style.color = '#10b981';
+                    activeLink.style.fontWeight = '600';
+                }
+
+                // If it's a subsection, expand its parent section and activate parent link
+                const parentSectionId = subsectionParents[currentId];
+                if (parentSectionId) {
+                    const parentTocSection = document.querySelector(`.toc-section[data-section="${parentSectionId}"]`);
+                    if (parentTocSection) {
+                        parentTocSection.classList.add('expanded');
+                    }
+                    // Also mark parent link as semi-active
+                    const parentLink = document.querySelector(`a[href="#${parentSectionId}"]`);
+                    if (parentLink) {
+                        parentLink.style.color = '#10b981';
+                    }
+                } else if (currentId) {
+                    // It's a main section, expand it
+                    const tocSection = document.querySelector(`.toc-section[data-section="${currentId}"]`);
+                    if (tocSection) {
+                        tocSection.classList.add('expanded');
+                    }
+                }
+
+                // Update floating badge
+                if (currentBadge && currentId && sectionNames[currentId]) {
+                    currentBadge.innerHTML = `<span class="text-emerald-500">§</span> ${sectionNames[currentId]}`;
+                    currentBadge.classList.add('visible');
+                } else if (currentBadge) {
+                    currentBadge.classList.remove('visible');
+                }
+            }
+
+            // Show/hide badge based on scroll position
+            if (currentBadge) {
+                if (window.scrollY > 400) {
+                    if (currentId && sectionNames[currentId]) {
+                        currentBadge.classList.add('visible');
+                    }
+                } else {
+                    currentBadge.classList.remove('visible');
+                }
+            }
+        });
+
+        // Reset link styles when not active (clean up inline styles)
+        tocLinks.forEach(link => {
+            link.addEventListener('mouseout', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.color = '';
+                    this.style.fontWeight = '';
+                }
+            });
+        });
+        tocSublinks.forEach(link => {
+            link.addEventListener('mouseout', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.color = '';
+                    this.style.fontWeight = '';
+                }
+            });
+        });
+
+        // ========================================
+        // SISTEMA DE TEMAS
+        // ========================================
+        function toggleTheme() {
+            const body = document.body;
+            const themeSwitch = document.getElementById('themeSwitch');
+            const icon = themeSwitch.querySelector('.icon');
+
+            if (body.classList.contains('light')) {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeSwitch.classList.remove('light');
+                icon.textContent = '🌙';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeSwitch.classList.add('light');
+                icon.textContent = '☀️';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Aplicar tema guardado al cargar
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const body = document.body;
+            const themeSwitch = document.getElementById('themeSwitch');
+            const icon = themeSwitch ? themeSwitch.querySelector('.icon') : null;
+
+            body.classList.remove('light', 'dark');
+            body.classList.add(savedTheme);
+
+            if (themeSwitch && icon) {
+                if (savedTheme === 'dark') {
+                    themeSwitch.classList.remove('light');
+                    icon.textContent = '🌙';
+                } else {
+                    themeSwitch.classList.add('light');
+                    icon.textContent = '☀️';
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
