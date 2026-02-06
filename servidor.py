@@ -222,23 +222,29 @@ def listar_genomas():
         ruta_gb = os.path.join(RUTA_DATOS_CRUDO, archivo)
         ruta_fasta = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.fasta")
         # Buscar metadata en datos/crudo/ o en backend/crudo/
-        ruta_meta = os.path.join(RUTA_DATOS_CRUDO, f"metadata_{basename}.json")
-        ruta_meta_backend = os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename}.json")
-
-        # Usar la que exista (prioridad: datos/crudo/)
-        if not os.path.exists(ruta_meta) and os.path.exists(ruta_meta_backend):
-            ruta_meta = ruta_meta_backend
+        # Intentar varios nombres posibles de metadata
+        ruta_meta = None
+        posibles_meta = [
+            os.path.join(RUTA_DATOS_CRUDO, f"metadata_{basename}.json"),
+            os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename}.json"),
+            # Nombres cortos (metadata_ecoli.json, metadata_salmonella.json)
+            os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename.split('_')[0]}.json"),
+        ]
+        for ruta in posibles_meta:
+            if os.path.exists(ruta):
+                ruta_meta = ruta
+                break
 
         info = {
             "filename": archivo,
             "basename": basename,
             "size_mb": round(os.path.getsize(ruta_gb) / (1024*1024), 2),
             "has_fasta": os.path.exists(ruta_fasta),
-            "has_metadata": os.path.exists(ruta_meta)
+            "has_metadata": ruta_meta is not None
         }
 
         # Leer metadata si existe
-        if os.path.exists(ruta_meta):
+        if ruta_meta:
             try:
                 with open(ruta_meta, "r", encoding="utf-8") as f:
                     meta = json.load(f)
