@@ -1,0 +1,16 @@
+{
+  "fecha_descarga": "2026-02-06T18:35:20.645168",
+  "fuente": "NCBI",
+  "id_acceso": "NC_000913.3",
+  "organismo_config": "Escherichia coli str. K-12 substr. MG1655",
+  "genoma": {
+    "id": "NC_000913.3",
+    "nombre": "NC_000913",
+    "descripcion": "Escherichia coli str. K-12 substr. MG1655, complete genome",
+    "longitud": 4641652,
+    "organismo": "Escherichia coli str. K-12 substr. MG1655",
+    "fecha_actualizacion": "09-DEC-2025",
+    "num_features": 9285,
+    "nombre_corto": "escherichia_coli_str_k_12_substr_mg1655"
+  }
+}
