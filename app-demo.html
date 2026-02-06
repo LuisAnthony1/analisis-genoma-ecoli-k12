@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GenomeHub DEMO - Modo Sin Servidor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .section-panel { display: none; }
+        .section-panel.active { display: block; }
+
+        /* Tema oscuro */
+        body.dark { background-color: #000000; color: #f1f5f9; }
+        body.dark .bg-card { background-color: #1a1a1a; }
+        body.dark .bg-nav { background-color: rgba(10,10,10,0.95); }
+        body.dark .text-primary { color: #f8fafc; }
+        body.dark .text-secondary { color: #cbd5e1; }
+        body.dark .border-slate-200 { border-color: rgba(255,255,255,0.1); }
+    </style>
+</head>
+
+<body class="dark" style="background: #000;">
+
+    <!-- Banner Demo -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-black text-center py-2 text-sm font-semibold">
+        ⚠️ MODO DEMO - Datos de ejemplo | Para funcionalidad completa instala XAMPP
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-10 left-0 right-0 z-40 bg-nav backdrop-blur-xl border-b border-emerald-500/30">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xl">🧬</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-primary">GenomeHub DEMO</h1>
+                        <p class="text-xs text-secondary">Modo Sin Servidor</p>
+                    </div>
+                </div>
+
+                <nav class="flex space-x-2">
+                    <button onclick="showSection('search')" class="nav-btn px-4 py-2 rounded-lg text-sm bg-emerald-500 text-white">
+                        🔍 Buscar
+                    </button>
+                    <button onclick="showSection('library')" class="nav-btn px-4 py-2 rounded-lg text-sm text-secondary hover:bg-slate-800">
+                        📚 Biblioteca
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="pt-32 px-6 pb-12" style="max-width: 1400px; margin: 0 auto;">
+
+        <!-- Búsqueda -->
+        <section id="section-search" class="section-panel active">
+            <h2 class="text-3xl font-bold mb-6 text-primary">🔍 Búsqueda de Genomas (Demo)</h2>
+
+            <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
+                <input
+                    type="text"
+                    id="demo-search"
+                    placeholder="Escribe: Escherichia, Salmonella, o Tuberculosis"
+                    class="w-full px-4 py-3 bg-slate-800 rounded-lg border border-slate-700 text-white"
+                >
+                <button onclick="demoSearch()" class="mt-4 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg">
+                    Buscar (Demo)
+                </button>
+            </div>
+
+            <div id="demo-results" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- Biblioteca -->
+        <section id="section-library" class="section-panel">
+            <h2 class="text-3xl font-bold mb-6 text-primary">📚 Biblioteca de Genomas (Demo)</h2>
+
+            <div id="demo-library" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+    </main>
+
+    <script>
+        // Datos de ejemplo
+        const DEMO_DATA = {
+            genomes: [
+                {
+                    id: "1",
+                    accession: "NC_000913.3",
+                    organism: "Escherichia coli K-12 MG1655",
+                    title: "Escherichia coli str. K-12 substr. MG1655, complete genome",
+                    length: 4641652,
+                    length_mb: 4.64,
+                    update_date: "2025-02-14"
+                },
+                {
+                    id: "2",
+                    accession: "NC_003197.2",
+                    organism: "Salmonella enterica Typhimurium LT2",
+                    title: "Salmonella enterica subsp. enterica serovar Typhimurium str. LT2, complete genome",
+                    length: 4857450,
+                    length_mb: 4.86,
+                    update_date: "2025-01-20"
+                },
+                {
+                    id: "3",
+                    accession: "NC_000962.3",
+                    organism: "Mycobacterium tuberculosis H37Rv",
+                    title: "Mycobacterium tuberculosis H37Rv, complete genome",
+                    length: 4411532,
+                    length_mb: 4.41,
+                    update_date: "2024-12-10"
+                }
+            ],
+            library: [
+                {
+                    basename: "ecoli_k12",
+                    organism: "Escherichia coli K-12 MG1655",
+                    accession_id: "NC_000913.3",
+                    size_mb: 5.2,
+                    length: 4641652,
+                    num_features: 4318,
+                    download_date: "2026-02-05T15:30:00"
+                },
+                {
+                    basename: "salmonella_lt2",
+                    organism: "Salmonella enterica Typhimurium LT2",
+                    accession_id: "NC_003197.2",
+                    size_mb: 5.5,
+                    length: 4857450,
+                    num_features: 4452,
+                    download_date: "2026-02-05T16:00:00"
+                }
+            ]
+        };
+
+        function showSection(name) {
+            document.querySelectorAll('.section-panel').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+
+            if (name === 'library') {
+                renderLibrary();
+            }
+        }
+
+        function demoSearch() {
+            const query = document.getElementById('demo-search').value.toLowerCase();
+            const results = DEMO_DATA.genomes.filter(g =>
+                g.organism.toLowerCase().includes(query) ||
+                g.title.toLowerCase().includes(query)
+            );
+
+            const container = document.getElementById('demo-results');
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-card rounded-xl border border-slate-200">
+                        <div class="text-6xl mb-3">🔍</div>
+                        <p class="text-primary">No hay resultados para "${query}"</p>
+                        <p class="text-sm text-secondary mt-2">Intenta: Escherichia, Salmonella, o Tuberculosis</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = results.map(g => `
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-2 text-primary">${g.organism}</h3>
+                    <p class="text-sm text-secondary mb-3 line-clamp-2">${g.title}</p>
+                    <div class="flex gap-2 text-xs mb-3">
+                        <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded">${g.accession}</span>
+                        <span class="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded">${g.length_mb} Mb</span>
+                    </div>
+                    <button onclick="alert('En modo demo. Instala XAMPP para descargar genomas reales.')"
+                            class="w-full px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                        Descargar (Requiere XAMPP)
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderLibrary() {
+            const container = document.getElementById('demo-library');
+
+            container.innerHTML = DEMO_DATA.library.map(g => `
+                <div class="bg-card rounded-xl p-6 border border-slate-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-2xl">
+                            🧬
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded-full">
+                            ${g.size_mb} MB
+                        </span>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2 text-primary">${g.organism}</h3>
+                    <div class="space-y-1 text-sm text-secondary mb-4">
+                        <p><span class="font-medium">ID:</span> ${g.accession_id}</p>
+                        <p><span class="font-medium">Longitud:</span> ${g.length.toLocaleString()} pb</p>
+                        <p><span class="font-medium">Features:</span> ${g.num_features.toLocaleString()}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="alert('Instala XAMPP para análisis reales')"
+                                class="flex-1 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                            Analizar
+                        </button>
+                        <button onclick="showDetails('${g.organism}')"
+                                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg">
+                            Ver
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showDetails(name) {
+            const genome = DEMO_DATA.library.find(g => g.organism === name);
+            alert(`Detalles de ${genome.organism}:\n\n` +
+                  `Accession: ${genome.accession_id}\n` +
+                  `Tamaño: ${genome.size_mb} MB\n` +
+                  `Longitud: ${genome.length.toLocaleString()} pb\n` +
+                  `Features: ${genome.num_features.toLocaleString()}\n\n` +
+                  `Para ver detalles completos, instala XAMPP`);
+        }
+
+        // Inicializar
+        renderLibrary();
+    </script>
+
+</body>
+</html>
