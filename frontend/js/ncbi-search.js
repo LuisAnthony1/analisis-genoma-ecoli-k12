@@ -105,7 +105,7 @@ const NCBISearch = {
 
             if (results.length > 0) {
                 this.renderResults(results);
-                showNotification(`${results.length} genomas encontrados en NCBI`, 'success');
+                showNotification(`${results.length} genomas encontrados`, 'success');
             } else {
                 searchResults.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-card rounded-xl border border-slate-200">
@@ -125,7 +125,7 @@ const NCBISearch = {
                     <p class="text-sm text-secondary mt-2">Verifica tu conexión a internet</p>
                 </div>
             `;
-            showNotification('Error de conexión con NCBI', 'error');
+            showNotification('Error de conexión', 'error');
         } finally {
             searchBtn.disabled = false;
             searchBtn.textContent = 'Buscar';
@@ -192,7 +192,6 @@ const NCBISearch = {
         if (hasServer) {
             // Servidor disponible: descargar a datos/crudo/
             try {
-                showNotification(`Descargando ${genome.organism} al servidor...`, 'info');
                 await this.downloadGenome(genome);
             } catch (error) {
                 showNotification(`Error al descargar: ${error.message}`, 'error');
@@ -207,7 +206,7 @@ const NCBISearch = {
      * Descargar directo desde NCBI (sin servidor - descarga al navegador)
      */
     downloadFromNCBI(genome) {
-        showNotification(`Abriendo descarga de ${genome.organism} desde NCBI...`, 'info');
+        showNotification(`Descargando ${genome.organism}...`, 'info');
 
         // Abrir GenBank en nueva pestaña
         const gbUrl = `${NCBI_BASE}/efetch.fcgi?db=nucleotide&id=${genome.accession}&rettype=gbwithparts&retmode=text&email=${NCBI_EMAIL}`;
@@ -231,7 +230,7 @@ const NCBISearch = {
             document.body.appendChild(b);
             b.click();
             b.remove();
-            showNotification(`Descargando GenBank + FASTA de ${genome.organism}`, 'success');
+            showNotification(`${genome.organism} descargado`, 'success');
         }, 2000);
     },
 
@@ -320,11 +319,11 @@ const NCBISearch = {
             }
 
             if (successCount > 0) {
-                showNotification(`${successCount} genomas descargados a datos/crudo/`, 'success');
+                showNotification(`${successCount} genomas descargados`, 'success');
                 setTimeout(() => showSection('library'), 2000);
             }
             if (errorCount > 0) {
-                showNotification(`${errorCount} genomas fallaron`, 'error');
+                showNotification(`${errorCount} descargas fallaron`, 'error');
             }
         } else {
             // Sin servidor: descargar desde NCBI directo
@@ -332,7 +331,7 @@ const NCBISearch = {
                 this.downloadFromNCBI(genome);
                 await new Promise(r => setTimeout(r, 3000)); // esperar entre descargas
             }
-            showNotification('Archivos descargándose desde NCBI. Colócalos en datos/crudo/', 'info');
+            showNotification('Descarga en progreso', 'info');
         }
 
         btn.disabled = false;
@@ -364,7 +363,7 @@ const NCBISearch = {
             throw new Error(data.error || 'Error al descargar');
         }
 
-        showNotification(`${genome.organism} descargado a datos/crudo/`, 'success');
+        showNotification(`${genome.organism} descargado`, 'success');
         return data;
     }
 };

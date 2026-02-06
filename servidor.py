@@ -428,6 +428,56 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(resultado)
             return
 
+        if path == "/api/delete_genome":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                self._json_response({"success": False, "error": "JSON inválido"}, 400)
+                return
+
+            basename = data.get("basename", "")
+            if not basename or ".." in basename or "/" in basename or "\\" in basename:
+                self._json_response({"success": False, "error": "Nombre inválido"}, 400)
+                return
+
+            resultado = eliminar_genoma(basename)
+            self._json_response(resultado)
+            return
+
+        if path == "/api/delete_result":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                self._json_response({"success": False, "error": "JSON inválido"}, 400)
+                return
+
+            filename = data.get("filename", "")
+            tipo = data.get("type", "tablas")
+            if not filename or ".." in filename or "/" in filename or "\\" in filename:
+                self._json_response({"success": False, "error": "Nombre inválido"}, 400)
+                return
+
+            resultado = eliminar_resultado(filename, tipo)
+            self._json_response(resultado)
+            return
+
+        if path == "/api/delete_results_all":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                data = {}
+
+            tipo = data.get("type")
+            resultado = eliminar_todos_resultados(tipo)
+            self._json_response(resultado)
+            return
+
         self._json_response({"error": "Endpoint no encontrado"}, 404)
 
     def _json_response(self, data, status=200):
@@ -449,6 +499,51 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
         msg = format % args
         if "/api/" in msg or "GET / " in msg:
             print(f"[HTTP] {msg}")
+
+
+def eliminar_genoma(basename):
+    """Elimina un genoma descargado y sus archivos asociados."""
+    archivos = [
+        os.path.join(RUTA_DATOS_CRUDO, f"{basename}.gb"),
+        os.path.join(RUTA_DATOS_CRUDO, f"{basename}.fasta"),
+        os.path.join(RUTA_DATOS_CRUDO, f"metadata_{basename}.json"),
+    ]
+    eliminados = 0
+    for ruta in archivos:
+        if os.path.exists(ruta):
+            os.remove(ruta)
+            eliminados += 1
+    if eliminados == 0:
+        return {"success": False, "error": "No se encontraron archivos para este genoma"}
+    print(f"[ELIMINAR] Genoma '{basename}' eliminado ({eliminados} archivos)")
+    return {"success": True, "deleted": eliminados}
+
+
+def eliminar_resultado(filename, tipo="tablas"):
+    """Elimina un archivo de resultado específico."""
+    ruta = os.path.join(RUTA_RESULTADOS, tipo, filename)
+    if not os.path.exists(ruta):
+        return {"success": False, "error": "Archivo no encontrado"}
+    os.remove(ruta)
+    print(f"[ELIMINAR] Resultado '{filename}' eliminado")
+    return {"success": True}
+
+
+def eliminar_todos_resultados(tipo=None):
+    """Elimina todos los resultados, opcionalmente filtrado por tipo."""
+    tipos = [tipo] if tipo else ["tablas", "figuras"]
+    total = 0
+    for t in tipos:
+        directorio = os.path.join(RUTA_RESULTADOS, t)
+        if not os.path.exists(directorio):
+            continue
+        for archivo in os.listdir(directorio):
+            ruta = os.path.join(directorio, archivo)
+            if os.path.isfile(ruta):
+                os.remove(ruta)
+                total += 1
+    print(f"[ELIMINAR] {total} resultados eliminados")
+    return {"success": True, "deleted": total}
 
 
 def listar_resultados(tipo="tablas"):

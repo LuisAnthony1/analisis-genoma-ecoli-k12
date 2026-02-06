@@ -2,71 +2,146 @@
  * GenomeHub - Analysis Runner
  *
  * Ejecuta scripts Python de análisis via servidor.py
- * Requiere servidor corriendo en AWS
+ * Selector de genoma + checkboxes de análisis + ejecución batch
  */
 
 const AnalysisRunner = {
-    async runScript(scriptName, organism = null) {
-        const consolePanel = document.getElementById('analysis-console');
-        const consoleOutput = document.getElementById('console-output');
 
-        // Verificar servidor
+    /**
+     * Cargar selector de genomas desde la biblioteca
+     */
+    async loadGenomeSelector() {
+        const select = document.getElementById('analysis-genome');
+        if (!select) return;
+
         const hasServer = await NCBISearch.checkServer();
         if (!hasServer) {
-            consolePanel.classList.remove('hidden');
-            consoleOutput.innerHTML = `[ERROR] Servidor no disponible.\nEjecuta en AWS: python3 servidor.py\n\nLa búsqueda NCBI funciona sin servidor, pero los análisis requieren el servidor corriendo.`;
-            showNotification('Se necesita servidor.py para ejecutar análisis', 'warning');
+            select.innerHTML = '<option value="">Servidor no disponible</option>';
             return;
         }
 
-        consolePanel.classList.remove('hidden');
-        consoleOutput.innerHTML = `[${new Date().toLocaleTimeString()}] Ejecutando ${scriptName}...\n`;
+        try {
+            const resp = await fetch('/api/genomes');
+            const data = await resp.json();
 
-        const btn = document.querySelector(`[data-script="${scriptName}"]`);
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'Ejecutando...';
+            if (data.success && data.genomes && data.genomes.length > 0) {
+                select.innerHTML = '<option value="">-- Seleccionar genoma --</option>' +
+                    data.genomes.map(g =>
+                        `<option value="${g.basename}">${g.organism || g.basename} (${g.accession_id || 'N/A'})</option>`
+                    ).join('');
+
+                // Pre-seleccionar si viene de Biblioteca
+                if (AppState.analysisGenome) {
+                    select.value = AppState.analysisGenome;
+                    AppState.analysisGenome = null;
+                }
+            } else {
+                select.innerHTML = '<option value="">No hay genomas descargados</option>';
+            }
+        } catch {
+            select.innerHTML = '<option value="">Error al cargar genomas</option>';
+        }
+    },
+
+    /**
+     * Ejecutar todos los análisis seleccionados
+     */
+    async runSelectedAnalyses() {
+        const genome = document.getElementById('analysis-genome').value;
+        if (!genome) {
+            showNotification('Selecciona un genoma', 'warning');
+            return;
         }
 
-        showNotification(`Ejecutando ${scriptName}...`, 'info');
+        const checked = document.querySelectorAll('.analysis-check:checked');
+        if (checked.length === 0) {
+            showNotification('Selecciona al menos un análisis', 'warning');
+            return;
+        }
 
-        try {
-            const payload = { script: scriptName };
-            if (organism) payload.organism = organism;
+        const scripts = Array.from(checked).map(cb => cb.getAttribute('data-script'));
+        const btn = document.getElementById('run-analysis-btn');
+        const progress = document.getElementById('analysis-progress');
+        const progressText = document.getElementById('analysis-progress-text');
+        const progressDetail = document.getElementById('analysis-progress-detail');
+        const consolePanel = document.getElementById('analysis-console');
+        const consoleOutput = document.getElementById('console-output');
 
-            const response = await fetch('/api/run_analysis', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        btn.disabled = true;
+        btn.textContent = 'Analizando...';
+        progress.classList.remove('hidden');
+        consolePanel.classList.remove('hidden');
+        consoleOutput.innerHTML = '';
 
-            const data = await response.json();
+        let completed = 0;
+        let errors = 0;
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Error en el servidor');
+        for (const script of scripts) {
+            completed++;
+            progressText.textContent = `Ejecutando ${completed}/${scripts.length}...`;
+            progressDetail.textContent = script;
+            consoleOutput.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${script}...\n`;
+
+            try {
+                const payload = { script };
+
+                // Mapear organismo si el script lo requiere
+                if (script === 'analisis_genes') {
+                    // Determinar organismo basándose en el basename
+                    if (genome.includes('ecoli') || genome.includes('escherichia')) {
+                        payload.organism = 'ecoli_k12';
+                    } else if (genome.includes('salmonella')) {
+                        payload.organism = 'salmonella_lt2';
+                    } else {
+                        payload.organism = 'ecoli_k12';
+                    }
+                }
+
+                const response = await fetch('/api/run_analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error en el servidor');
+                }
+
+                consoleOutput.innerHTML += data.output + '\n';
+
+                if (data.return_code === 0) {
+                    consoleOutput.innerHTML += `[OK] Completado en ${data.execution_time}s\n`;
+                } else {
+                    consoleOutput.innerHTML += `[ERROR] Código: ${data.return_code}\n`;
+                    errors++;
+                }
+            } catch (error) {
+                consoleOutput.innerHTML += `[ERROR] ${error.message}\n`;
+                errors++;
             }
 
-            consoleOutput.innerHTML += `\n${data.output}\n\n`;
+            // Scroll al final
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
 
-            if (data.return_code === 0) {
-                consoleOutput.innerHTML += `[OK] Completado en ${data.execution_time}s`;
-                showNotification('Análisis completado correctamente', 'success');
-                setTimeout(() => showSection('results'), 2000);
-            } else {
-                consoleOutput.innerHTML += `[ERROR] Finalizó con errores (código: ${data.return_code})`;
-                showNotification('El análisis finalizó con errores', 'warning');
-            }
-        } catch (error) {
-            consoleOutput.innerHTML += `\n[ERROR] ${error.message}`;
-            showNotification('Error al ejecutar análisis', 'error');
-        } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'Ejecutar';
-            }
+        progress.classList.add('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Analizar';
+
+        if (errors === 0) {
+            showNotification('Análisis completado', 'success');
+            setTimeout(() => showSection('results'), 2000);
+        } else {
+            showNotification(`${errors} análisis con errores`, 'warning');
         }
     }
 };
+
+// =============================================================================
+// RESULTADOS
+// =============================================================================
 
 async function loadResults(type = 'tablas') {
     const tablasContainer = document.getElementById('results-tablas');
@@ -85,10 +160,9 @@ async function loadResults(type = 'tablas') {
             figurasContainer.classList.remove('hidden');
         }
         grid.innerHTML = `
-            <div class="col-span-full text-center py-12 text-secondary">
+            <div class="text-center py-12 text-secondary">
                 <div class="text-6xl mb-3">🖥️</div>
-                <p class="font-semibold">Servidor requerido para ver resultados</p>
-                <code class="bg-slate-900 text-emerald-400 px-3 py-1 rounded text-sm font-mono mt-2 inline-block">python3 servidor.py</code>
+                <p class="font-semibold">Servidor no disponible</p>
             </div>
         `;
         return;
@@ -104,21 +178,30 @@ async function loadResults(type = 'tablas') {
 
             if (data.results.length === 0) {
                 tablasGrid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-secondary">
+                    <div class="text-center py-12 text-secondary">
                         <div class="text-6xl mb-3">📄</div>
-                        <p>No hay resultados de tablas aún</p>
+                        <p>No hay resultados aún</p>
                         <p class="text-sm mt-2">Ejecuta un análisis primero</p>
                     </div>
                 `;
             } else {
                 tablasGrid.innerHTML = data.results.map(file => `
-                    <div class="bg-card rounded-lg p-4 border border-slate-200 hover:shadow-md transition">
-                        <div class="text-4xl mb-3">${file.extension === 'json' ? '📋' : '📊'}</div>
-                        <h4 class="font-medium mb-1 text-sm text-primary line-clamp-2">${file.filename}</h4>
-                        <p class="text-xs text-secondary mb-3">${file.size_kb} KB</p>
-                        <a href="${file.path}" download class="block text-center px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
-                            Descargar
-                        </a>
+                    <div class="flex items-center justify-between bg-card rounded-lg px-5 py-3 border border-slate-200 hover:border-emerald-500/30 transition">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <span class="text-xl">${file.extension === 'json' ? '📋' : '📊'}</span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-primary truncate">${file.filename}</p>
+                                <p class="text-xs text-secondary">${file.size_kb} KB</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 ml-4">
+                            <a href="${file.path}" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
+                                Descargar
+                            </a>
+                            <button onclick="deleteResult('${file.filename}', 'tablas')" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs rounded-lg transition">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
@@ -128,27 +211,84 @@ async function loadResults(type = 'tablas') {
 
             if (data.results.length === 0) {
                 figurasGrid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-secondary">
+                    <div class="text-center py-12 text-secondary">
                         <div class="text-6xl mb-3">📈</div>
-                        <p>No hay gráficos generados aún</p>
-                        <p class="text-sm mt-2">Ejecuta el script de visualizaciones</p>
+                        <p>No hay gráficos aún</p>
+                        <p class="text-sm mt-2">Ejecuta un análisis primero</p>
                     </div>
                 `;
             } else {
                 figurasGrid.innerHTML = data.results.map(file => `
-                    <div class="bg-card rounded-lg p-4 border border-slate-200 hover:shadow-md transition">
-                        <img src="${file.path}" alt="${file.filename}" class="w-full h-48 object-contain rounded-lg mb-3 cursor-pointer hover:scale-105 transition" onclick="viewImage('${file.path}', '${file.filename}')">
-                        <h4 class="font-medium text-sm mb-1 text-primary line-clamp-1">${file.filename}</h4>
-                        <p class="text-xs text-secondary mb-2">${file.size_kb} KB</p>
-                        <a href="${file.path}" download class="block text-center px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
-                            Descargar
-                        </a>
+                    <div class="flex items-center justify-between bg-card rounded-lg px-5 py-3 border border-slate-200 hover:border-emerald-500/30 transition">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <img src="${file.path}" alt="${file.filename}" class="w-12 h-12 object-contain rounded cursor-pointer" onclick="viewImage('${file.path}', '${file.filename}')">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-primary truncate">${file.filename}</p>
+                                <p class="text-xs text-secondary">${file.size_kb} KB</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 ml-4">
+                            <a href="${file.path}" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
+                                Descargar
+                            </a>
+                            <button onclick="deleteResult('${file.filename}', 'figuras')" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs rounded-lg transition">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
         }
     } catch (error) {
         showNotification('Error al cargar resultados', 'error');
+    }
+}
+
+async function deleteResult(filename, type) {
+    if (!confirm(`¿Eliminar ${filename}?`)) return;
+
+    try {
+        const resp = await fetch('/api/delete_result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename, type })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            showNotification('Eliminado', 'success');
+            loadResults(type);
+        } else {
+            showNotification(data.error || 'Error', 'error');
+        }
+    } catch {
+        showNotification('Error al eliminar', 'error');
+    }
+}
+
+async function deleteAllResults() {
+    // Determinar qué tab está activo
+    const tablasVisible = !document.getElementById('results-tablas').classList.contains('hidden');
+    const type = tablasVisible ? 'tablas' : 'figuras';
+
+    if (!confirm(`¿Eliminar todos los resultados de ${type}?`)) return;
+
+    try {
+        const resp = await fetch('/api/delete_results_all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            showNotification(`${data.deleted} archivos eliminados`, 'success');
+            loadResults(type);
+        } else {
+            showNotification('Error al eliminar', 'error');
+        }
+    } catch {
+        showNotification('Error al eliminar', 'error');
     }
 }
 
@@ -175,25 +315,13 @@ function viewImage(path, filename) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.analysis-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const script = e.currentTarget.getAttribute('data-script');
+    // Botón analizar
+    const runBtn = document.getElementById('run-analysis-btn');
+    if (runBtn) {
+        runBtn.addEventListener('click', () => AnalysisRunner.runSelectedAnalyses());
+    }
 
-            if (['analisis_genes'].includes(script)) {
-                const organism = prompt('Seleccionar organismo:\n1 = E. coli K-12\n2 = Salmonella LT2');
-
-                if (organism === '1' || organism === '2') {
-                    const orgName = organism === '1' ? 'ecoli_k12' : 'salmonella_lt2';
-                    AnalysisRunner.runScript(script, orgName);
-                } else if (organism !== null) {
-                    showNotification('Opción inválida. Usa 1 o 2', 'warning');
-                }
-            } else {
-                AnalysisRunner.runScript(script);
-            }
-        });
-    });
-
+    // Limpiar consola
     const clearConsoleBtn = document.getElementById('clear-console');
     if (clearConsoleBtn) {
         clearConsoleBtn.addEventListener('click', () => {
@@ -201,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Tabs de resultados
     const tabTablas = document.getElementById('tab-tablas');
     const tabFiguras = document.getElementById('tab-figuras');
 
@@ -226,5 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
             tabFiguras.classList.remove('text-secondary');
             loadResults('figuras');
         });
+    }
+
+    // Eliminar todos los resultados
+    const deleteAllBtn = document.getElementById('delete-all-results-btn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', deleteAllResults);
     }
 });

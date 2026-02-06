@@ -22,10 +22,8 @@ async function loadLibrary() {
         grid.innerHTML = `
             <div class="col-span-full text-center py-12 bg-card rounded-xl border border-slate-200">
                 <div class="text-6xl mb-4">🖥️</div>
-                <h3 class="text-xl font-semibold mb-2 text-primary">Servidor requerido</h3>
-                <p class="text-secondary mb-4">Para ver genomas descargados, ejecuta el servidor en AWS:</p>
-                <code class="bg-slate-900 text-emerald-400 px-4 py-2 rounded-lg text-sm font-mono">python3 servidor.py</code>
-                <p class="text-sm text-secondary mt-4">La búsqueda en NCBI funciona sin servidor</p>
+                <h3 class="text-xl font-semibold mb-2 text-primary">Servidor no disponible</h3>
+                <p class="text-secondary mb-4">Se requiere conexión al servidor para ver genomas descargados</p>
             </div>
         `;
         return;
@@ -62,9 +60,18 @@ function renderLibrary(genomes) {
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-2xl">
                     🧬
                 </div>
-                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-xs font-medium rounded-full">
-                    ${genome.size_mb} MB
-                </span>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-xs font-medium rounded-full">
+                        ${genome.size_mb} MB
+                    </span>
+                    <button
+                        onclick="deleteGenome('${genome.basename}')"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition"
+                        title="Eliminar genoma"
+                    >
+                        🗑️
+                    </button>
+                </div>
             </div>
 
             <h3 class="font-semibold text-lg mb-2 text-primary line-clamp-2">
@@ -96,9 +103,31 @@ function renderLibrary(genomes) {
     `).join('');
 }
 
+async function deleteGenome(basename) {
+    if (!confirm('¿Eliminar este genoma y todos sus archivos?')) return;
+
+    try {
+        const resp = await fetch('/api/delete_genome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ basename })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            showNotification('Genoma eliminado', 'success');
+            loadLibrary();
+        } else {
+            showNotification(data.error || 'Error al eliminar', 'error');
+        }
+    } catch (error) {
+        showNotification('Error al eliminar', 'error');
+    }
+}
+
 function analyzeGenome(basename) {
+    AppState.analysisGenome = basename;
     showSection('analysis');
-    showNotification(`Preparando análisis de ${basename}`, 'info');
 }
 
 function viewGenomeDetails(basename) {
@@ -128,9 +157,9 @@ function viewGenomeDetails(basename) {
                     <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2 text-sm">
                         <p><span class="font-medium">Organismo:</span> ${genomaInfo.organismo || genome.organism || 'N/A'}</p>
                         <p><span class="font-medium">Accession ID:</span> ${metadata.id_acceso || genome.accession_id}</p>
-                        <p><span class="font-medium">Descripción:</span> ${genomaInfo.descripcion || 'N/A'}</p>
-                        <p><span class="font-medium">Longitud:</span> ${formatNumber(genomaInfo.longitud || 0)} pares de bases</p>
-                        <p><span class="font-medium">Features:</span> ${formatNumber(genomaInfo.num_features || 0)} anotaciones</p>
+                        <p><span class="font-medium">Descripción:</span> ${genomaInfo.descripcion || genome.description || 'N/A'}</p>
+                        <p><span class="font-medium">Longitud:</span> ${formatNumber(genomaInfo.longitud || genome.length || 0)} pares de bases</p>
+                        <p><span class="font-medium">Features:</span> ${formatNumber(genomaInfo.num_features || genome.num_features || 0)} anotaciones</p>
                     </div>
                 </div>
 
@@ -146,14 +175,14 @@ function viewGenomeDetails(basename) {
                 <div>
                     <h3 class="text-sm font-semibold text-secondary mb-2">Descarga</h3>
                     <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2 text-sm">
-                        <p><span class="font-medium">Fecha:</span> ${formatDate(metadata.fecha_descarga || genome.modified)}</p>
+                        <p><span class="font-medium">Fecha:</span> ${formatDate(metadata.fecha_descarga || genome.download_date)}</p>
                         <p><span class="font-medium">Fuente:</span> ${metadata.fuente || 'NCBI'}</p>
                     </div>
                 </div>
             </div>
 
             <div class="flex gap-2 mt-6">
-                <button onclick="analyzeGenome('${genome.basename}')" class="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition">
+                <button onclick="this.closest('.fixed').remove(); analyzeGenome('${genome.basename}')" class="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition">
                     Analizar este Genoma
                 </button>
                 <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg transition">
