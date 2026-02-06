@@ -42,8 +42,9 @@ const NCBISearch = {
 
         try {
             // PASO 1: Buscar IDs en NCBI
-            const searchTerm = `${query}[Organism] AND complete genome[Title]`;
-            const searchUrl = `${NCBI_BASE}/esearch.fcgi?db=nucleotide&term=${encodeURIComponent(searchTerm)}&retmax=${limit}&retmode=json&email=${NCBI_EMAIL}`;
+            // Usar wildcard (*) para búsquedas parciales y buscar en todos los campos
+            const searchTerm = `${query}*[Organism] AND (complete genome[Title] OR complete sequence[Title])`;
+            const searchUrl = `${NCBI_BASE}/esearch.fcgi?db=nucleotide&term=${encodeURIComponent(searchTerm)}&retmax=${limit}&retmode=json&email=${NCBI_EMAIL}&sort=relevance`;
 
             const searchResp = await fetch(searchUrl);
             const searchData = await searchResp.json();
