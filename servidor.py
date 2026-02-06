@@ -221,7 +221,13 @@ def listar_genomas():
         basename = archivo[:-3]  # sin .gb
         ruta_gb = os.path.join(RUTA_DATOS_CRUDO, archivo)
         ruta_fasta = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.fasta")
+        # Buscar metadata en datos/crudo/ o en backend/crudo/
         ruta_meta = os.path.join(RUTA_DATOS_CRUDO, f"metadata_{basename}.json")
+        ruta_meta_backend = os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename}.json")
+
+        # Usar la que exista (prioridad: datos/crudo/)
+        if not os.path.exists(ruta_meta) and os.path.exists(ruta_meta_backend):
+            ruta_meta = ruta_meta_backend
 
         info = {
             "filename": archivo,
