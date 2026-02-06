@@ -1,12 +1,11 @@
 /**
  * GenomeHub - Genome Library Manager
  *
- * Maneja la biblioteca de genomas descargados
+ * Maneja la biblioteca de genomas descargados.
+ * Con servidor: lee datos/crudo/ del servidor
+ * Sin servidor: muestra mensaje indicando que se necesita servidor.py
  */
 
-/**
- * Cargar biblioteca de genomas
- */
 async function loadLibrary() {
     const loading = document.getElementById('library-loading');
     const grid = document.getElementById('library-grid');
@@ -16,37 +15,44 @@ async function loadLibrary() {
     grid.innerHTML = '';
     empty.classList.add('hidden');
 
-    try {
-        const response = await fetch('/backend/api/list_genomes.php');
-        const data = await response.json();
+    const hasServer = await NCBISearch.checkServer();
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al cargar genomas');
-        }
+    if (!hasServer) {
+        hideLoading('library-loading');
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-12 bg-card rounded-xl border border-slate-200">
+                <div class="text-6xl mb-4">🖥️</div>
+                <h3 class="text-xl font-semibold mb-2 text-primary">Servidor requerido</h3>
+                <p class="text-secondary mb-4">Para ver genomas descargados, ejecuta el servidor en AWS:</p>
+                <code class="bg-slate-900 text-emerald-400 px-4 py-2 rounded-lg text-sm font-mono">python3 servidor.py</code>
+                <p class="text-sm text-secondary mt-4">La búsqueda en NCBI funciona sin servidor</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/genomes');
+        const data = await response.json();
 
         if (data.success && data.genomes && data.genomes.length > 0) {
             AppState.libraryGenomes = data.genomes;
             renderLibrary(data.genomes);
-            hideLoading('library-loading');
         } else {
-            hideLoading('library-loading');
             empty.classList.remove('hidden');
         }
     } catch (error) {
-        hideLoading('library-loading');
         grid.innerHTML = `
             <div class="col-span-full bg-red-500/10 border border-red-500/20 rounded-xl p-6">
                 <h3 class="text-red-600 font-semibold mb-2">Error al cargar biblioteca</h3>
                 <p class="text-red-600 text-sm">${error.message}</p>
             </div>
         `;
-        showNotification('Error al cargar biblioteca de genomas', 'error');
+    } finally {
+        hideLoading('library-loading');
     }
 }
 
-/**
- * Renderizar biblioteca
- */
 function renderLibrary(genomes) {
     const grid = document.getElementById('library-grid');
 
@@ -90,31 +96,21 @@ function renderLibrary(genomes) {
     `).join('');
 }
 
-/**
- * Analizar genoma
- */
 function analyzeGenome(basename) {
     showSection('analysis');
     showNotification(`Preparando análisis de ${basename}`, 'info');
 }
 
-/**
- * Ver detalles del genoma
- */
 function viewGenomeDetails(basename) {
     const genome = AppState.libraryGenomes.find(g => g.basename === basename);
-
     if (!genome) {
         showNotification('Genoma no encontrado', 'error');
         return;
     }
 
-    // Crear modal
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.remove();
-    };
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 
     const metadata = genome.metadata || {};
     const genomaInfo = metadata.genoma || {};
@@ -123,9 +119,7 @@ function viewGenomeDetails(basename) {
         <div class="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-slate-200">
             <div class="flex items-start justify-between mb-6">
                 <h2 class="text-2xl font-bold text-primary">Detalles del Genoma</h2>
-                <button onclick="this.closest('.fixed').remove()" class="text-secondary hover:text-primary text-2xl">
-                    ✕
-                </button>
+                <button onclick="this.closest('.fixed').remove()" class="text-secondary hover:text-primary text-2xl">✕</button>
             </div>
 
             <div class="space-y-4">
@@ -154,22 +148,15 @@ function viewGenomeDetails(basename) {
                     <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2 text-sm">
                         <p><span class="font-medium">Fecha:</span> ${formatDate(metadata.fecha_descarga || genome.modified)}</p>
                         <p><span class="font-medium">Fuente:</span> ${metadata.fuente || 'NCBI'}</p>
-                        ${genomaInfo.fecha_actualizacion ? `<p><span class="font-medium">Última actualización (NCBI):</span> ${genomaInfo.fecha_actualizacion}</p>` : ''}
                     </div>
                 </div>
             </div>
 
             <div class="flex gap-2 mt-6">
-                <button
-                    onclick="analyzeGenome('${genome.basename}')"
-                    class="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition"
-                >
+                <button onclick="analyzeGenome('${genome.basename}')" class="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition">
                     Analizar este Genoma
                 </button>
-                <button
-                    onclick="this.closest('.fixed').remove()"
-                    class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg transition"
-                >
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg transition">
                     Cerrar
                 </button>
             </div>
