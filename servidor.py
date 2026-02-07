@@ -16,6 +16,7 @@ import json
 import os
 import sys
 import re
+import shutil
 import subprocess
 import time
 import urllib.parse
@@ -42,6 +43,10 @@ Entrez.email = CORREO_ELECTRONICO
 DIRECTORIO_BASE = os.path.dirname(os.path.abspath(__file__))
 RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "backend", "resultados")
+
+# Directorios legacy donde los scripts escriben por defecto
+RUTA_RESULTADOS_TABLAS = os.path.join(RUTA_RESULTADOS, "tablas")
+RUTA_RESULTADOS_FIGURAS = os.path.join(RUTA_RESULTADOS, "figuras")
 
 
 # =============================================================================
@@ -222,12 +227,10 @@ def listar_genomas():
         ruta_gb = os.path.join(RUTA_DATOS_CRUDO, archivo)
         ruta_fasta = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.fasta")
         # Buscar metadata en datos/crudo/ o en backend/crudo/
-        # Intentar varios nombres posibles de metadata
         ruta_meta = None
         posibles_meta = [
             os.path.join(RUTA_DATOS_CRUDO, f"metadata_{basename}.json"),
             os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename}.json"),
-            # Nombres cortos (metadata_ecoli.json, metadata_salmonella.json)
             os.path.join(DIRECTORIO_BASE, "backend", "crudo", f"metadata_{basename.split('_')[0]}.json"),
         ]
         for ruta in posibles_meta:
@@ -268,14 +271,14 @@ def listar_genomas():
     return {"success": True, "count": len(genomas), "genomes": genomas}
 
 
-def ejecutar_analisis(script_name, organism=None):
-    """Ejecuta un script de análisis Python."""
+def ejecutar_analisis(script_name, organism=None, genome_basename=None):
+    """Ejecuta un script de análisis Python y mueve resultados a carpeta del genoma."""
     scripts_permitidos = {
-        "analisis_genes": {"file": "analisis_genes.py", "requires_organism": True, "timeout": 120},
-        "analisis_codones": {"file": "analisis_codones.py", "requires_organism": False, "timeout": 60},
-        "comparar_genomas": {"file": "comparar_genomas.py", "requires_organism": False, "timeout": 120},
-        "visualizaciones": {"file": "visualizaciones.py", "requires_organism": False, "timeout": 180},
-        "analisis_distancias_intergenicas": {"file": "analisis_distancias_intergenicas.py", "requires_organism": False, "timeout": 60},
+        "analisis_genes": {"file": "analisis_genes.py", "timeout": 120},
+        "analisis_codones": {"file": "analisis_codones.py", "timeout": 60},
+        "analisis_distancias_intergenicas": {"file": "analisis_distancias_intergenicas.py", "timeout": 60},
+        "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 120},
+        "visualizaciones": {"file": "visualizaciones.py", "timeout": 180},
     }
 
     if script_name not in scripts_permitidos:
@@ -287,15 +290,18 @@ def ejecutar_analisis(script_name, organism=None):
     if not os.path.exists(script_path):
         return {"success": False, "error": f"Script no encontrado: {config['file']}"}
 
-    # Construir comando
+    # Construir comando - todos los scripts reciben genome_basename como argumento
     cmd = [sys.executable, script_path]
+    if genome_basename:
+        cmd.append(genome_basename)
 
-    # Mapear organism a número si es necesario
-    if config["requires_organism"]:
-        organism_map = {"ecoli_k12": "1", "salmonella_lt2": "2"}
-        if not organism or organism not in organism_map:
-            return {"success": False, "error": "Se requiere organism: ecoli_k12 o salmonella_lt2"}
-        cmd.append(organism_map[organism])
+    # Registrar archivos existentes ANTES del análisis
+    archivos_antes_tablas = set()
+    archivos_antes_figuras = set()
+    if os.path.exists(RUTA_RESULTADOS_TABLAS):
+        archivos_antes_tablas = set(os.listdir(RUTA_RESULTADOS_TABLAS))
+    if os.path.exists(RUTA_RESULTADOS_FIGURAS):
+        archivos_antes_figuras = set(os.listdir(RUTA_RESULTADOS_FIGURAS))
 
     try:
         start = time.time()
@@ -308,6 +314,12 @@ def ejecutar_analisis(script_name, organism=None):
         )
         elapsed = round(time.time() - start, 2)
 
+        # Mover archivos nuevos a carpeta del genoma
+        if genome_basename:
+            mover_resultados_a_genoma(
+                genome_basename, archivos_antes_tablas, archivos_antes_figuras
+            )
+
         return {
             "success": True,
             "output": result.stdout + result.stderr,
@@ -319,6 +331,38 @@ def ejecutar_analisis(script_name, organism=None):
         return {"success": False, "error": f"Timeout: el script tardó más de {config['timeout']}s"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def mover_resultados_a_genoma(genome_basename, antes_tablas, antes_figuras):
+    """Mueve archivos nuevos de resultados a la carpeta del genoma."""
+    # Crear directorios destino
+    dest_tablas = os.path.join(RUTA_RESULTADOS, genome_basename, "tablas")
+    dest_figuras = os.path.join(RUTA_RESULTADOS, genome_basename, "figuras")
+    os.makedirs(dest_tablas, exist_ok=True)
+    os.makedirs(dest_figuras, exist_ok=True)
+
+    movidos = 0
+
+    # Mover tablas nuevas
+    if os.path.exists(RUTA_RESULTADOS_TABLAS):
+        for archivo in os.listdir(RUTA_RESULTADOS_TABLAS):
+            if archivo not in antes_tablas:
+                origen = os.path.join(RUTA_RESULTADOS_TABLAS, archivo)
+                destino = os.path.join(dest_tablas, archivo)
+                shutil.move(origen, destino)
+                movidos += 1
+
+    # Mover figuras nuevas
+    if os.path.exists(RUTA_RESULTADOS_FIGURAS):
+        for archivo in os.listdir(RUTA_RESULTADOS_FIGURAS):
+            if archivo not in antes_figuras:
+                origen = os.path.join(RUTA_RESULTADOS_FIGURAS, archivo)
+                destino = os.path.join(dest_figuras, archivo)
+                shutil.move(origen, destino)
+                movidos += 1
+
+    if movidos > 0:
+        print(f"[RESULTADOS] {movidos} archivos movidos a {genome_basename}/")
 
 
 # =============================================================================
@@ -356,7 +400,26 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/api/results":
             tipo = query.get("type", ["tablas"])[0]
-            resultado = listar_resultados(tipo)
+            genome = query.get("genome", [None])[0]
+            resultado = listar_resultados(tipo, genome)
+            self._json_response(resultado)
+            return
+
+        if path == "/api/results_genomes":
+            resultado = listar_genomas_con_resultados()
+            self._json_response(resultado)
+            return
+
+        if path == "/api/result_data":
+            genome = query.get("genome", [""])[0]
+            filename = query.get("file", [""])[0]
+            if not genome or not filename:
+                self._json_response({"success": False, "error": "Faltan genome y file"}, 400)
+                return
+            if ".." in filename or "/" in filename or "\\" in filename:
+                self._json_response({"success": False, "error": "Nombre inválido"}, 400)
+                return
+            resultado = leer_resultado(genome, filename)
             self._json_response(resultado)
             return
 
@@ -372,7 +435,6 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
 
         if path == "/api/download":
-            # Leer body JSON
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length).decode('utf-8')
 
@@ -393,9 +455,9 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
             resultado = descargar_genoma(accession_id, organism_name)
 
             if resultado["success"]:
-                print(f"[DESCARGAR] ✓ Descarga completada -> datos/crudo/")
+                print(f"[DESCARGAR] Descarga completada")
             else:
-                print(f"[DESCARGAR] ✕ Error: {resultado['error']}")
+                print(f"[DESCARGAR] Error: {resultado['error']}")
 
             self._json_response(resultado)
             return
@@ -412,18 +474,19 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
 
             script = data.get("script", "")
             organism = data.get("organism")
+            genome_basename = data.get("genome_basename")
 
             if not script:
                 self._json_response({"success": False, "error": "Falta el parámetro 'script'"}, 400)
                 return
 
-            print(f"[ANÁLISIS] Ejecutando {script}...")
-            resultado = ejecutar_analisis(script, organism)
+            print(f"[ANÁLISIS] Ejecutando {script} (genoma: {genome_basename})...")
+            resultado = ejecutar_analisis(script, organism, genome_basename)
 
             if resultado.get("success"):
-                print(f"[ANÁLISIS] ✓ Completado en {resultado.get('execution_time', '?')}s")
+                print(f"[ANÁLISIS] Completado en {resultado.get('execution_time', '?')}s")
             else:
-                print(f"[ANÁLISIS] ✕ Error: {resultado.get('error', '?')}")
+                print(f"[ANÁLISIS] Error: {resultado.get('error', '?')}")
 
             self._json_response(resultado)
             return
@@ -457,11 +520,12 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
 
             filename = data.get("filename", "")
             tipo = data.get("type", "tablas")
+            genome = data.get("genome", "")
             if not filename or ".." in filename or "/" in filename or "\\" in filename:
                 self._json_response({"success": False, "error": "Nombre inválido"}, 400)
                 return
 
-            resultado = eliminar_resultado(filename, tipo)
+            resultado = eliminar_resultado(filename, tipo, genome)
             self._json_response(resultado)
             return
 
@@ -473,8 +537,8 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
             except json.JSONDecodeError:
                 data = {}
 
-            tipo = data.get("type")
-            resultado = eliminar_todos_resultados(tipo)
+            genome = data.get("genome", "")
+            resultado = eliminar_todos_resultados_genoma(genome)
             self._json_response(resultado)
             return
 
@@ -495,11 +559,14 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        # Solo loguear requests importantes, no cada archivo estático
         msg = format % args
         if "/api/" in msg or "GET / " in msg:
             print(f"[HTTP] {msg}")
 
+
+# =============================================================================
+# FUNCIONES DE ELIMINACIÓN
+# =============================================================================
 
 def eliminar_genoma(basename):
     """Elimina un genoma descargado y sus archivos asociados."""
@@ -513,15 +580,25 @@ def eliminar_genoma(basename):
         if os.path.exists(ruta):
             os.remove(ruta)
             eliminados += 1
+
+    # También eliminar resultados de este genoma
+    ruta_resultados_genoma = os.path.join(RUTA_RESULTADOS, basename)
+    if os.path.exists(ruta_resultados_genoma):
+        shutil.rmtree(ruta_resultados_genoma)
+        print(f"[ELIMINAR] Resultados de '{basename}' eliminados")
+
     if eliminados == 0:
         return {"success": False, "error": "No se encontraron archivos para este genoma"}
     print(f"[ELIMINAR] Genoma '{basename}' eliminado ({eliminados} archivos)")
     return {"success": True, "deleted": eliminados}
 
 
-def eliminar_resultado(filename, tipo="tablas"):
+def eliminar_resultado(filename, tipo="tablas", genome=""):
     """Elimina un archivo de resultado específico."""
-    ruta = os.path.join(RUTA_RESULTADOS, tipo, filename)
+    if genome:
+        ruta = os.path.join(RUTA_RESULTADOS, genome, tipo, filename)
+    else:
+        ruta = os.path.join(RUTA_RESULTADOS, tipo, filename)
     if not os.path.exists(ruta):
         return {"success": False, "error": "Archivo no encontrado"}
     os.remove(ruta)
@@ -529,30 +606,73 @@ def eliminar_resultado(filename, tipo="tablas"):
     return {"success": True}
 
 
-def eliminar_todos_resultados(tipo=None):
-    """Elimina todos los resultados, opcionalmente filtrado por tipo."""
-    tipos = [tipo] if tipo else ["tablas", "figuras"]
+def eliminar_todos_resultados_genoma(genome):
+    """Elimina todos los resultados de un genoma."""
+    if not genome:
+        return {"success": False, "error": "Falta el genoma"}
+
+    ruta = os.path.join(RUTA_RESULTADOS, genome)
+    if not os.path.exists(ruta):
+        return {"success": False, "error": "No hay resultados para este genoma"}
+
     total = 0
-    for t in tipos:
-        directorio = os.path.join(RUTA_RESULTADOS, t)
-        if not os.path.exists(directorio):
-            continue
-        for archivo in os.listdir(directorio):
-            ruta = os.path.join(directorio, archivo)
-            if os.path.isfile(ruta):
-                os.remove(ruta)
-                total += 1
-    print(f"[ELIMINAR] {total} resultados eliminados")
+    for root, dirs, files in os.walk(ruta):
+        for f in files:
+            os.remove(os.path.join(root, f))
+            total += 1
+
+    print(f"[ELIMINAR] {total} resultados de '{genome}' eliminados")
     return {"success": True, "deleted": total}
 
 
-def listar_resultados(tipo="tablas"):
-    """Lista archivos de resultados."""
+# =============================================================================
+# FUNCIONES DE RESULTADOS
+# =============================================================================
+
+def listar_genomas_con_resultados():
+    """Lista los genomas que tienen carpetas de resultados."""
+    genomas = []
+    if not os.path.exists(RUTA_RESULTADOS):
+        return {"success": True, "genomes": []}
+
+    for nombre in sorted(os.listdir(RUTA_RESULTADOS)):
+        ruta = os.path.join(RUTA_RESULTADOS, nombre)
+        # Solo carpetas que NO sean 'tablas' o 'figuras' (legacy)
+        if os.path.isdir(ruta) and nombre not in ("tablas", "figuras"):
+            # Contar archivos
+            num_tablas = 0
+            num_figuras = 0
+            ruta_t = os.path.join(ruta, "tablas")
+            ruta_f = os.path.join(ruta, "figuras")
+            if os.path.exists(ruta_t):
+                num_tablas = len([f for f in os.listdir(ruta_t) if os.path.isfile(os.path.join(ruta_t, f))])
+            if os.path.exists(ruta_f):
+                num_figuras = len([f for f in os.listdir(ruta_f) if os.path.isfile(os.path.join(ruta_f, f))])
+
+            if num_tablas > 0 or num_figuras > 0:
+                genomas.append({
+                    "basename": nombre,
+                    "label": nombre.replace("_", " ").title(),
+                    "tablas": num_tablas,
+                    "figuras": num_figuras
+                })
+
+    return {"success": True, "genomes": genomas}
+
+
+def listar_resultados(tipo="tablas", genome=None):
+    """Lista archivos de resultados, filtrado por genoma."""
     resultados = []
-    directorio = os.path.join(RUTA_RESULTADOS, tipo)
+
+    if genome:
+        directorio = os.path.join(RUTA_RESULTADOS, genome, tipo)
+        path_prefix = f"backend/resultados/{genome}/{tipo}"
+    else:
+        directorio = os.path.join(RUTA_RESULTADOS, tipo)
+        path_prefix = f"backend/resultados/{tipo}"
 
     if not os.path.exists(directorio):
-        return {"success": True, "type": tipo, "count": 0, "results": []}
+        return {"success": True, "type": tipo, "genome": genome, "count": 0, "results": []}
 
     extensiones = {"tablas": [".json", ".csv"], "figuras": [".png"]}
     exts = extensiones.get(tipo, [".json"])
@@ -564,13 +684,43 @@ def listar_resultados(tipo="tablas"):
         ruta = os.path.join(directorio, archivo)
         resultados.append({
             "filename": archivo,
-            "path": f"backend/resultados/{tipo}/{archivo}",
+            "path": f"{path_prefix}/{archivo}",
             "extension": os.path.splitext(archivo)[1][1:],
             "size_kb": round(os.path.getsize(ruta) / 1024, 2),
             "modified": datetime.fromtimestamp(os.path.getmtime(ruta)).strftime("%Y-%m-%d %H:%M:%S")
         })
 
-    return {"success": True, "type": tipo, "count": len(resultados), "results": resultados}
+    return {"success": True, "type": tipo, "genome": genome, "count": len(resultados), "results": resultados}
+
+
+def leer_resultado(genome, filename):
+    """Lee el contenido de un archivo de resultado y lo retorna como JSON."""
+    import csv as csv_mod
+
+    ruta = os.path.join(RUTA_RESULTADOS, genome, "tablas", filename)
+    if not os.path.exists(ruta):
+        return {"success": False, "error": "Archivo no encontrado"}
+
+    try:
+        if filename.endswith(".json"):
+            with open(ruta, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return {"success": True, "type": "json", "data": data}
+
+        elif filename.endswith(".csv"):
+            rows = []
+            with open(ruta, "r", encoding="utf-8") as f:
+                reader = csv_mod.DictReader(f)
+                headers = reader.fieldnames or []
+                for row in reader:
+                    rows.append(row)
+            return {"success": True, "type": "csv", "headers": headers, "data": rows}
+
+        else:
+            return {"success": False, "error": "Tipo de archivo no soportado"}
+
+    except Exception as e:
+        return {"success": False, "error": f"Error al leer: {str(e)}"}
 
 
 # =============================================================================

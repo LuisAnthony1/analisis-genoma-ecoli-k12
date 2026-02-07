@@ -13,6 +13,7 @@ const AppState = {
     selectedGenomes: new Set(),
     libraryGenomes: [],
     analysisGenome: null,
+    resultsGenome: null,
     theme: localStorage.getItem('theme') || 'dark',
     apiBase: window.location.hostname === 'localhost' ? '' : ''
 };
@@ -56,8 +57,10 @@ function showSection(sectionName) {
         loadLibrary();
     } else if (sectionName === 'analysis') {
         AnalysisRunner.loadGenomeSelector();
+    } else if (sectionName === 'compare') {
+        loadCompareSelectors();
     } else if (sectionName === 'results') {
-        loadResults('tablas');
+        loadResultsGenomeSelector();
     }
 }
 

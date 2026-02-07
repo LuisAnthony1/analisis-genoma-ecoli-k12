@@ -19,6 +19,7 @@ Proyecto: Análisis del genoma de E. coli K-12 MG1655
 
 from Bio import SeqIO
 import os
+import sys
 import json
 import csv
 from datetime import datetime
@@ -33,7 +34,15 @@ from collections import Counter
 DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
-ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.gb")
+
+# Parametro de linea de comandos
+if len(sys.argv) < 2:
+    print("[ERROR] Uso: python analisis_distancias_intergenicas.py <genome_basename>")
+    print("  Ejemplo: python analisis_distancias_intergenicas.py ecoli_k12")
+    sys.exit(1)
+
+GENOME_BASENAME = sys.argv[1]
+ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{GENOME_BASENAME}.gb")
 
 # Crear directorio de resultados si no existe
 os.makedirs(RUTA_RESULTADOS, exist_ok=True)
@@ -394,21 +403,14 @@ def exportar_distancias_csv(distancias, archivo_salida):
     print(f"[OK] {len(distancias):,} distancias exportadas a CSV")
 
 
-def exportar_estadisticas_json(estadisticas_general, estadisticas_hebra, 
+def exportar_estadisticas_json(estadisticas_general, estadisticas_hebra,
                                distribucion_tipos, regiones_grandes,
-                               archivo_salida):
+                               archivo_salida, organismo=""):
     """
     Exporta todas las estadísticas a un archivo JSON.
-    
-    Args:
-        estadisticas_general: Estadísticas generales
-        estadisticas_hebra: Estadísticas por hebra
-        distribucion_tipos: Distribución de tipos
-        regiones_grandes: Lista de regiones grandes
-        archivo_salida: Ruta del archivo JSON de salida
     """
     print(f"\nExportando estadísticas a JSON: {os.path.basename(archivo_salida)}")
-    
+
     # Top 20 regiones grandes (resumido)
     top_regiones = []
     for region in regiones_grandes[:20]:
@@ -419,22 +421,23 @@ def exportar_estadisticas_json(estadisticas_general, estadisticas_hebra,
             "hebra_gen1": region["gen1_hebra"],
             "hebra_gen2": region["gen2_hebra"]
         })
-    
+
     datos_completos = {
         "metadata": {
             "fecha_analisis": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "script": "analisis_distancias_intergenicas.py",
-            "organismo": "Escherichia coli K-12 MG1655"
+            "genoma": GENOME_BASENAME,
+            "organismo": organismo
         },
         "estadisticas_generales": estadisticas_general,
         "estadisticas_por_hebra": estadisticas_hebra,
         "distribucion_tipos": distribucion_tipos,
         "top_20_regiones_grandes": top_regiones
     }
-    
+
     with open(archivo_salida, 'w', encoding='utf-8') as f:
         json.dump(datos_completos, f, indent=2, ensure_ascii=False)
-    
+
     print(f"[OK] Estadísticas exportadas a JSON")
 
 
@@ -484,58 +487,60 @@ def main():
     Función principal que ejecuta todo el análisis.
     """
     print("\n" + "=" * 60)
-    print("ANÁLISIS DE DISTANCIAS INTERGÉNICAS - E. coli K-12 MG1655")
+    print(f"ANÁLISIS DE DISTANCIAS INTERGÉNICAS - {GENOME_BASENAME}")
     print("=" * 60)
     print(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     # 1. Extraer genes ordenados
     genes, longitud_genoma = extraer_genes_ordenados(ARCHIVO_GENBANK)
-    
+
+    # Obtener nombre del organismo del GenBank
+    registro = SeqIO.read(ARCHIVO_GENBANK, "genbank")
+    organismo = registro.description
+
     # 2. Calcular distancias intergénicas
     distancias = calcular_distancias_intergenicas(genes)
-    
+
     # 3. Analizar estadísticas generales
     estadisticas_general = analizar_estadisticas_distancias(distancias)
-    
+
     # 4. Analizar por hebra
     estadisticas_hebra = analizar_por_hebra(distancias)
-    
+
     # 5. Analizar distribución de tipos
     distribucion_tipos = analizar_distribucion_tipos(distancias)
-    
+
     # 6. Encontrar regiones grandes
     regiones_grandes = encontrar_regiones_grandes(distancias)
-    
-    # 7. Exportar resultados
+
+    # 7. Exportar resultados con sufijo del genoma
     print("\n" + "=" * 60)
     print("EXPORTANDO RESULTADOS")
     print("=" * 60)
-    
-    # Archivo CSV con todas las distancias
-    archivo_distancias_csv = os.path.join(RUTA_RESULTADOS, 
-                                          "distancias_intergenicas.csv")
+
+    archivo_distancias_csv = os.path.join(RUTA_RESULTADOS,
+                                          f"distancias_intergenicas_{GENOME_BASENAME}.csv")
     exportar_distancias_csv(distancias, archivo_distancias_csv)
-    
-    # Archivo CSV solo con regiones grandes
-    archivo_grandes_csv = os.path.join(RUTA_RESULTADOS, 
-                                       "regiones_intergenicas_grandes.csv")
+
+    archivo_grandes_csv = os.path.join(RUTA_RESULTADOS,
+                                       f"regiones_intergenicas_grandes_{GENOME_BASENAME}.csv")
     exportar_regiones_grandes_csv(regiones_grandes, archivo_grandes_csv)
-    
-    # Archivo JSON con estadísticas completas
-    archivo_json = os.path.join(RUTA_RESULTADOS, 
-                                "analisis_distancias_completo.json")
+
+    archivo_json = os.path.join(RUTA_RESULTADOS,
+                                f"analisis_distancias_{GENOME_BASENAME}.json")
     exportar_estadisticas_json(estadisticas_general, estadisticas_hebra,
                               distribucion_tipos, regiones_grandes,
-                              archivo_json)
-    
+                              archivo_json, organismo)
+
     # Resumen final
     print("\n" + "=" * 60)
     print("ANÁLISIS COMPLETADO")
     print("=" * 60)
-    print(f"\nArchivos generados en: {RUTA_RESULTADOS}")
-    print(f"  • distancias_intergenicas.csv")
-    print(f"  • regiones_intergenicas_grandes.csv")
-    print(f"  • analisis_distancias_completo.json")
+    print(f"\nGenoma: {GENOME_BASENAME}")
+    print(f"Archivos generados:")
+    print(f"  • distancias_intergenicas_{GENOME_BASENAME}.csv")
+    print(f"  • regiones_intergenicas_grandes_{GENOME_BASENAME}.csv")
+    print(f"  • analisis_distancias_{GENOME_BASENAME}.json")
     print("\n" + "=" * 60 + "\n")
 
 

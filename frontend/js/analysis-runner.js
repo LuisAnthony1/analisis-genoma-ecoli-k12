@@ -1,15 +1,16 @@
 /**
- * GenomeHub - Analysis Runner
+ * GenomeHub - Analysis Runner + Results Dashboard
  *
  * Ejecuta scripts Python de análisis via servidor.py
- * Selector de genoma + checkboxes de análisis + ejecución batch
+ * Resultados como dashboards interactivos con Chart.js
  */
+
+// =============================================================================
+// ANÁLISIS RUNNER
+// =============================================================================
 
 const AnalysisRunner = {
 
-    /**
-     * Cargar selector de genomas desde la biblioteca
-     */
     async loadGenomeSelector() {
         const select = document.getElementById('analysis-genome');
         if (!select) return;
@@ -30,7 +31,6 @@ const AnalysisRunner = {
                         `<option value="${g.basename}">${g.organism || g.basename} (${g.accession_id || 'N/A'})</option>`
                     ).join('');
 
-                // Pre-seleccionar si viene de Biblioteca
                 if (AppState.analysisGenome) {
                     select.value = AppState.analysisGenome;
                     AppState.analysisGenome = null;
@@ -43,11 +43,9 @@ const AnalysisRunner = {
         }
     },
 
-    /**
-     * Ejecutar todos los análisis seleccionados
-     */
     async runSelectedAnalyses() {
-        const genome = document.getElementById('analysis-genome').value;
+        const genomeSelect = document.getElementById('analysis-genome');
+        const genome = genomeSelect.value;
         if (!genome) {
             showNotification('Selecciona un genoma', 'warning');
             return;
@@ -83,19 +81,7 @@ const AnalysisRunner = {
             consoleOutput.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${script}...\n`;
 
             try {
-                const payload = { script };
-
-                // Mapear organismo si el script lo requiere
-                if (script === 'analisis_genes') {
-                    // Determinar organismo basándose en el basename
-                    if (genome.includes('ecoli') || genome.includes('escherichia')) {
-                        payload.organism = 'ecoli_k12';
-                    } else if (genome.includes('salmonella')) {
-                        payload.organism = 'salmonella_lt2';
-                    } else {
-                        payload.organism = 'ecoli_k12';
-                    }
-                }
+                const payload = { script, genome_basename: genome };
 
                 const response = await fetch('/api/run_analysis', {
                     method: 'POST',
@@ -122,7 +108,6 @@ const AnalysisRunner = {
                 errors++;
             }
 
-            // Scroll al final
             consoleOutput.scrollTop = consoleOutput.scrollHeight;
         }
 
@@ -132,6 +117,8 @@ const AnalysisRunner = {
 
         if (errors === 0) {
             showNotification('Análisis completado', 'success');
+            DashboardRenderer.clearCache();
+            AppState.resultsGenome = genome;
             setTimeout(() => showSection('results'), 2000);
         } else {
             showNotification(`${errors} análisis con errores`, 'warning');
@@ -139,108 +126,134 @@ const AnalysisRunner = {
     }
 };
 
+
 // =============================================================================
-// RESULTADOS
+// RESULTADOS - DASHBOARDS
 // =============================================================================
 
-async function loadResults(type = 'tablas') {
-    const tablasContainer = document.getElementById('results-tablas');
-    const figurasContainer = document.getElementById('results-figuras');
-    const tablasGrid = document.getElementById('tablas-grid');
-    const figurasGrid = document.getElementById('figuras-grid');
+let currentResultsGenome = '';
+let currentDashboardTab = 'genes';
+
+async function loadResultsGenomeSelector() {
+    const select = document.getElementById('results-genome');
+    if (!select) return;
 
     const hasServer = await NCBISearch.checkServer();
     if (!hasServer) {
-        const grid = type === 'tablas' ? tablasGrid : figurasGrid;
-        if (type === 'tablas') {
-            tablasContainer.classList.remove('hidden');
-            figurasContainer.classList.add('hidden');
+        select.innerHTML = '<option value="">Servidor no disponible</option>';
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/results_genomes');
+        const data = await resp.json();
+
+        if (data.success && data.genomes && data.genomes.length > 0) {
+            select.innerHTML = data.genomes.map(g =>
+                `<option value="${g.basename}">${g.label} (${g.tablas} tablas, ${g.figuras} gráficos)</option>`
+            ).join('');
+
+            if (AppState.resultsGenome) {
+                select.value = AppState.resultsGenome;
+                AppState.resultsGenome = null;
+            }
+
+            currentResultsGenome = select.value;
+            loadDashboard('genes');
         } else {
-            tablasContainer.classList.add('hidden');
-            figurasContainer.classList.remove('hidden');
+            select.innerHTML = '<option value="">No hay resultados</option>';
+            document.getElementById('dashboard-container').innerHTML = `
+                <div class="text-center py-12 text-secondary">
+                    <div class="text-6xl mb-3">📊</div>
+                    <p>No hay resultados aún</p>
+                    <p class="text-sm mt-2">Ejecuta un análisis primero</p>
+                </div>
+            `;
         }
-        grid.innerHTML = `
+    } catch {
+        select.innerHTML = '<option value="">Error al cargar</option>';
+    }
+}
+
+async function loadDashboard(analysisType) {
+    const container = document.getElementById('dashboard-container');
+    const genome = document.getElementById('results-genome')?.value || '';
+    currentResultsGenome = genome;
+    currentDashboardTab = analysisType;
+
+    if (!genome) {
+        container.innerHTML = `
             <div class="text-center py-12 text-secondary">
-                <div class="text-6xl mb-3">🖥️</div>
-                <p class="font-semibold">Servidor no disponible</p>
+                <div class="text-6xl mb-3">📊</div>
+                <p>Selecciona un genoma para ver sus dashboards</p>
             </div>
         `;
         return;
     }
 
-    try {
-        const response = await fetch(`/api/results?type=${type}`);
-        const data = await response.json();
+    // Actualizar tabs activas
+    document.querySelectorAll('.dashboard-tab').forEach(t => {
+        t.classList.remove('active', 'bg-emerald-500', 'text-white');
+        t.classList.add('text-secondary');
+    });
+    const activeTab = document.querySelector(`.dashboard-tab[data-analysis="${analysisType}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active', 'bg-emerald-500', 'text-white');
+        activeTab.classList.remove('text-secondary');
+    }
 
-        if (type === 'tablas') {
-            tablasContainer.classList.remove('hidden');
-            figurasContainer.classList.add('hidden');
+    DashboardRenderer.destroyCharts();
 
-            if (data.results.length === 0) {
-                tablasGrid.innerHTML = `
-                    <div class="text-center py-12 text-secondary">
-                        <div class="text-6xl mb-3">📄</div>
-                        <p>No hay resultados aún</p>
-                        <p class="text-sm mt-2">Ejecuta un análisis primero</p>
-                    </div>
-                `;
-            } else {
-                tablasGrid.innerHTML = data.results.map(file => `
-                    <div class="flex items-center justify-between bg-card rounded-lg px-5 py-3 border border-slate-200 hover:border-emerald-500/30 transition">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <span class="text-xl">${file.extension === 'json' ? '📋' : '📊'}</span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-primary truncate">${file.filename}</p>
-                                <p class="text-xs text-secondary">${file.size_kb} KB</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 ml-4">
-                            <a href="${file.path}" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
-                                Descargar
-                            </a>
-                            <button onclick="deleteResult('${file.filename}', 'tablas')" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs rounded-lg transition">
-                                🗑️
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        } else {
-            tablasContainer.classList.add('hidden');
-            figurasContainer.classList.remove('hidden');
+    // Loading
+    container.innerHTML = `
+        <div class="flex items-center justify-center py-12">
+            <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mr-4"></div>
+            <span class="text-secondary">Cargando dashboard...</span>
+        </div>
+    `;
 
-            if (data.results.length === 0) {
-                figurasGrid.innerHTML = `
-                    <div class="text-center py-12 text-secondary">
-                        <div class="text-6xl mb-3">📈</div>
-                        <p>No hay gráficos aún</p>
-                        <p class="text-sm mt-2">Ejecuta un análisis primero</p>
-                    </div>
-                `;
-            } else {
-                figurasGrid.innerHTML = data.results.map(file => `
-                    <div class="flex items-center justify-between bg-card rounded-lg px-5 py-3 border border-slate-200 hover:border-emerald-500/30 transition">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <img src="${file.path}" alt="${file.filename}" class="w-12 h-12 object-contain rounded cursor-pointer" onclick="viewImage('${file.path}', '${file.filename}')">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-primary truncate">${file.filename}</p>
-                                <p class="text-xs text-secondary">${file.size_kb} KB</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 ml-4">
-                            <a href="${file.path}" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
-                                Descargar
-                            </a>
-                            <button onclick="deleteResult('${file.filename}', 'figuras')" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs rounded-lg transition">
-                                🗑️
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
+    if (analysisType === 'archivos') {
+        // Vista de archivos (lista simple)
+        try {
+            const resp = await fetch(`/api/results?type=tablas&genome=${genome}`);
+            const data = await resp.json();
+            DashboardRenderer.renderArchivosView(data.results || [], genome, container);
+        } catch {
+            container.innerHTML = '<p class="text-red-500 text-center py-8">Error al cargar archivos</p>';
         }
-    } catch (error) {
-        showNotification('Error al cargar resultados', 'error');
+        return;
+    }
+
+    // Mapear tab a archivo JSON
+    const fileMap = {
+        genes: `analisis_genes_${genome}.json`,
+        codones: `analisis_codones_${genome}.json`,
+        distancias: `analisis_distancias_${genome}.json`
+    };
+
+    const filename = fileMap[analysisType];
+    if (!filename) return;
+
+    const data = await DashboardRenderer.fetchResultData(genome, filename);
+
+    if (!data) {
+        container.innerHTML = `
+            <div class="text-center py-12 text-secondary">
+                <div class="text-6xl mb-3">📭</div>
+                <p>No hay datos de ${analysisType} para este genoma</p>
+                <p class="text-sm mt-2">Ejecuta el análisis correspondiente primero</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Renderizar dashboard según tipo
+    if (analysisType === 'genes') {
+        DashboardRenderer.renderGenesDashboard(data, container);
+    } else if (analysisType === 'codones') {
+        DashboardRenderer.renderCodonesDashboard(data, container);
+    } else if (analysisType === 'distancias') {
+        DashboardRenderer.renderDistanciasDashboard(data, container);
     }
 }
 
@@ -251,13 +264,14 @@ async function deleteResult(filename, type) {
         const resp = await fetch('/api/delete_result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename, type })
+            body: JSON.stringify({ filename, type, genome: currentResultsGenome })
         });
         const data = await resp.json();
 
         if (data.success) {
             showNotification('Eliminado', 'success');
-            loadResults(type);
+            DashboardRenderer.clearCache();
+            loadDashboard(currentDashboardTab);
         } else {
             showNotification(data.error || 'Error', 'error');
         }
@@ -267,23 +281,26 @@ async function deleteResult(filename, type) {
 }
 
 async function deleteAllResults() {
-    // Determinar qué tab está activo
-    const tablasVisible = !document.getElementById('results-tablas').classList.contains('hidden');
-    const type = tablasVisible ? 'tablas' : 'figuras';
+    const genome = currentResultsGenome;
+    if (!genome) {
+        showNotification('Selecciona un genoma', 'warning');
+        return;
+    }
 
-    if (!confirm(`¿Eliminar todos los resultados de ${type}?`)) return;
+    if (!confirm('¿Eliminar todos los resultados de este genoma?')) return;
 
     try {
         const resp = await fetch('/api/delete_results_all', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type })
+            body: JSON.stringify({ genome })
         });
         const data = await resp.json();
 
         if (data.success) {
             showNotification(`${data.deleted} archivos eliminados`, 'success');
-            loadResults(type);
+            DashboardRenderer.clearCache();
+            loadResultsGenomeSelector();
         } else {
             showNotification('Error al eliminar', 'error');
         }
@@ -292,23 +309,122 @@ async function deleteAllResults() {
     }
 }
 
-function viewImage(path, filename) {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm';
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 
-    modal.innerHTML = `
-        <div class="max-w-6xl w-full">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-white font-medium">${filename}</h3>
-                <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300 text-2xl">✕</button>
-            </div>
-            <img src="${path}" alt="${filename}" class="w-full h-auto rounded-lg">
-        </div>
-    `;
+// =============================================================================
+// COMPARAR GENOMAS
+// =============================================================================
 
-    document.body.appendChild(modal);
+async function loadCompareSelectors() {
+    const select1 = document.getElementById('compare-genome-1');
+    const select2 = document.getElementById('compare-genome-2');
+    if (!select1 || !select2) return;
+
+    const hasServer = await NCBISearch.checkServer();
+    if (!hasServer) {
+        select1.innerHTML = '<option value="">Servidor no disponible</option>';
+        select2.innerHTML = '<option value="">Servidor no disponible</option>';
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/genomes');
+        const data = await resp.json();
+
+        if (data.success && data.genomes && data.genomes.length >= 2) {
+            const options = data.genomes.map(g =>
+                `<option value="${g.basename}">${g.organism || g.basename}</option>`
+            ).join('');
+
+            select1.innerHTML = '<option value="">-- Seleccionar --</option>' + options;
+            select2.innerHTML = '<option value="">-- Seleccionar --</option>' + options;
+
+            // Pre-seleccionar los primeros 2
+            if (data.genomes.length >= 2) {
+                select1.value = data.genomes[0].basename;
+                select2.value = data.genomes[1].basename;
+            }
+        } else {
+            select1.innerHTML = '<option value="">Se necesitan al menos 2 genomas</option>';
+            select2.innerHTML = '<option value="">Se necesitan al menos 2 genomas</option>';
+        }
+    } catch {
+        select1.innerHTML = '<option value="">Error</option>';
+        select2.innerHTML = '<option value="">Error</option>';
+    }
 }
+
+async function runComparison() {
+    const genome1 = document.getElementById('compare-genome-1')?.value;
+    const genome2 = document.getElementById('compare-genome-2')?.value;
+
+    if (!genome1 || !genome2) {
+        showNotification('Selecciona dos genomas', 'warning');
+        return;
+    }
+
+    if (genome1 === genome2) {
+        showNotification('Selecciona genomas diferentes', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('run-compare-btn');
+    const progress = document.getElementById('compare-progress');
+    const dashboard = document.getElementById('compare-dashboard');
+
+    btn.disabled = true;
+    btn.textContent = 'Comparando...';
+    progress.classList.remove('hidden');
+    dashboard.innerHTML = '';
+
+    try {
+        // Ejecutar comparar_genomas
+        const response = await fetch('/api/run_analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                script: 'comparar_genomas',
+                genome_basename: genome1
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.return_code === 0) {
+            // Cargar datos de comparación
+            const compFile = `comparacion_ecoli_vs_salmonella.json`;
+            const data = await DashboardRenderer.fetchResultData(genome1, compFile);
+
+            if (data) {
+                DashboardRenderer.destroyCharts();
+                DashboardRenderer.renderComparacionDashboard(data, dashboard);
+                showNotification('Comparación completada', 'success');
+            } else {
+                dashboard.innerHTML = `
+                    <div class="text-center py-12 text-secondary">
+                        <div class="text-6xl mb-3">📭</div>
+                        <p>No se pudieron cargar los resultados de comparación</p>
+                    </div>
+                `;
+            }
+        } else {
+            showNotification('Error en la comparación', 'error');
+            dashboard.innerHTML = `
+                <div class="bg-card rounded-xl p-6 border border-red-500/30">
+                    <h3 class="text-red-500 font-semibold mb-2">Error</h3>
+                    <pre class="text-sm text-secondary whitespace-pre-wrap">${result.output || 'Error desconocido'}</pre>
+                </div>
+            `;
+        }
+    } catch (error) {
+        showNotification('Error al comparar', 'error');
+        dashboard.innerHTML = `<p class="text-red-500 text-center py-8">${error.message}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Comparar';
+        progress.classList.add('hidden');
+    }
+}
+
 
 // =============================================================================
 // EVENT LISTENERS
@@ -329,37 +445,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Tabs de resultados
-    const tabTablas = document.getElementById('tab-tablas');
-    const tabFiguras = document.getElementById('tab-figuras');
-
-    if (tabTablas) {
-        tabTablas.addEventListener('click', () => {
-            document.querySelectorAll('.result-tab').forEach(t => {
+    // Selector de genoma en resultados
+    const resultsGenome = document.getElementById('results-genome');
+    if (resultsGenome) {
+        resultsGenome.addEventListener('change', () => {
+            currentResultsGenome = resultsGenome.value;
+            DashboardRenderer.clearCache();
+            loadDashboard('genes');
+            // Reset tabs
+            document.querySelectorAll('.dashboard-tab').forEach(t => {
                 t.classList.remove('active', 'bg-emerald-500', 'text-white');
                 t.classList.add('text-secondary');
             });
-            tabTablas.classList.add('active', 'bg-emerald-500', 'text-white');
-            tabTablas.classList.remove('text-secondary');
-            loadResults('tablas');
+            const tabGenes = document.getElementById('tab-genes');
+            if (tabGenes) {
+                tabGenes.classList.add('active', 'bg-emerald-500', 'text-white');
+                tabGenes.classList.remove('text-secondary');
+            }
         });
     }
 
-    if (tabFiguras) {
-        tabFiguras.addEventListener('click', () => {
-            document.querySelectorAll('.result-tab').forEach(t => {
-                t.classList.remove('active', 'bg-emerald-500', 'text-white');
-                t.classList.add('text-secondary');
-            });
-            tabFiguras.classList.add('active', 'bg-emerald-500', 'text-white');
-            tabFiguras.classList.remove('text-secondary');
-            loadResults('figuras');
+    // Dashboard tabs
+    document.querySelectorAll('.dashboard-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const analysis = tab.getAttribute('data-analysis');
+            loadDashboard(analysis);
         });
-    }
+    });
 
     // Eliminar todos los resultados
     const deleteAllBtn = document.getElementById('delete-all-results-btn');
     if (deleteAllBtn) {
         deleteAllBtn.addEventListener('click', deleteAllResults);
+    }
+
+    // Botón comparar
+    const compareBtn = document.getElementById('run-compare-btn');
+    if (compareBtn) {
+        compareBtn.addEventListener('click', runComparison);
     }
 });

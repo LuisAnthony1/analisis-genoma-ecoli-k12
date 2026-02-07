@@ -1,52 +1,87 @@
 #!/usr/bin/env python3
 """
-Analisis de Codones del Genoma de E. coli K-12 MG1655
+Analisis de Codones de Genomas Bacterianos
 
-Este script analiza los codones de inicio (ATG) y parada (TAA, TAG, TGA)
-en el genoma completo de E. coli K-12 MG1655.
+Este script analiza todos los 64 codones posibles, codones de inicio (ATG)
+y parada (TAA, TAG, TGA) en el genoma completo.
 
 Funcionalidades:
-- Contar todos los codones ATG y calcular densidad por kilobase
+- Contar los 64 codones posibles y sus frecuencias
+- Contar codones ATG y calcular densidad por kilobase
 - Contar codones de parada (TAA, TAG, TGA) y sus proporciones
-- Comparar resultados con valores de literatura cientifica
+- Calcular contenido GC
 - Exportar resultados en formato CSV y JSON
 
+Uso: python analisis_codones.py <genome_basename>
+Ejemplo: python analisis_codones.py ecoli_k12
+
 Fecha: 2026
-Proyecto: Analisis del genoma de E. coli K-12 MG1655
+Proyecto: Analisis comparativo de genomas bacterianos
 """
 
 from Bio import SeqIO
 import os
+import sys
 import json
 import csv
 from datetime import datetime
+from collections import Counter
 
 
 # CONFIGURACION
 # =============================================================================
 
-# Rutas de archivos
 DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
-ARCHIVO_FASTA = os.path.join(RUTA_DATOS_CRUDO, "ecoli_k12.fasta")
 
-# Codones a analizar
+# Parametro de linea de comandos
+if len(sys.argv) < 2:
+    print("[ERROR] Uso: python analisis_codones.py <genome_basename>")
+    print("  Ejemplo: python analisis_codones.py ecoli_k12")
+    sys.exit(1)
+
+GENOME_BASENAME = sys.argv[1]
+ARCHIVO_FASTA = os.path.join(RUTA_DATOS_CRUDO, f"{GENOME_BASENAME}.fasta")
+
+# Codones
 CODON_INICIO = "ATG"
 CODONES_PARADA = ["TAA", "TAG", "TGA"]
 
-# Valores de referencia de literatura cientifica para E. coli K-12
-# Fuente: Blattner et al. (1997), GenBank, estudios de genomica comparativa
-VALORES_LITERATURA = {
+# Tabla del codigo genetico - los 64 codones y su aminoacido
+TABLA_CODONES = {
+    "TTT": "Phe (F)", "TTC": "Phe (F)", "TTA": "Leu (L)", "TTG": "Leu (L)",
+    "CTT": "Leu (L)", "CTC": "Leu (L)", "CTA": "Leu (L)", "CTG": "Leu (L)",
+    "ATT": "Ile (I)", "ATC": "Ile (I)", "ATA": "Ile (I)", "ATG": "Met (M)",
+    "GTT": "Val (V)", "GTC": "Val (V)", "GTA": "Val (V)", "GTG": "Val (V)",
+    "TCT": "Ser (S)", "TCC": "Ser (S)", "TCA": "Ser (S)", "TCG": "Ser (S)",
+    "CCT": "Pro (P)", "CCC": "Pro (P)", "CCA": "Pro (P)", "CCG": "Pro (P)",
+    "ACT": "Thr (T)", "ACC": "Thr (T)", "ACA": "Thr (T)", "ACG": "Thr (T)",
+    "GCT": "Ala (A)", "GCC": "Ala (A)", "GCA": "Ala (A)", "GCG": "Ala (A)",
+    "TAT": "Tyr (Y)", "TAC": "Tyr (Y)", "TAA": "Stop", "TAG": "Stop",
+    "CAT": "His (H)", "CAC": "His (H)", "CAA": "Gln (Q)", "CAG": "Gln (Q)",
+    "AAT": "Asn (N)", "AAC": "Asn (N)", "AAA": "Lys (K)", "AAG": "Lys (K)",
+    "GAT": "Asp (D)", "GAC": "Asp (D)", "GAA": "Glu (E)", "GAG": "Glu (E)",
+    "TGT": "Cys (C)", "TGC": "Cys (C)", "TGA": "Stop", "TGG": "Trp (W)",
+    "CGT": "Arg (R)", "CGC": "Arg (R)", "CGA": "Arg (R)", "CGG": "Arg (R)",
+    "AGT": "Ser (S)", "AGC": "Ser (S)", "AGA": "Arg (R)", "AGG": "Arg (R)",
+    "GGT": "Gly (G)", "GGC": "Gly (G)", "GGA": "Gly (G)", "GGG": "Gly (G)",
+}
+
+# Valores de referencia (solo para E. coli K-12)
+VALORES_LITERATURA_ECOLI = {
     "longitud_genoma": 4641652,
-    "genes_anotados": 4300,  # Aproximadamente
-    "contenido_gc": 50.8,   # Porcentaje
-    # Proporciones de codones de parada en E. coli (literatura)
-    # TAA es el mas comun (~63%), TAG (~8%), TGA (~29%)
+    "genes_anotados": 4300,
+    "contenido_gc": 50.8,
     "proporcion_taa": 63.0,
     "proporcion_tag": 8.0,
     "proporcion_tga": 29.0,
 }
+
+if "ecoli" in GENOME_BASENAME.lower():
+    VALORES_LITERATURA = VALORES_LITERATURA_ECOLI
+else:
+    VALORES_LITERATURA = {}
 
 
 # FUNCIONES DE UTILIDAD
@@ -54,9 +89,7 @@ VALORES_LITERATURA = {
 
 def crear_directorios():
     """Crea los directorios de resultados si no existen."""
-    if not os.path.exists(RUTA_RESULTADOS):
-        os.makedirs(RUTA_RESULTADOS)
-        print(f"[INFO] Directorio creado: {RUTA_RESULTADOS}")
+    os.makedirs(RUTA_RESULTADOS, exist_ok=True)
 
 
 def cargar_secuencia(ruta_archivo):
@@ -69,7 +102,7 @@ def cargar_secuencia(ruta_archivo):
     Returns:
         str: Secuencia de ADN en mayusculas
     """
-    print(f"[INFO] Cargando secuencia desde: {ruta_archivo}")
+    print(f"[INFO] Cargando secuencia desde: {os.path.basename(ruta_archivo)}")
 
     if not os.path.exists(ruta_archivo):
         raise FileNotFoundError(f"No se encontro el archivo: {ruta_archivo}")
@@ -85,52 +118,88 @@ def cargar_secuencia(ruta_archivo):
 # =============================================================================
 
 def contar_codon(secuencia, codon):
-    """
-    Cuenta las ocurrencias de un codon en la secuencia.
-
-    Args:
-        secuencia: Secuencia de ADN
-        codon: Codon a buscar (3 nucleotidos)
-
-    Returns:
-        int: Numero de ocurrencias del codon
-    """
+    """Cuenta las ocurrencias de un codon en la secuencia (sliding window)."""
     contador = 0
     codon = codon.upper()
-
-    # Buscar el codon en toda la secuencia (no solo en marcos de lectura)
     for i in range(len(secuencia) - 2):
         if secuencia[i:i+3] == codon:
             contador += 1
-
     return contador
 
 
 def calcular_densidad_por_kilobase(conteo, longitud_genoma):
-    """
-    Calcula la densidad de un codon por kilobase de genoma.
-
-    Args:
-        conteo: Numero de ocurrencias del codon
-        longitud_genoma: Longitud total del genoma en pb
-
-    Returns:
-        float: Densidad por kilobase
-    """
+    """Calcula la densidad de un codon por kilobase de genoma."""
     kilobases = longitud_genoma / 1000
     return conteo / kilobases
 
 
-def analizar_codones_inicio(secuencia):
+def contar_64_codones(secuencia):
     """
-    Analiza los codones de inicio (ATG) en el genoma.
+    Cuenta los 64 codones en los 3 marcos de lectura de la hebra forward.
 
     Args:
         secuencia: Secuencia de ADN
 
     Returns:
-        dict: Resultados del analisis de codones de inicio
+        dict: Conteo de cada codon, frecuencias, agrupados por aminoacido
     """
+    print("\n" + "=" * 60)
+    print("CONTEO DE LOS 64 CODONES")
+    print("=" * 60)
+
+    longitud = len(secuencia)
+
+    # Contar en los 3 marcos de lectura (frame 0, 1, 2)
+    conteo_total = Counter()
+
+    for frame in range(3):
+        for i in range(frame, longitud - 2, 3):
+            codon = secuencia[i:i+3]
+            if len(codon) == 3 and all(n in "ATGC" for n in codon):
+                conteo_total[codon] += 1
+
+    total_codones = sum(conteo_total.values())
+
+    # Construir resultados detallados para los 64 codones
+    codones_detalle = {}
+    for codon in sorted(TABLA_CODONES.keys()):
+        conteo = conteo_total.get(codon, 0)
+        frecuencia = (conteo / total_codones * 100) if total_codones > 0 else 0
+        codones_detalle[codon] = {
+            "conteo": conteo,
+            "frecuencia_porcentaje": round(frecuencia, 4),
+            "aminoacido": TABLA_CODONES[codon],
+            "densidad_por_kb": round(conteo / (longitud / 1000), 4)
+        }
+
+    # Agrupar por aminoacido
+    por_aminoacido = {}
+    for codon, info in codones_detalle.items():
+        aa = info["aminoacido"]
+        if aa not in por_aminoacido:
+            por_aminoacido[aa] = {"codones": {}, "total": 0}
+        por_aminoacido[aa]["codones"][codon] = info["conteo"]
+        por_aminoacido[aa]["total"] += info["conteo"]
+
+    # Mostrar resumen
+    print(f"\n  Total codones contados (3 frames): {total_codones:,}")
+    print(f"\n  {'Codon':<8} {'AA':<12} {'Conteo':>10} {'Frecuencia':>12}")
+    print("  " + "-" * 45)
+    for codon in sorted(TABLA_CODONES.keys()):
+        info = codones_detalle[codon]
+        print(f"  {codon:<8} {info['aminoacido']:<12} {info['conteo']:>10,} {info['frecuencia_porcentaje']:>11.4f}%")
+
+    resultados = {
+        "total_codones_contados": total_codones,
+        "codones_detalle": codones_detalle,
+        "por_aminoacido": por_aminoacido
+    }
+
+    return resultados
+
+
+def analizar_codones_inicio(secuencia):
+    """Analiza los codones de inicio (ATG) en el genoma."""
     print("\n" + "=" * 60)
     print("ANALISIS DE CODONES DE INICIO (ATG)")
     print("=" * 60)
@@ -139,9 +208,8 @@ def analizar_codones_inicio(secuencia):
     conteo_atg = contar_codon(secuencia, CODON_INICIO)
     densidad = calcular_densidad_por_kilobase(conteo_atg, longitud)
 
-    # Comparacion con genes anotados
-    genes_anotados = VALORES_LITERATURA["genes_anotados"]
-    ratio_atg_genes = conteo_atg / genes_anotados
+    genes_anotados = VALORES_LITERATURA.get("genes_anotados", 0)
+    ratio_atg_genes = conteo_atg / genes_anotados if genes_anotados > 0 else 0
 
     resultados = {
         "codon": CODON_INICIO,
@@ -152,31 +220,18 @@ def analizar_codones_inicio(secuencia):
         "ratio_atg_por_gen": round(ratio_atg_genes, 2),
     }
 
-    # Mostrar resultados
     print(f"\n  Conteo total de ATG:        {conteo_atg:,}")
     print(f"  Longitud del genoma:        {longitud:,} pb")
     print(f"  Densidad por kilobase:      {densidad:.4f} ATG/kb")
-    print(f"  Genes anotados (literatura): {genes_anotados:,}")
-    print(f"  Ratio ATG/gen:              {ratio_atg_genes:.2f}")
-
-    print("\n  [INTERPRETACION]")
-    print(f"  Por cada gen anotado, hay aproximadamente {ratio_atg_genes:.0f} codones ATG")
-    print("  en el genoma. Esto indica que NO todos los ATG corresponden")
-    print("  a inicios reales de genes funcionales.")
+    if genes_anotados > 0:
+        print(f"  Genes anotados (literatura): {genes_anotados:,}")
+        print(f"  Ratio ATG/gen:              {ratio_atg_genes:.2f}")
 
     return resultados
 
 
 def analizar_codones_parada(secuencia):
-    """
-    Analiza los codones de parada (TAA, TAG, TGA) en el genoma.
-
-    Args:
-        secuencia: Secuencia de ADN
-
-    Returns:
-        dict: Resultados del analisis de codones de parada
-    """
+    """Analiza los codones de parada (TAA, TAG, TGA) en el genoma."""
     print("\n" + "=" * 60)
     print("ANALISIS DE CODONES DE PARADA (TAA, TAG, TGA)")
     print("=" * 60)
@@ -185,68 +240,46 @@ def analizar_codones_parada(secuencia):
     conteos = {}
     densidades = {}
 
-    # Contar cada codon de parada
     for codon in CODONES_PARADA:
         conteos[codon] = contar_codon(secuencia, codon)
         densidades[codon] = calcular_densidad_por_kilobase(conteos[codon], longitud)
 
-    # Calcular total y proporciones
     total_parada = sum(conteos.values())
     proporciones = {}
     for codon in CODONES_PARADA:
-        proporciones[codon] = (conteos[codon] / total_parada) * 100
+        proporciones[codon] = (conteos[codon] / total_parada) * 100 if total_parada > 0 else 0
 
-    # Construir resultados
+    # Proporciones de literatura si disponibles
+    proporciones_lit = {}
+    if VALORES_LITERATURA:
+        proporciones_lit = {
+            "TAA": VALORES_LITERATURA.get("proporcion_taa", 0),
+            "TAG": VALORES_LITERATURA.get("proporcion_tag", 0),
+            "TGA": VALORES_LITERATURA.get("proporcion_tga", 0),
+        }
+
     resultados = {
         "conteos": conteos,
         "total_codones_parada": total_parada,
         "densidades_por_kb": {k: round(v, 4) for k, v in densidades.items()},
         "proporciones_porcentaje": {k: round(v, 2) for k, v in proporciones.items()},
-        "proporciones_literatura": {
-            "TAA": VALORES_LITERATURA["proporcion_taa"],
-            "TAG": VALORES_LITERATURA["proporcion_tag"],
-            "TGA": VALORES_LITERATURA["proporcion_tga"],
-        }
     }
+    if proporciones_lit:
+        resultados["proporciones_literatura"] = proporciones_lit
 
     # Mostrar resultados
-    print("\n  CONTEOS:")
-    print(f"  {'Codon':<8} {'Conteo':>12} {'Densidad/kb':>15} {'Proporcion':>12}")
+    print(f"\n  {'Codon':<8} {'Conteo':>12} {'Densidad/kb':>15} {'Proporcion':>12}")
     print("  " + "-" * 50)
     for codon in CODONES_PARADA:
         print(f"  {codon:<8} {conteos[codon]:>12,} {densidades[codon]:>15.4f} {proporciones[codon]:>11.2f}%")
     print("  " + "-" * 50)
     print(f"  {'TOTAL':<8} {total_parada:>12,}")
 
-    # Comparacion con literatura
-    print("\n  COMPARACION CON LITERATURA CIENTIFICA:")
-    print(f"  {'Codon':<8} {'Observado':>12} {'Literatura':>12} {'Diferencia':>12}")
-    print("  " + "-" * 50)
-    for codon in CODONES_PARADA:
-        lit_key = f"proporcion_{codon.lower()}"
-        valor_lit = VALORES_LITERATURA[lit_key]
-        diferencia = proporciones[codon] - valor_lit
-        signo = "+" if diferencia > 0 else ""
-        print(f"  {codon:<8} {proporciones[codon]:>11.2f}% {valor_lit:>11.2f}% {signo}{diferencia:>11.2f}%")
-
-    print("\n  [INTERPRETACION]")
-    print("  En E. coli, TAA es el codon de parada preferido (~63% en genes),")
-    print("  seguido de TGA (~29%) y TAG (~8%). Las proporciones observadas")
-    print("  en el genoma completo difieren porque incluyen secuencias no codificantes.")
-
     return resultados
 
 
 def calcular_contenido_gc(secuencia):
-    """
-    Calcula el contenido de GC del genoma.
-
-    Args:
-        secuencia: Secuencia de ADN
-
-    Returns:
-        dict: Resultados del contenido GC
-    """
+    """Calcula el contenido de GC del genoma."""
     print("\n" + "=" * 60)
     print("CONTENIDO DE GC")
     print("=" * 60)
@@ -260,8 +293,8 @@ def calcular_contenido_gc(secuencia):
     contenido_gc = ((conteo_g + conteo_c) / longitud) * 100
     contenido_at = ((conteo_a + conteo_t) / longitud) * 100
 
-    gc_literatura = VALORES_LITERATURA["contenido_gc"]
-    diferencia = contenido_gc - gc_literatura
+    gc_literatura = VALORES_LITERATURA.get("contenido_gc", 0)
+    diferencia = contenido_gc - gc_literatura if gc_literatura > 0 else 0
 
     resultados = {
         "conteo_nucleotidos": {
@@ -272,9 +305,11 @@ def calcular_contenido_gc(secuencia):
         },
         "contenido_gc_porcentaje": round(contenido_gc, 2),
         "contenido_at_porcentaje": round(contenido_at, 2),
-        "gc_literatura": gc_literatura,
-        "diferencia_con_literatura": round(diferencia, 2)
     }
+
+    if gc_literatura > 0:
+        resultados["gc_literatura"] = gc_literatura
+        resultados["diferencia_con_literatura"] = round(diferencia, 2)
 
     print(f"\n  Nucleotidos:")
     print(f"    A: {conteo_a:,} ({(conteo_a/longitud)*100:.2f}%)")
@@ -283,13 +318,6 @@ def calcular_contenido_gc(secuencia):
     print(f"    C: {conteo_c:,} ({(conteo_c/longitud)*100:.2f}%)")
     print(f"\n  Contenido GC: {contenido_gc:.2f}%")
     print(f"  Contenido AT: {contenido_at:.2f}%")
-    print(f"\n  Valor literatura: {gc_literatura}%")
-    print(f"  Diferencia: {'+' if diferencia > 0 else ''}{diferencia:.2f}%")
-
-    if abs(diferencia) < 1:
-        print("\n  [OK] El contenido GC coincide con la literatura")
-    else:
-        print(f"\n  [ADVERTENCIA] Diferencia de {abs(diferencia):.2f}% con literatura")
 
     return resultados
 
@@ -299,123 +327,50 @@ def calcular_contenido_gc(secuencia):
 # =============================================================================
 
 def exportar_json(datos, nombre_archivo):
-    """
-    Exporta los resultados a formato JSON.
-
-    Args:
-        datos: Diccionario con los resultados
-        nombre_archivo: Nombre del archivo (sin extension)
-    """
+    """Exporta los resultados a formato JSON."""
     ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.json")
-
     with open(ruta, 'w', encoding='utf-8') as archivo:
         json.dump(datos, archivo, indent=2, ensure_ascii=False)
+    print(f"[OK] Exportado: {nombre_archivo}.json")
 
-    print(f"[OK] Exportado: {ruta}")
+
+def exportar_csv_codones_64(conteo_64, nombre_archivo):
+    """Exporta el conteo de los 64 codones a CSV."""
+    ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
+    with open(ruta, 'w', newline='', encoding='utf-8') as archivo:
+        escritor = csv.writer(archivo)
+        escritor.writerow(['Codon', 'Aminoacido', 'Conteo', 'Frecuencia_porcentaje', 'Densidad_por_kb'])
+        for codon in sorted(TABLA_CODONES.keys()):
+            info = conteo_64["codones_detalle"][codon]
+            escritor.writerow([
+                codon,
+                info["aminoacido"],
+                info["conteo"],
+                info["frecuencia_porcentaje"],
+                info["densidad_por_kb"]
+            ])
+    print(f"[OK] Exportado: {nombre_archivo}.csv")
 
 
 def exportar_csv_codones(resultados_inicio, resultados_parada, nombre_archivo):
-    """
-    Exporta los resultados de codones a formato CSV.
-
-    Args:
-        resultados_inicio: Resultados del analisis de ATG
-        resultados_parada: Resultados del analisis de codones de parada
-        nombre_archivo: Nombre del archivo (sin extension)
-    """
+    """Exporta resultados de codones inicio/parada a CSV."""
     ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
-
     with open(ruta, 'w', newline='', encoding='utf-8') as archivo:
         escritor = csv.writer(archivo)
-
-        # Encabezado
         escritor.writerow(['Tipo', 'Codon', 'Conteo', 'Densidad_por_kb', 'Proporcion_porcentaje'])
-
-        # Codon de inicio
         escritor.writerow([
-            'Inicio',
-            resultados_inicio['codon'],
+            'Inicio', resultados_inicio['codon'],
             resultados_inicio['conteo_total'],
-            resultados_inicio['densidad_por_kb'],
-            '100.00'
+            resultados_inicio['densidad_por_kb'], '100.00'
         ])
-
-        # Codones de parada
         for codon in CODONES_PARADA:
             escritor.writerow([
-                'Parada',
-                codon,
+                'Parada', codon,
                 resultados_parada['conteos'][codon],
                 resultados_parada['densidades_por_kb'][codon],
                 resultados_parada['proporciones_porcentaje'][codon]
             ])
-
-    print(f"[OK] Exportado: {ruta}")
-
-
-def exportar_resumen_csv(todos_resultados, nombre_archivo):
-    """
-    Exporta un resumen general a CSV.
-
-    Args:
-        todos_resultados: Diccionario con todos los resultados
-        nombre_archivo: Nombre del archivo (sin extension)
-    """
-    ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
-
-    with open(ruta, 'w', newline='', encoding='utf-8') as archivo:
-        escritor = csv.writer(archivo)
-
-        # Encabezado
-        escritor.writerow(['Metrica', 'Valor', 'Unidad', 'Valor_Literatura', 'Diferencia'])
-
-        # Metricas generales
-        escritor.writerow([
-            'Longitud_genoma',
-            todos_resultados['codones_inicio']['longitud_genoma_pb'],
-            'pb',
-            VALORES_LITERATURA['longitud_genoma'],
-            todos_resultados['codones_inicio']['longitud_genoma_pb'] - VALORES_LITERATURA['longitud_genoma']
-        ])
-
-        escritor.writerow([
-            'Contenido_GC',
-            todos_resultados['contenido_gc']['contenido_gc_porcentaje'],
-            '%',
-            VALORES_LITERATURA['contenido_gc'],
-            todos_resultados['contenido_gc']['diferencia_con_literatura']
-        ])
-
-        escritor.writerow([
-            'Total_ATG',
-            todos_resultados['codones_inicio']['conteo_total'],
-            'codones',
-            '-',
-            '-'
-        ])
-
-        escritor.writerow([
-            'Densidad_ATG',
-            todos_resultados['codones_inicio']['densidad_por_kb'],
-            'ATG/kb',
-            '-',
-            '-'
-        ])
-
-        # Codones de parada
-        for codon in CODONES_PARADA:
-            lit_key = f"proporcion_{codon.lower()}"
-            valor_obs = todos_resultados['codones_parada']['proporciones_porcentaje'][codon]
-            valor_lit = VALORES_LITERATURA[lit_key]
-            escritor.writerow([
-                f'Proporcion_{codon}',
-                valor_obs,
-                '%',
-                valor_lit,
-                round(valor_obs - valor_lit, 2)
-            ])
-
-    print(f"[OK] Exportado: {ruta}")
+    print(f"[OK] Exportado: {nombre_archivo}.csv")
 
 
 # FUNCION PRINCIPAL
@@ -425,14 +380,12 @@ def main():
     """Funcion principal que ejecuta todo el analisis de codones."""
 
     print("\n" + "=" * 60)
-    print("ANALISIS DE CODONES - E. coli K-12 MG1655")
+    print(f"ANALISIS DE CODONES - {GENOME_BASENAME}")
     print("=" * 60)
     print(f"Fecha de analisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Crear directorios
     crear_directorios()
 
-    # Cargar secuencia
     try:
         secuencia = cargar_secuencia(ARCHIVO_FASTA)
     except FileNotFoundError as error:
@@ -440,7 +393,10 @@ def main():
         print("[INFO] Ejecuta primero descargar_genoma.py para obtener el genoma")
         return
 
-    # Realizar analisis
+    # Analisis de los 64 codones
+    conteo_64 = contar_64_codones(secuencia)
+
+    # Analisis especificos
     resultados_inicio = analizar_codones_inicio(secuencia)
     resultados_parada = analizar_codones_parada(secuencia)
     resultados_gc = calcular_contenido_gc(secuencia)
@@ -448,32 +404,35 @@ def main():
     # Compilar todos los resultados
     todos_resultados = {
         "fecha_analisis": datetime.now().isoformat(),
-        "archivo_fuente": ARCHIVO_FASTA,
+        "genoma": GENOME_BASENAME,
+        "archivo_fuente": os.path.basename(ARCHIVO_FASTA),
+        "conteo_64_codones": conteo_64,
         "codones_inicio": resultados_inicio,
         "codones_parada": resultados_parada,
         "contenido_gc": resultados_gc,
-        "valores_literatura": VALORES_LITERATURA
     }
+    if VALORES_LITERATURA:
+        todos_resultados["valores_literatura"] = VALORES_LITERATURA
 
-    # Exportar resultados
+    # Exportar resultados con sufijo del genoma
     print("\n" + "=" * 60)
     print("EXPORTANDO RESULTADOS")
     print("=" * 60)
 
-    exportar_json(todos_resultados, "analisis_codones_completo")
-    exportar_csv_codones(resultados_inicio, resultados_parada, "codones_conteo")
-    exportar_resumen_csv(todos_resultados, "resumen_analisis")
+    exportar_json(todos_resultados, f"analisis_codones_{GENOME_BASENAME}")
+    exportar_csv_codones_64(conteo_64, f"codones_64_{GENOME_BASENAME}")
+    exportar_csv_codones(resultados_inicio, resultados_parada, f"codones_conteo_{GENOME_BASENAME}")
 
     # Resumen final
     print("\n" + "=" * 60)
     print("RESUMEN FINAL")
     print("=" * 60)
-    print(f"  Genoma analizado:    E. coli K-12 MG1655")
-    print(f"  Longitud:            {len(secuencia):,} pb")
-    print(f"  Contenido GC:        {resultados_gc['contenido_gc_porcentaje']}%")
-    print(f"  Total ATG:           {resultados_inicio['conteo_total']:,}")
-    print(f"  Densidad ATG:        {resultados_inicio['densidad_por_kb']:.4f} /kb")
+    print(f"  Genoma analizado:     {GENOME_BASENAME}")
+    print(f"  Longitud:             {len(secuencia):,} pb")
+    print(f"  Contenido GC:         {resultados_gc['contenido_gc_porcentaje']}%")
+    print(f"  Total ATG:            {resultados_inicio['conteo_total']:,}")
     print(f"  Total codones parada: {resultados_parada['total_codones_parada']:,}")
+    print(f"  Codones unicos:       {len([c for c in conteo_64['codones_detalle'] if conteo_64['codones_detalle'][c]['conteo'] > 0])}/64")
     print("=" * 60)
 
     print("\n[OK] Analisis completado exitosamente\n")

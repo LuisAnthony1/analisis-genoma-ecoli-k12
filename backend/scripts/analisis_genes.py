@@ -25,6 +25,7 @@ Proyecto: Analisis comparativo de genomas bacterianos
 from Bio import SeqIO
 from Bio.SeqUtils import gc_fraction
 import os
+import sys
 import json
 import csv
 from datetime import datetime
@@ -95,50 +96,61 @@ REFERENCIAS = None
 
 def seleccionar_organismo():
     """
-    Muestra menu para seleccionar el organismo a analizar.
+    Selecciona el organismo a analizar desde sys.argv[1] (basename del genoma).
 
     Returns:
-        int: Numero del organismo seleccionado (1 o 2)
+        int o str: Numero del organismo si es conocido, o basename directamente
     """
-    print("\n" + "=" * 70)
-    print("ANALISIS DE GENES - SELECCION DE ORGANISMO")
-    print("=" * 70)
-    print("\n  Seleccione el genoma a analizar:\n")
+    if len(sys.argv) < 2:
+        print("[ERROR] Uso: python analisis_genes.py <genome_basename>")
+        print("  Ejemplo: python analisis_genes.py ecoli_k12")
+        sys.exit(1)
 
+    basename = sys.argv[1]
+
+    # Buscar en organismos conocidos por nombre_corto
     for num, org in ORGANISMOS.items():
-        print(f"    [{num}] {org['nombre']}")
-        print(f"        {org['descripcion']}")
-        lit = org['valores_literatura']
-        print(f"        Tamano: ~{lit['longitud_genoma']/1e6:.2f} Mb | CDS esperados: ~{lit['genes_codificantes']:,}")
-        print()
+        if org["nombre_corto"] == basename:
+            return num
 
-    while True:
-        try:
-            opcion = int(input("  Ingrese su opcion (1 o 2): "))
-            if opcion in [1, 2]:
-                return opcion
-            print("  [ERROR] Opcion no valida. Ingrese 1 o 2.")
-        except ValueError:
-            print("  [ERROR] Ingrese un numero valido.")
+    # Genoma desconocido - retornar basename como string
+    return basename
 
 
-def configurar_organismo(num_organismo):
+def configurar_organismo(seleccion):
     """
     Configura las variables globales segun el organismo seleccionado.
 
     Args:
-        num_organismo: Numero del organismo (1 o 2)
+        seleccion: Numero del organismo (1 o 2) o basename como string
     """
     global ORGANISMO_ACTUAL, ARCHIVO_GENBANK, VALORES_LITERATURA, REFERENCIAS
 
-    config = ORGANISMOS[num_organismo]
-    ORGANISMO_ACTUAL = config
-    ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
-    VALORES_LITERATURA = config["valores_literatura"]
-    REFERENCIAS = config["referencias"]
-
-    print(f"\n[OK] Organismo configurado: {config['nombre']}")
-    print(f"     Archivo: {config['archivo_genbank']}")
+    if isinstance(seleccion, int) and seleccion in ORGANISMOS:
+        # Organismo conocido
+        config = ORGANISMOS[seleccion]
+        ORGANISMO_ACTUAL = config
+        ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
+        VALORES_LITERATURA = config["valores_literatura"]
+        REFERENCIAS = config["referencias"]
+        print(f"\n[OK] Organismo configurado: {config['nombre']}")
+        print(f"     Archivo: {config['archivo_genbank']}")
+    else:
+        # Genoma desconocido - configurar con valores genericos
+        basename = str(seleccion)
+        ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.gb")
+        VALORES_LITERATURA = {}
+        REFERENCIAS = {"fuente": "Archivo GenBank local"}
+        ORGANISMO_ACTUAL = {
+            "nombre": basename.replace("_", " ").title(),
+            "nombre_corto": basename,
+            "archivo_genbank": f"{basename}.gb",
+            "descripcion": "Genoma cargado desde archivo local",
+            "valores_literatura": VALORES_LITERATURA,
+            "referencias": REFERENCIAS
+        }
+        print(f"\n[OK] Genoma configurado: {basename}")
+        print(f"     Archivo: {basename}.gb")
 
 
 # FUNCIONES DE UTILIDAD
@@ -648,21 +660,29 @@ def comparar_con_literatura(estadisticas):
     print("\n" + "=" * 70)
     print("COMPARACION CON LITERATURA CIENTIFICA")
     print("=" * 70)
+
+    if not VALORES_LITERATURA:
+        print("  No hay valores de literatura disponibles para este organismo.")
+        return {}
+
     print("  (Validacion de resultados comparando con valores publicados)")
     print("")
     print("  FUENTES DE REFERENCIA:")
-    print("    - NCBI RefSeq: NC_000913.3 (genoma de referencia oficial)")
-    print("    - EcoCyc Database: https://ecocyc.org/ (base de datos curada)")
-    print("    - Blattner et al. 1997, Science 277:1453-1462 (secuenciacion original)")
+    if REFERENCIAS:
+        for clave, valor in REFERENCIAS.items():
+            print(f"    - {clave}: {valor}")
 
     comparaciones = {}
 
     metricas = [
-        ("Total CDS", estadisticas["total_genes"], VALORES_LITERATURA["genes_codificantes"], "genes", "EcoCyc"),
-        ("Densidad genica", estadisticas["densidad_genica_porcentaje"], VALORES_LITERATURA["densidad_genica"], "%", "EcoCyc"),
-        ("GC en CDS", estadisticas["contenido_gc_cds"]["promedio"], VALORES_LITERATURA["contenido_gc_cds"], "%", "NCBI"),
-        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA["tamano_promedio_gen"], "pb", "EcoCyc"),
+        ("Total CDS", estadisticas["total_genes"], VALORES_LITERATURA.get("genes_codificantes"), "genes", "EcoCyc"),
+        ("Densidad genica", estadisticas["densidad_genica_porcentaje"], VALORES_LITERATURA.get("densidad_genica"), "%", "EcoCyc"),
+        ("GC en CDS", estadisticas["contenido_gc_cds"]["promedio"], VALORES_LITERATURA.get("contenido_gc_cds"), "%", "NCBI"),
+        ("Tamano promedio", estadisticas["tamano_gen"]["promedio_pb"], VALORES_LITERATURA.get("tamano_promedio_gen"), "pb", "EcoCyc"),
     ]
+
+    # Filtrar metricas sin valores de literatura
+    metricas = [(n, o, l, u, f) for n, o, l, u, f in metricas if l is not None]
 
     print(f"\n  {'Metrica':<18} {'Analisis':>12} {'Literatura':>12} {'Dif.':>10} {'Fuente':<10}")
     print("  " + "-" * 70)
@@ -802,9 +822,9 @@ def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
 def main():
     """Funcion principal que ejecuta todo el analisis de genes."""
 
-    # Paso 0: Seleccionar organismo
-    num_organismo = seleccionar_organismo()
-    configurar_organismo(num_organismo)
+    # Paso 0: Seleccionar organismo desde sys.argv
+    seleccion = seleccionar_organismo()
+    configurar_organismo(seleccion)
 
     nombre_organismo = ORGANISMO_ACTUAL["nombre"]
     nombre_corto = ORGANISMO_ACTUAL["nombre_corto"]

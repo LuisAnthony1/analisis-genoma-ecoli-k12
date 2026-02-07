@@ -6,6 +6,7 @@
     <title>GenomeHub - Plataforma de Análisis Genómico Interactiva | UNSAAC</title>
     <meta name="description" content="Aplicación web interactiva para búsqueda, descarga y análisis de genomas bacterianos desde NCBI">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -262,25 +263,19 @@
                             </button>
                         </div>
 
-                        <!-- Checkboxes de análisis -->
+                        <!-- Checkboxes de análisis (solo análisis individual) -->
                         <div class="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
                             <p class="text-sm font-medium text-secondary mb-3">Análisis a ejecutar:</p>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_genes" checked>
                                     <span class="text-sm text-primary">Análisis de Genes</span>
+                                    <span class="text-xs text-secondary">(exones, intrones, literatura)</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_codones" checked>
                                     <span class="text-sm text-primary">Análisis de Codones</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
-                                    <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="comparar_genomas" checked>
-                                    <span class="text-sm text-primary">Comparar Genomas</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
-                                    <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="visualizaciones" checked>
-                                    <span class="text-sm text-primary">Generar Gráficos</span>
+                                    <span class="text-xs text-secondary">(64 codones)</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_distancias_intergenicas" checked>
@@ -322,50 +317,101 @@
         <section id="section-compare" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-                    <div class="text-center py-20">
-                        <div class="text-6xl mb-4">🔬</div>
-                        <h2 class="text-3xl font-bold mb-3 text-primary">Comparación de Genomas</h2>
-                        <p class="text-secondary text-lg">Próximamente</p>
-                        <p class="text-sm text-secondary mt-2">Esta sección permitirá comparar genomas lado a lado</p>
+
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold mb-2 text-primary">🔬 Comparar Genomas</h2>
+                        <p class="text-secondary">Selecciona dos genomas para comparar lado a lado</p>
                     </div>
+
+                    <!-- Selectores de genomas -->
+                    <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
+                        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                            <div class="flex-1">
+                                <label class="text-sm font-medium text-secondary mb-1 block">Genoma 1</label>
+                                <select id="compare-genome-1" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary">
+                                    <option value="">Cargando genomas...</option>
+                                </select>
+                            </div>
+                            <div class="text-2xl text-secondary font-bold mt-auto">vs</div>
+                            <div class="flex-1">
+                                <label class="text-sm font-medium text-secondary mb-1 block">Genoma 2</label>
+                                <select id="compare-genome-2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary">
+                                    <option value="">Cargando genomas...</option>
+                                </select>
+                            </div>
+                            <button id="run-compare-btn" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition mt-auto">
+                                Comparar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progreso comparación -->
+                    <div id="compare-progress" class="hidden mb-6">
+                        <div class="bg-card rounded-xl p-6 border border-emerald-500/30">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                <div>
+                                    <p class="text-primary font-medium">Comparando genomas...</p>
+                                    <p class="text-sm text-secondary">Esto puede tardar unos minutos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard de comparación -->
+                    <div id="compare-dashboard"></div>
+
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 5: VER RESULTADOS -->
+        <!-- SECCIÓN 5: VER RESULTADOS (DASHBOARDS) -->
         <section id="section-results" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
 
                     <div class="mb-8">
                         <h2 class="text-3xl font-bold mb-2 text-primary">📈 Resultados de Análisis</h2>
-                        <p class="text-secondary">Visualiza tablas, gráficos y datos generados</p>
+                        <p class="text-secondary">Dashboards interactivos con gráficos y tablas</p>
                     </div>
 
-                    <!-- Barra superior: filtro + eliminar todos -->
-                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center mb-6">
-                        <div class="flex gap-4 flex-1">
-                            <!-- Tabs -->
-                            <button id="tab-tablas" class="result-tab active px-6 py-3 rounded-lg font-medium bg-emerald-500 text-white transition">
-                                Tablas
-                            </button>
-                            <button id="tab-figuras" class="result-tab px-6 py-3 rounded-lg font-medium text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                Gráficos
+                    <!-- Selector de genoma -->
+                    <div class="bg-card rounded-xl p-4 mb-6 border border-slate-200">
+                        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                            <div class="flex-1">
+                                <label class="text-sm font-medium text-secondary mb-1 block">Genoma</label>
+                                <select id="results-genome" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary text-sm">
+                                    <option value="">Cargando...</option>
+                                </select>
+                            </div>
+                            <button id="delete-all-results-btn" class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition">
+                                Eliminar todos
                             </button>
                         </div>
-                        <button id="delete-all-results-btn" class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition">
-                            Eliminar todos
+                    </div>
+
+                    <!-- Tabs por tipo de análisis -->
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <button id="tab-genes" class="dashboard-tab active px-5 py-2.5 rounded-lg font-medium text-sm bg-emerald-500 text-white transition" data-analysis="genes">
+                            Genes
+                        </button>
+                        <button id="tab-codones" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="codones">
+                            Codones
+                        </button>
+                        <button id="tab-distancias" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="distancias">
+                            Distancias Intergénicas
+                        </button>
+                        <button id="tab-archivos" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="archivos">
+                            Archivos
                         </button>
                     </div>
 
-                    <!-- Contenedor de tablas (formato lista) -->
-                    <div id="results-tablas" class="results-container">
-                        <div id="tablas-grid" class="space-y-2"></div>
-                    </div>
-
-                    <!-- Contenedor de figuras (formato lista) -->
-                    <div id="results-figuras" class="results-container hidden">
-                        <div id="figuras-grid" class="space-y-2"></div>
+                    <!-- Contenedor del dashboard (se renderiza dinámicamente) -->
+                    <div id="dashboard-container">
+                        <div class="text-center py-12 text-secondary">
+                            <div class="text-6xl mb-3">📊</div>
+                            <p>Selecciona un genoma para ver sus dashboards</p>
+                        </div>
                     </div>
 
                     <!-- Botón Generar Informe -->
@@ -388,6 +434,7 @@
     <script src="frontend/js/app.js"></script>
     <script src="frontend/js/ncbi-search.js"></script>
     <script src="frontend/js/genome-manager.js"></script>
+    <script src="frontend/js/dashboard-renderer.js"></script>
     <script src="frontend/js/analysis-runner.js"></script>
 
 </body>
