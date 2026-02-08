@@ -95,7 +95,13 @@ const AnalysisRunner = {
                     throw new Error(data.error || 'Error en el servidor');
                 }
 
-                consoleOutput.innerHTML += data.output + '\n';
+                if (!data.success && data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Escapar HTML para evitar que <tags> se eliminen
+                const safeOutput = (data.output || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                consoleOutput.innerHTML += safeOutput + '\n';
 
                 if (data.return_code === 0) {
                     consoleOutput.innerHTML += `[OK] Completado en ${data.execution_time}s\n`;
@@ -409,10 +415,11 @@ async function runComparison() {
             }
         } else {
             showNotification('Error en la comparación', 'error');
+            const safeCompOutput = (result.output || 'Error desconocido').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             dashboard.innerHTML = `
                 <div class="bg-card rounded-xl p-6 border border-red-500/30">
                     <h3 class="text-red-500 font-semibold mb-2">Error</h3>
-                    <pre class="text-sm text-secondary whitespace-pre-wrap">${result.output || 'Error desconocido'}</pre>
+                    <pre class="text-sm text-secondary whitespace-pre-wrap">${safeCompOutput}</pre>
                 </div>
             `;
         }
