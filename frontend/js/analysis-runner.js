@@ -377,21 +377,22 @@ async function runComparison() {
     dashboard.innerHTML = '';
 
     try {
-        // Ejecutar comparar_genomas
+        // Ejecutar comparar_genomas con ambos genomas
         const response = await fetch('/api/run_analysis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 script: 'comparar_genomas',
-                genome_basename: genome1
+                genome_basename: genome1,
+                genome_basename_2: genome2
             })
         });
 
         const result = await response.json();
 
         if (result.return_code === 0) {
-            // Cargar datos de comparación
-            const compFile = `comparacion_ecoli_vs_salmonella.json`;
+            // Cargar datos de comparación con nombre dinámico
+            const compFile = `comparacion_${genome1}_vs_${genome2}.json`;
             const data = await DashboardRenderer.fetchResultData(genome1, compFile);
 
             if (data) {

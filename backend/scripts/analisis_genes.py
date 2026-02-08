@@ -37,8 +37,9 @@ import statistics
 # =============================================================================
 
 # Rutas de archivos
-DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
+DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
+DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
+RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
 
 # Configuracion de organismos disponibles
@@ -784,20 +785,20 @@ def exportar_estadisticas_csv(estadisticas, comparaciones, nombre_archivo):
         # Metricas principales
         filas = [
             ('Total_genes', estadisticas['total_genes'], 'genes',
-             VALORES_LITERATURA['genes_totales'],
-             comparaciones.get('Total genes', {}).get('diferencia_porcentaje', 0)),
+             VALORES_LITERATURA.get('genes_totales', '-'),
+             comparaciones.get('Total genes', {}).get('diferencia_porcentaje', '-')),
 
             ('Densidad_genica', estadisticas['densidad_genica_porcentaje'], '%',
-             VALORES_LITERATURA['densidad_genica'],
-             comparaciones.get('Densidad genica', {}).get('diferencia_porcentaje', 0)),
+             VALORES_LITERATURA.get('densidad_genica', '-'),
+             comparaciones.get('Densidad genica', {}).get('diferencia_porcentaje', '-')),
 
             ('GC_promedio_CDS', estadisticas['contenido_gc_cds']['promedio'], '%',
-             VALORES_LITERATURA['contenido_gc_cds'],
-             comparaciones.get('GC en CDS', {}).get('diferencia_porcentaje', 0)),
+             VALORES_LITERATURA.get('contenido_gc_cds', '-'),
+             comparaciones.get('GC en CDS', {}).get('diferencia_porcentaje', '-')),
 
             ('Tamano_promedio_gen', estadisticas['tamano_gen']['promedio_pb'], 'pb',
-             VALORES_LITERATURA['tamano_promedio_gen'],
-             comparaciones.get('Tamano promedio', {}).get('diferencia_porcentaje', 0)),
+             VALORES_LITERATURA.get('tamano_promedio_gen', '-'),
+             comparaciones.get('Tamano promedio', {}).get('diferencia_porcentaje', '-')),
 
             ('Tamano_mediana_gen', estadisticas['tamano_gen']['mediana_pb'], 'pb', '-', '-'),
             ('Tamano_minimo_gen', estadisticas['tamano_gen']['minimo_pb'], 'pb', '-', '-'),
@@ -952,7 +953,8 @@ def main():
     print(f"    Genes totales anotados:       {analisis_genes_cds['genes_totales_anotados']:,} genes en el GenBank")
     print(f"    Genes codificantes (CDS):     {analisis_genes_cds['genes_codificantes_cds']:,} genes que producen proteinas")
     print(f"    Genes no codificantes:        {analisis_genes_cds['genes_no_codificantes']:,} genes (ARN funcional)")
-    print(f"    CDS segun literatura:         {VALORES_LITERATURA['genes_codificantes']:,} CDS")
+    if VALORES_LITERATURA.get('genes_codificantes'):
+        print(f"    CDS segun literatura:         {VALORES_LITERATURA['genes_codificantes']:,} CDS")
 
     print(f"\n  GENES EXTREMOS:")
     print(f"    Gen mas largo:  {genes_extremos['gen_mas_largo']['locus_tag']} ({genes_extremos['gen_mas_largo']['longitud_pb']:,} pares de bases)")

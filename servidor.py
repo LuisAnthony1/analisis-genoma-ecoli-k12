@@ -271,7 +271,7 @@ def listar_genomas():
     return {"success": True, "count": len(genomas), "genomes": genomas}
 
 
-def ejecutar_analisis(script_name, organism=None, genome_basename=None):
+def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_basename_2=None):
     """Ejecuta un script de análisis Python y mueve resultados a carpeta del genoma."""
     scripts_permitidos = {
         "analisis_genes": {"file": "analisis_genes.py", "timeout": 120},
@@ -294,6 +294,8 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None):
     cmd = [sys.executable, script_path]
     if genome_basename:
         cmd.append(genome_basename)
+    if genome_basename_2:
+        cmd.append(genome_basename_2)
 
     # Registrar archivos existentes ANTES del análisis
     archivos_antes_tablas = set()
@@ -475,13 +477,14 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
             script = data.get("script", "")
             organism = data.get("organism")
             genome_basename = data.get("genome_basename")
+            genome_basename_2 = data.get("genome_basename_2")
 
             if not script:
                 self._json_response({"success": False, "error": "Falta el parámetro 'script'"}, 400)
                 return
 
             print(f"[ANÁLISIS] Ejecutando {script} (genoma: {genome_basename})...")
-            resultado = ejecutar_analisis(script, organism, genome_basename)
+            resultado = ejecutar_analisis(script, organism, genome_basename, genome_basename_2)
 
             if resultado.get("success"):
                 print(f"[ANÁLISIS] Completado en {resultado.get('execution_time', '?')}s")

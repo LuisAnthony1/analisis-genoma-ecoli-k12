@@ -25,6 +25,7 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import json
 import os
+import sys
 import gc
 from datetime import datetime
 
@@ -33,18 +34,30 @@ from datetime import datetime
 # =============================================================================
 
 # Rutas de archivos
-DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
 RUTA_RESULTADOS_TABLAS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
 RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", "figuras")
 
-# Archivos de entrada (generados por los scripts de analisis)
-ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_codones_completo.json")
-ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_completo.json")
+# Parametro de linea de comandos (basename del genoma)
+GENOME_BASENAME = sys.argv[1] if len(sys.argv) >= 2 else None
 
-# Archivos de comparacion entre organismos
-ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, "comparacion_ecoli_vs_salmonella.json")
-ARCHIVO_ANALISIS_ECOLI = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_ecoli_k12.json")
-ARCHIVO_ANALISIS_SALMONELLA = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_salmonella_lt2.json")
+# Archivos de entrada - buscar por basename si se proporciono
+if GENOME_BASENAME:
+    ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, f"analisis_codones_{GENOME_BASENAME}.json")
+    ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, f"analisis_genes_{GENOME_BASENAME}.json")
+else:
+    ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_codones_completo.json")
+    ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_completo.json")
+
+# Archivos de comparacion entre organismos (buscar cualquier archivo de comparacion)
+ARCHIVO_COMPARACION = None
+if os.path.exists(RUTA_RESULTADOS_TABLAS):
+    for f in os.listdir(RUTA_RESULTADOS_TABLAS):
+        if f.startswith("comparacion_") and f.endswith(".json"):
+            ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, f)
+            break
+if ARCHIVO_COMPARACION is None:
+    ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, "comparacion_ecoli_vs_salmonella.json")
 
 # Configuracion de estilo (con fallback para diferentes versiones)
 try:

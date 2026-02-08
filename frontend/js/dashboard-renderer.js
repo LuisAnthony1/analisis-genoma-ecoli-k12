@@ -449,15 +449,19 @@ const DashboardRenderer = {
     renderComparacionDashboard(data, container) {
         const metricas = data.metricas_generales || {};
         const virulencia = data.genes_virulencia || {};
+        const organismos = data.organismos_comparados || {};
 
         const ecoli = metricas.ecoli || {};
         const salmonella = metricas.salmonella || {};
+
+        const nombre1 = ecoli.nombre || organismos.organismo_1?.nombre || 'Genoma 1';
+        const nombre2 = salmonella.nombre || organismos.organismo_2?.nombre || 'Genoma 2';
 
         container.innerHTML = `
             <!-- Stats lado a lado -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="bg-card rounded-xl p-5 border border-emerald-500/30">
-                    <h3 class="text-lg font-bold text-emerald-500 mb-3">Genoma 1</h3>
+                    <h3 class="text-lg font-bold text-emerald-500 mb-3">${nombre1}</h3>
                     <div class="space-y-2 text-sm">
                         <p><span class="text-secondary">Longitud:</span> <span class="font-bold text-primary">${this.fmt(ecoli.longitud_genoma_pb)} pb</span></p>
                         <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(ecoli.total_genes_cds)}</span></p>
@@ -466,7 +470,7 @@ const DashboardRenderer = {
                     </div>
                 </div>
                 <div class="bg-card rounded-xl p-5 border border-cyan-500/30">
-                    <h3 class="text-lg font-bold text-cyan-500 mb-3">Genoma 2</h3>
+                    <h3 class="text-lg font-bold text-cyan-500 mb-3">${nombre2}</h3>
                     <div class="space-y-2 text-sm">
                         <p><span class="text-secondary">Longitud:</span> <span class="font-bold text-primary">${this.fmt(salmonella.longitud_genoma_pb)} pb</span></p>
                         <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(salmonella.total_genes_cds)}</span></p>
@@ -497,7 +501,7 @@ const DashboardRenderer = {
                     labels: ['Longitud (Mb)', 'Genes CDS', 'GC %', 'Densidad %'],
                     datasets: [
                         {
-                            label: 'Genoma 1',
+                            label: nombre1,
                             data: [
                                 (ecoli.longitud_genoma_pb || 0) / 1e6,
                                 ecoli.total_genes_cds || 0,
@@ -508,7 +512,7 @@ const DashboardRenderer = {
                             borderRadius: 4
                         },
                         {
-                            label: 'Genoma 2',
+                            label: nombre2,
                             data: [
                                 (salmonella.longitud_genoma_pb || 0) / 1e6,
                                 salmonella.total_genes_cds || 0,
@@ -528,7 +532,7 @@ const DashboardRenderer = {
                 this.createChart('chart-compare-virulence', {
                     type: 'bar',
                     data: {
-                        labels: ['Genoma 1', 'Genoma 2'],
+                        labels: [nombre1, nombre2],
                         datasets: [{
                             label: 'Genes de virulencia',
                             data: [virulencia.ecoli.total || 0, virulencia.salmonella.total || 0],

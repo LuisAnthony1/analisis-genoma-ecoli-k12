@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """
-Comparacion de Genomas Bacterianos: E. coli vs Salmonella
+Comparacion de Genomas Bacterianos
 
-Este script compara los genomas de dos bacterias relacionadas:
-1. Escherichia coli K-12 MG1655 (no patogena, cepa de laboratorio)
-2. Salmonella enterica serovar Typhimurium LT2 (patogena, causa gastroenteritis)
+Este script compara dos genomas bacterianos cualesquiera a partir de sus
+archivos GenBank descargados.
 
-Objetivo:
-Demostrar como pequenas diferencias geneticas pueden crear patogenos.
-E. coli y Salmonella divergieron hace ~100-160 millones de anos, pero comparten
-~70% de sus genes. Las diferencias incluyen islas de patogenicidad, genes de
-virulencia y factores de colonizacion.
+Uso: python comparar_genomas.py <basename_1> <basename_2>
+Ejemplo: python comparar_genomas.py escherichia_coli_str_k_12_substr_mg1655 salmonella_enterica_subsp_enterica_serovar_typhimu
 
 Funcionalidades:
 - Comparar metricas generales (tamano, GC, densidad genica)
@@ -26,6 +22,7 @@ Proyecto: Analisis comparativo de genomas bacterianos
 from Bio import SeqIO
 from Bio.SeqUtils import gc_fraction
 import os
+import sys
 import json
 import csv
 from datetime import datetime
@@ -36,31 +33,22 @@ import statistics
 # CONFIGURACION
 # =============================================================================
 
-DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
+DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
+DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
+RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
 RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
 
-# Configuracion de organismos
-ORGANISMOS = {
-    "ecoli": {
-        "nombre": "Escherichia coli K-12 MG1655",
-        "nombre_corto": "ecoli_k12",
-        "archivo_genbank": "ecoli_k12.gb",
-        "archivo_analisis": "analisis_genes_ecoli_k12.json",
-        "patogeno": False,
-        "descripcion": "Cepa de laboratorio no patogena",
-        "habitat": "Intestino de mamiferos (comensal)",
-    },
-    "salmonella": {
-        "nombre": "Salmonella enterica serovar Typhimurium LT2",
-        "nombre_corto": "salmonella_lt2",
-        "archivo_genbank": "salmonella_lt2.gb",
-        "archivo_analisis": "analisis_genes_salmonella_lt2.json",
-        "patogeno": True,
-        "descripcion": "Patogeno que causa gastroenteritis",
-        "habitat": "Intestino - invasivo (patogeno)",
-    }
-}
+# Parametros de linea de comandos
+if len(sys.argv) < 3:
+    print("[ERROR] Uso: python comparar_genomas.py <basename_1> <basename_2>")
+    print("  Ejemplo: python comparar_genomas.py ecoli_k12 salmonella_lt2")
+    sys.exit(1)
+
+BASENAME_1 = sys.argv[1]
+BASENAME_2 = sys.argv[2]
+
+ARCHIVO_GB_1 = os.path.join(RUTA_DATOS_CRUDO, f"{BASENAME_1}.gb")
+ARCHIVO_GB_2 = os.path.join(RUTA_DATOS_CRUDO, f"{BASENAME_2}.gb")
 
 # Palabras clave para detectar genes de virulencia/patogenicidad
 PALABRAS_VIRULENCIA = [
@@ -83,58 +71,44 @@ def crear_directorios():
 
 def verificar_archivos():
     """
-    Verifica que existan los archivos GenBank de ambos organismos.
+    Verifica que existan los archivos GenBank de ambos genomas.
 
     Returns:
         tuple: (bool, list) - Si ambos existen y lista de faltantes
     """
     faltantes = []
 
-    for key, org in ORGANISMOS.items():
-        ruta = os.path.join(RUTA_DATOS_CRUDO, org["archivo_genbank"])
-        if not os.path.exists(ruta):
-            faltantes.append(org["nombre"])
+    if not os.path.exists(ARCHIVO_GB_1):
+        faltantes.append(f"{BASENAME_1}.gb")
+    if not os.path.exists(ARCHIVO_GB_2):
+        faltantes.append(f"{BASENAME_2}.gb")
 
     return len(faltantes) == 0, faltantes
 
 
-def cargar_genbank(nombre_organismo):
+def cargar_genbank(archivo_gb, nombre):
     """
     Carga un archivo GenBank.
 
     Args:
-        nombre_organismo: "ecoli" o "salmonella"
+        archivo_gb: Ruta al archivo GenBank
+        nombre: Nombre para mostrar en logs
 
     Returns:
         SeqRecord: Registro del genoma
     """
-    config = ORGANISMOS[nombre_organismo]
-    ruta = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
-
-    print(f"[INFO] Cargando {config['nombre']}...")
-    registro = SeqIO.read(ruta, "genbank")
+    print(f"[INFO] Cargando {nombre}...")
+    registro = SeqIO.read(archivo_gb, "genbank")
     print(f"       Longitud: {len(registro.seq):,} pares de bases")
-
     return registro
 
 
-def cargar_analisis_previo(nombre_organismo):
-    """
-    Carga el archivo JSON de analisis previo si existe.
-
-    Args:
-        nombre_organismo: "ecoli" o "salmonella"
-
-    Returns:
-        dict o None: Datos del analisis previo
-    """
-    config = ORGANISMOS[nombre_organismo]
-    ruta = os.path.join(RUTA_RESULTADOS, config["archivo_analisis"])
-
-    if os.path.exists(ruta):
-        with open(ruta, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return None
+def obtener_nombre_organismo(registro, basename):
+    """Obtiene el nombre del organismo desde el registro GenBank."""
+    nombre = registro.annotations.get("organism", "")
+    if nombre:
+        return nombre
+    return basename.replace("_", " ").title()
 
 
 # FUNCIONES DE EXTRACCION
@@ -284,7 +258,7 @@ def contar_genes_virulencia(genes):
 # FUNCIONES DE COMPARACION
 # =============================================================================
 
-def comparar_metricas_generales(registro_ecoli, registro_salmonella, genes_ecoli, genes_salmonella):
+def comparar_metricas_generales(registro_1, registro_2, genes_1, genes_2, nombre_1, nombre_2):
     """
     Compara metricas generales entre ambos genomas.
 
@@ -295,46 +269,49 @@ def comparar_metricas_generales(registro_ecoli, registro_salmonella, genes_ecoli
     print("COMPARACION DE METRICAS GENERALES")
     print("=" * 70)
 
-    # Calcular metricas para E. coli
-    long_ecoli = len(registro_ecoli.seq)
-    gc_ecoli = gc_fraction(registro_ecoli.seq) * 100
-    total_cds_ecoli = len(genes_ecoli)
-    pb_codificante_ecoli = sum(g["longitud_pb"] for g in genes_ecoli)
-    densidad_ecoli = (pb_codificante_ecoli / long_ecoli) * 100
+    # Calcular metricas para genoma 1
+    long_1 = len(registro_1.seq)
+    gc_1 = gc_fraction(registro_1.seq) * 100
+    total_cds_1 = len(genes_1)
+    pb_codificante_1 = sum(g["longitud_pb"] for g in genes_1)
+    densidad_1 = (pb_codificante_1 / long_1) * 100 if long_1 > 0 else 0
 
-    # Calcular metricas para Salmonella
-    long_salmonella = len(registro_salmonella.seq)
-    gc_salmonella = gc_fraction(registro_salmonella.seq) * 100
-    total_cds_salmonella = len(genes_salmonella)
-    pb_codificante_salmonella = sum(g["longitud_pb"] for g in genes_salmonella)
-    densidad_salmonella = (pb_codificante_salmonella / long_salmonella) * 100
+    # Calcular metricas para genoma 2
+    long_2 = len(registro_2.seq)
+    gc_2 = gc_fraction(registro_2.seq) * 100
+    total_cds_2 = len(genes_2)
+    pb_codificante_2 = sum(g["longitud_pb"] for g in genes_2)
+    densidad_2 = (pb_codificante_2 / long_2) * 100 if long_2 > 0 else 0
 
     # Calcular diferencias
-    dif_longitud = long_salmonella - long_ecoli
-    dif_gc = gc_salmonella - gc_ecoli
-    dif_genes = total_cds_salmonella - total_cds_ecoli
-    dif_densidad = densidad_salmonella - densidad_ecoli
+    dif_longitud = long_2 - long_1
+    dif_gc = gc_2 - gc_1
+    dif_genes = total_cds_2 - total_cds_1
+    dif_densidad = densidad_2 - densidad_1
 
+    # Usar "ecoli" y "salmonella" como claves para compatibilidad con dashboard
     comparacion = {
         "ecoli": {
-            "longitud_genoma_pb": long_ecoli,
-            "contenido_gc_porcentaje": round(gc_ecoli, 2),
-            "total_genes_cds": total_cds_ecoli,
-            "pb_codificante": pb_codificante_ecoli,
-            "densidad_genica_porcentaje": round(densidad_ecoli, 2),
-            "tamano_promedio_gen_pb": round(statistics.mean([g["longitud_pb"] for g in genes_ecoli]), 2)
+            "nombre": nombre_1,
+            "longitud_genoma_pb": long_1,
+            "contenido_gc_porcentaje": round(gc_1, 2),
+            "total_genes_cds": total_cds_1,
+            "pb_codificante": pb_codificante_1,
+            "densidad_genica_porcentaje": round(densidad_1, 2),
+            "tamano_promedio_gen_pb": round(statistics.mean([g["longitud_pb"] for g in genes_1]), 2) if genes_1 else 0
         },
         "salmonella": {
-            "longitud_genoma_pb": long_salmonella,
-            "contenido_gc_porcentaje": round(gc_salmonella, 2),
-            "total_genes_cds": total_cds_salmonella,
-            "pb_codificante": pb_codificante_salmonella,
-            "densidad_genica_porcentaje": round(densidad_salmonella, 2),
-            "tamano_promedio_gen_pb": round(statistics.mean([g["longitud_pb"] for g in genes_salmonella]), 2)
+            "nombre": nombre_2,
+            "longitud_genoma_pb": long_2,
+            "contenido_gc_porcentaje": round(gc_2, 2),
+            "total_genes_cds": total_cds_2,
+            "pb_codificante": pb_codificante_2,
+            "densidad_genica_porcentaje": round(densidad_2, 2),
+            "tamano_promedio_gen_pb": round(statistics.mean([g["longitud_pb"] for g in genes_2]), 2) if genes_2 else 0
         },
         "diferencias": {
             "longitud_pb": dif_longitud,
-            "longitud_porcentaje": round((dif_longitud / long_ecoli) * 100, 2),
+            "longitud_porcentaje": round((dif_longitud / long_1) * 100, 2) if long_1 > 0 else 0,
             "contenido_gc": round(dif_gc, 2),
             "total_genes": dif_genes,
             "densidad_genica": round(dif_densidad, 2)
@@ -342,24 +319,26 @@ def comparar_metricas_generales(registro_ecoli, registro_salmonella, genes_ecoli
     }
 
     # Mostrar resultados
-    print(f"\n  {'Metrica':<35} {'E. coli':>15} {'Salmonella':>15} {'Diferencia':>15}")
-    print("  " + "-" * 80)
+    n1_short = nombre_1[:20]
+    n2_short = nombre_2[:20]
+    print(f"\n  {'Metrica':<35} {n1_short:>20} {n2_short:>20} {'Diferencia':>15}")
+    print("  " + "-" * 90)
 
-    print(f"  {'Longitud del genoma (pb)':<35} {long_ecoli:>15,} {long_salmonella:>15,} {dif_longitud:>+15,}")
-    print(f"  {'Contenido GC (%)':<35} {gc_ecoli:>15.2f} {gc_salmonella:>15.2f} {dif_gc:>+15.2f}")
-    print(f"  {'Total genes (CDS)':<35} {total_cds_ecoli:>15,} {total_cds_salmonella:>15,} {dif_genes:>+15,}")
-    print(f"  {'Densidad genica (%)':<35} {densidad_ecoli:>15.2f} {densidad_salmonella:>15.2f} {dif_densidad:>+15.2f}")
+    print(f"  {'Longitud del genoma (pb)':<35} {long_1:>20,} {long_2:>20,} {dif_longitud:>+15,}")
+    print(f"  {'Contenido GC (%)':<35} {gc_1:>20.2f} {gc_2:>20.2f} {dif_gc:>+15.2f}")
+    print(f"  {'Total genes (CDS)':<35} {total_cds_1:>20,} {total_cds_2:>20,} {dif_genes:>+15,}")
+    print(f"  {'Densidad genica (%)':<35} {densidad_1:>20.2f} {densidad_2:>20.2f} {dif_densidad:>+15.2f}")
 
     print(f"\n  [INTERPRETACION]")
-    print(f"  - Salmonella tiene un genoma {abs(dif_longitud):,} pb ({abs(comparacion['diferencias']['longitud_porcentaje']):.1f}%) "
-          f"{'mayor' if dif_longitud > 0 else 'menor'} que E. coli")
-    print(f"  - Salmonella tiene {abs(dif_genes):,} genes {'mas' if dif_genes > 0 else 'menos'} que E. coli")
-    print(f"  - El contenido GC es similar (diferencia de {abs(dif_gc):.2f}%)")
+    print(f"  - Genoma 2 tiene {abs(dif_longitud):,} pb ({abs(comparacion['diferencias']['longitud_porcentaje']):.1f}%) "
+          f"{'mas' if dif_longitud > 0 else 'menos'} que Genoma 1")
+    print(f"  - Genoma 2 tiene {abs(dif_genes):,} genes {'mas' if dif_genes > 0 else 'menos'} que Genoma 1")
+    print(f"  - El contenido GC difiere en {abs(dif_gc):.2f}%")
 
     return comparacion
 
 
-def comparar_virulencia(genes_ecoli, genes_salmonella):
+def comparar_virulencia(genes_1, genes_2, nombre_1, nombre_2):
     """
     Compara genes de virulencia entre ambos organismos.
 
@@ -371,40 +350,34 @@ def comparar_virulencia(genes_ecoli, genes_salmonella):
     print("=" * 70)
     print("  (Genes relacionados con patogenicidad, invasion, toxinas, etc.)")
 
-    virulencia_ecoli = contar_genes_virulencia(genes_ecoli)
-    virulencia_salmonella = contar_genes_virulencia(genes_salmonella)
+    virulencia_1 = contar_genes_virulencia(genes_1)
+    virulencia_2 = contar_genes_virulencia(genes_2)
 
     comparacion = {
-        "ecoli": virulencia_ecoli,
-        "salmonella": virulencia_salmonella,
-        "diferencia_total": virulencia_salmonella["total"] - virulencia_ecoli["total"]
+        "ecoli": virulencia_1,
+        "salmonella": virulencia_2,
+        "diferencia_total": virulencia_2["total"] - virulencia_1["total"]
     }
 
     print(f"\n  CONTEO TOTAL DE GENES DE VIRULENCIA:")
-    print(f"    E. coli K-12:     {virulencia_ecoli['total']:,} genes")
-    print(f"    Salmonella LT2:   {virulencia_salmonella['total']:,} genes")
-    print(f"    Diferencia:       {comparacion['diferencia_total']:+,} genes")
+    print(f"    {nombre_1}: {virulencia_1['total']:,} genes")
+    print(f"    {nombre_2}: {virulencia_2['total']:,} genes")
+    print(f"    Diferencia: {comparacion['diferencia_total']:+,} genes")
 
-    print(f"\n  DESGLOSE POR CATEGORIA EN SALMONELLA:")
-    for categoria, cantidad in sorted(virulencia_salmonella["categorias"].items(), key=lambda x: -x[1]):
-        cant_ecoli = virulencia_ecoli["categorias"].get(categoria, 0)
-        print(f"    {categoria:<35} {cantidad:>5} (E.coli: {cant_ecoli})")
+    print(f"\n  DESGLOSE POR CATEGORIA EN {nombre_2}:")
+    for categoria, cantidad in sorted(virulencia_2["categorias"].items(), key=lambda x: -x[1]):
+        cant_1 = virulencia_1["categorias"].get(categoria, 0)
+        print(f"    {categoria:<35} {cantidad:>5} ({nombre_1[:15]}: {cant_1})")
 
-    print(f"\n  [INTERPRETACION]")
-    print(f"  - Salmonella tiene {comparacion['diferencia_total']:+} genes de virulencia mas que E. coli K-12")
-    print(f"  - E. coli K-12 es una cepa de laboratorio NO patogena")
-    print(f"  - Los genes de virulencia en E. coli K-12 son mayormente residuales/inactivos")
-    print(f"  - Salmonella tiene genes activos para invadir celulas y causar enfermedad")
-
-    if virulencia_salmonella["ejemplos"]:
-        print(f"\n  EJEMPLOS DE GENES DE VIRULENCIA EN SALMONELLA (top 10):")
-        for i, gen in enumerate(virulencia_salmonella["ejemplos"][:10], 1):
+    if virulencia_2["ejemplos"]:
+        print(f"\n  EJEMPLOS DE GENES DE VIRULENCIA EN {nombre_2} (top 10):")
+        for i, gen in enumerate(virulencia_2["ejemplos"][:10], 1):
             print(f"    {i:2}. {gen['locus']}: {gen['producto'][:60]}")
 
     return comparacion
 
 
-def comparar_distancias_intergenicas(genes_ecoli, genes_salmonella):
+def comparar_distancias_intergenicas(genes_1, genes_2, nombre_1, nombre_2):
     """
     Compara las distancias intergenicas entre ambos genomas.
     Distancias grandes pueden indicar islas de patogenicidad.
@@ -417,40 +390,27 @@ def comparar_distancias_intergenicas(genes_ecoli, genes_salmonella):
     print("=" * 70)
     print("  (Las distancias grandes pueden indicar islas genomicas/patogenicidad)")
 
-    dist_ecoli = calcular_distancias_intergenicas(genes_ecoli)
-    dist_salmonella = calcular_distancias_intergenicas(genes_salmonella)
+    dist_1 = calcular_distancias_intergenicas(genes_1)
+    dist_2 = calcular_distancias_intergenicas(genes_2)
 
     comparacion = {
-        "ecoli": dist_ecoli,
-        "salmonella": dist_salmonella
+        "ecoli": dist_1,
+        "salmonella": dist_2
     }
 
-    print(f"\n  {'Metrica':<40} {'E. coli':>15} {'Salmonella':>15}")
-    print("  " + "-" * 70)
-    print(f"  {'Distancia intergenica promedio (pb)':<40} {dist_ecoli['promedio_pb']:>15.2f} {dist_salmonella['promedio_pb']:>15.2f}")
-    print(f"  {'Distancia intergenica mediana (pb)':<40} {dist_ecoli['mediana_pb']:>15.2f} {dist_salmonella['mediana_pb']:>15.2f}")
-    print(f"  {'Distancia maxima (pb)':<40} {dist_ecoli['maxima_pb']:>15,} {dist_salmonella['maxima_pb']:>15,}")
-    print(f"  {'Regiones intergenicas > 5 kb':<40} {dist_ecoli['regiones_grandes_5kb']:>15} {dist_salmonella['regiones_grandes_5kb']:>15}")
-
-    print(f"\n  [INTERPRETACION]")
-    dif_regiones = dist_salmonella['regiones_grandes_5kb'] - dist_ecoli['regiones_grandes_5kb']
-    if dif_regiones > 0:
-        print(f"  - Salmonella tiene {dif_regiones} regiones intergenicas grandes mas que E. coli")
-        print(f"  - Estas regiones pueden corresponder a ISLAS DE PATOGENICIDAD (SPIs)")
-        print(f"  - Las SPIs contienen genes de virulencia adquiridos horizontalmente")
-    else:
-        print(f"  - Ambos genomas tienen distribucion similar de distancias intergenicas")
-
-    if dist_salmonella['detalle_regiones_grandes']:
-        print(f"\n  REGIONES INTERGENICAS GRANDES EN SALMONELLA (posibles SPIs):")
-        for i, region in enumerate(dist_salmonella['detalle_regiones_grandes'][:5], 1):
-            print(f"    {i}. Entre {region['gen_anterior']} y {region['gen_siguiente']}")
-            print(f"       Posicion: {region['posicion_inicio']:,} - {region['posicion_fin']:,} ({region['distancia_pb']:,} pb)")
+    n1_short = nombre_1[:20]
+    n2_short = nombre_2[:20]
+    print(f"\n  {'Metrica':<40} {n1_short:>20} {n2_short:>20}")
+    print("  " + "-" * 80)
+    print(f"  {'Distancia intergenica promedio (pb)':<40} {dist_1['promedio_pb']:>20.2f} {dist_2['promedio_pb']:>20.2f}")
+    print(f"  {'Distancia intergenica mediana (pb)':<40} {dist_1['mediana_pb']:>20.2f} {dist_2['mediana_pb']:>20.2f}")
+    print(f"  {'Distancia maxima (pb)':<40} {dist_1['maxima_pb']:>20,} {dist_2['maxima_pb']:>20,}")
+    print(f"  {'Regiones intergenicas > 5 kb':<40} {dist_1['regiones_grandes_5kb']:>20} {dist_2['regiones_grandes_5kb']:>20}")
 
     return comparacion
 
 
-def generar_resumen_comparativo(metricas, virulencia, distancias):
+def generar_resumen_comparativo(metricas, virulencia, distancias, nombre_1, nombre_2):
     """
     Genera un resumen narrativo de la comparacion.
 
@@ -458,13 +418,11 @@ def generar_resumen_comparativo(metricas, virulencia, distancias):
         dict: Resumen con conclusiones principales
     """
     print("\n" + "=" * 70)
-    print("RESUMEN: POR QUE SALMONELLA ES PATOGENA Y E. COLI K-12 NO")
+    print(f"RESUMEN COMPARATIVO: {nombre_1} vs {nombre_2}")
     print("=" * 70)
 
     resumen = {
-        "titulo": "Diferencias geneticas entre E. coli K-12 y Salmonella LT2",
-        "divergencia_evolutiva": "~100-160 millones de anos",
-        "similitud_genica": "~70% de genes compartidos",
+        "titulo": f"Comparacion genomica: {nombre_1} vs {nombre_2}",
         "diferencias_clave": []
     }
 
@@ -472,56 +430,37 @@ def generar_resumen_comparativo(metricas, virulencia, distancias):
     dif_tamano = metricas["diferencias"]["longitud_pb"]
     resumen["diferencias_clave"].append({
         "aspecto": "Tamano del genoma",
-        "observacion": f"Salmonella tiene {abs(dif_tamano):,} pb adicionales",
-        "significado": "ADN extra contiene genes de virulencia y adaptacion"
+        "observacion": f"Diferencia de {abs(dif_tamano):,} pb",
+        "significado": "ADN adicional puede contener genes de adaptacion"
     })
 
     # Diferencia 2: Genes de virulencia
     dif_virulencia = virulencia["diferencia_total"]
     resumen["diferencias_clave"].append({
         "aspecto": "Genes de virulencia",
-        "observacion": f"Salmonella tiene {dif_virulencia:+} genes de virulencia",
-        "significado": "Genes para invadir celulas, secretar toxinas, evadir inmunidad"
+        "observacion": f"Diferencia de {abs(dif_virulencia)} genes de virulencia",
+        "significado": "Genes para invasion celular, toxinas, evasion inmune"
     })
 
-    # Diferencia 3: Islas de patogenicidad
-    dif_islas = distancias["salmonella"]["regiones_grandes_5kb"] - distancias["ecoli"]["regiones_grandes_5kb"]
+    # Diferencia 3: Regiones intergenicas
+    dist_1 = distancias["ecoli"]
+    dist_2 = distancias["salmonella"]
     resumen["diferencias_clave"].append({
-        "aspecto": "Islas de patogenicidad (SPIs)",
-        "observacion": f"Salmonella tiene {distancias['salmonella']['regiones_grandes_5kb']} regiones >5kb",
-        "significado": "SPIs contienen sistemas de secrecion tipo III y efectores"
+        "aspecto": "Regiones intergenicas grandes",
+        "observacion": f"Genoma 1: {dist_1.get('regiones_grandes_5kb', 0)}, Genoma 2: {dist_2.get('regiones_grandes_5kb', 0)} regiones >5kb",
+        "significado": "Regiones grandes pueden indicar islas genomicas adquiridas"
     })
 
-    print(f"\n  CONTEXTO EVOLUTIVO:")
-    print(f"    E. coli y Salmonella comparten un ancestro comun")
-    print(f"    Divergieron hace {resumen['divergencia_evolutiva']}")
-    print(f"    Comparten aproximadamente {resumen['similitud_genica']}")
-
-    print(f"\n  DIFERENCIAS CLAVE QUE HACEN A SALMONELLA PATOGENA:")
+    print(f"\n  DIFERENCIAS CLAVE:")
     for i, dif in enumerate(resumen["diferencias_clave"], 1):
         print(f"\n    {i}. {dif['aspecto'].upper()}")
         print(f"       Observacion: {dif['observacion']}")
         print(f"       Significado: {dif['significado']}")
 
-    print(f"\n  MECANISMOS DE PATOGENICIDAD DE SALMONELLA:")
-    print(f"    1. INVASION: Sistema de secrecion tipo III (T3SS) inyecta proteinas")
-    print(f"       en celulas del intestino para inducir su propia fagocitosis")
-    print(f"    2. SUPERVIVENCIA: Sobrevive dentro de macrofagos evadiendo muerte")
-    print(f"    3. DISEMINACION: Puede pasar del intestino al torrente sanguineo")
-    print(f"    4. INFLAMACION: Induce respuesta inflamatoria que causa diarrea")
-
-    print(f"\n  POR QUE E. COLI K-12 NO ES PATOGENA:")
-    print(f"    1. Es una cepa de laboratorio derivada de un aislado fecal de 1922")
-    print(f"    2. Ha perdido muchos genes de virulencia por domesticacion")
-    print(f"    3. No tiene sistemas de secrecion tipo III funcionales")
-    print(f"    4. No puede invadir celulas epiteliales")
-    print(f"    5. Es la cepa modelo mas segura para investigacion")
-
     resumen["conclusiones"] = [
-        "Pequenas diferencias geneticas (~5-10% del genoma) separan comensal de patogeno",
-        "La adquisicion horizontal de islas de patogenicidad es clave en evolucion bacteriana",
-        "E. coli K-12 y Salmonella son excelentes modelos para estudiar patogenicidad",
-        "La comparacion genomica permite identificar genes de virulencia"
+        "La comparacion genomica revela diferencias en contenido genico y organizacion",
+        "Las diferencias en genes de virulencia indican distintas capacidades patogenicas",
+        "Las regiones intergenicas grandes pueden indicar adquisicion horizontal de genes"
     ]
 
     print(f"\n  CONCLUSIONES:")
@@ -544,15 +483,14 @@ def exportar_comparacion_json(datos, nombre_archivo):
     print(f"       [OK] Guardado: {nombre_archivo}.json")
 
 
-def exportar_comparacion_csv(metricas, nombre_archivo):
+def exportar_comparacion_csv(metricas, nombre_archivo, nombre_1, nombre_2):
     """Exporta las metricas comparativas a CSV."""
     ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
 
     with open(ruta, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(['Metrica', 'E_coli_K12', 'Salmonella_LT2', 'Diferencia', 'Unidad'])
+        writer.writerow(['Metrica', nombre_1, nombre_2, 'Diferencia', 'Unidad'])
 
-        # Extraer metricas
         ec = metricas["ecoli"]
         sal = metricas["salmonella"]
         dif = metricas["diferencias"]
@@ -572,15 +510,15 @@ def exportar_comparacion_csv(metricas, nombre_archivo):
     print(f"       [OK] Guardado: {nombre_archivo}.csv")
 
 
-def exportar_genes_virulencia_csv(virulencia_salmonella, nombre_archivo):
-    """Exporta lista de genes de virulencia de Salmonella a CSV."""
+def exportar_genes_virulencia_csv(virulencia_datos, nombre_archivo):
+    """Exporta lista de genes de virulencia a CSV."""
     ruta = os.path.join(RUTA_RESULTADOS, f"{nombre_archivo}.csv")
 
     with open(ruta, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['Locus_tag', 'Nombre_gen', 'Producto'])
 
-        for gen in virulencia_salmonella["ejemplos"]:
+        for gen in virulencia_datos["ejemplos"]:
             writer.writerow([gen['locus'], gen['gen'], gen['producto']])
 
     print(f"       [OK] Guardado: {nombre_archivo}.csv")
@@ -593,11 +531,11 @@ def main():
     """Funcion principal que ejecuta la comparacion de genomas."""
 
     print("\n" + "=" * 70)
-    print("COMPARACION DE GENOMAS: E. coli vs Salmonella")
+    print("COMPARACION DE GENOMAS BACTERIANOS")
     print("=" * 70)
     print(f"\n  Fecha de analisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Objetivo: Comparar genomas para entender diferencias entre")
-    print(f"            comensal (E. coli K-12) y patogeno (Salmonella LT2)")
+    print(f"  Genoma 1: {BASENAME_1}")
+    print(f"  Genoma 2: {BASENAME_2}")
     print("")
 
     # Crear directorios
@@ -609,41 +547,47 @@ def main():
         print("[ERROR] Faltan archivos GenBank:")
         for f in faltantes:
             print(f"        - {f}")
-        print("\n[INFO] Ejecuta descargar_genoma.py y selecciona opcion 3 (ambos genomas)")
+        print("\n[INFO] Descarga primero los genomas desde la interfaz web")
         return
 
     # Cargar genomas
     print("\n[PASO 1/4] Cargando archivos GenBank...")
-    registro_ecoli = cargar_genbank("ecoli")
-    registro_salmonella = cargar_genbank("salmonella")
+    registro_1 = cargar_genbank(ARCHIVO_GB_1, BASENAME_1)
+    registro_2 = cargar_genbank(ARCHIVO_GB_2, BASENAME_2)
+
+    nombre_1 = obtener_nombre_organismo(registro_1, BASENAME_1)
+    nombre_2 = obtener_nombre_organismo(registro_2, BASENAME_2)
+    print(f"       Organismo 1: {nombre_1}")
+    print(f"       Organismo 2: {nombre_2}")
 
     # Extraer genes
     print("\n[PASO 2/4] Extrayendo genes de ambos genomas...")
-    genes_ecoli = extraer_genes_con_info(registro_ecoli, "ecoli")
-    genes_salmonella = extraer_genes_con_info(registro_salmonella, "salmonella")
-    print(f"       E. coli:     {len(genes_ecoli):,} genes CDS extraidos")
-    print(f"       Salmonella:  {len(genes_salmonella):,} genes CDS extraidos")
+    genes_1 = extraer_genes_con_info(registro_1, nombre_1)
+    genes_2 = extraer_genes_con_info(registro_2, nombre_2)
+    print(f"       {nombre_1}: {len(genes_1):,} genes CDS extraidos")
+    print(f"       {nombre_2}: {len(genes_2):,} genes CDS extraidos")
 
     # Realizar comparaciones
     print("\n[PASO 3/4] Realizando comparaciones...")
 
     metricas = comparar_metricas_generales(
-        registro_ecoli, registro_salmonella,
-        genes_ecoli, genes_salmonella
+        registro_1, registro_2,
+        genes_1, genes_2,
+        nombre_1, nombre_2
     )
 
-    virulencia = comparar_virulencia(genes_ecoli, genes_salmonella)
+    virulencia = comparar_virulencia(genes_1, genes_2, nombre_1, nombre_2)
 
-    distancias = comparar_distancias_intergenicas(genes_ecoli, genes_salmonella)
+    distancias = comparar_distancias_intergenicas(genes_1, genes_2, nombre_1, nombre_2)
 
-    resumen = generar_resumen_comparativo(metricas, virulencia, distancias)
+    resumen = generar_resumen_comparativo(metricas, virulencia, distancias, nombre_1, nombre_2)
 
     # Compilar resultados
     resultados_completos = {
         "fecha_analisis": datetime.now().isoformat(),
         "organismos_comparados": {
-            "organismo_1": ORGANISMOS["ecoli"],
-            "organismo_2": ORGANISMOS["salmonella"]
+            "organismo_1": {"nombre": nombre_1, "basename": BASENAME_1},
+            "organismo_2": {"nombre": nombre_2, "basename": BASENAME_2}
         },
         "metricas_generales": metricas,
         "genes_virulencia": virulencia,
@@ -651,32 +595,33 @@ def main():
         "resumen_interpretativo": resumen
     }
 
+    # Nombre del archivo de salida
+    nombre_comparacion = f"comparacion_{BASENAME_1}_vs_{BASENAME_2}"
+
     # Exportar resultados
     print("\n[PASO 4/4] Exportando resultados...")
     print("  (Los archivos se guardan en resultados/tablas/)\n")
 
     print("  [1/3] Exportando comparacion completa (JSON)...")
-    exportar_comparacion_json(resultados_completos, "comparacion_ecoli_vs_salmonella")
+    exportar_comparacion_json(resultados_completos, nombre_comparacion)
 
     print("  [2/3] Exportando metricas comparativas (CSV)...")
-    exportar_comparacion_csv(metricas, "metricas_comparacion")
+    exportar_comparacion_csv(metricas, f"metricas_{nombre_comparacion}", nombre_1, nombre_2)
 
-    print("  [3/3] Exportando genes de virulencia Salmonella (CSV)...")
-    exportar_genes_virulencia_csv(virulencia["salmonella"], "genes_virulencia_salmonella")
+    print("  [3/3] Exportando genes de virulencia (CSV)...")
+    exportar_genes_virulencia_csv(virulencia["salmonella"], f"genes_virulencia_{BASENAME_2}")
 
     # Resumen final
     print("\n" + "=" * 70)
     print("ARCHIVOS GENERADOS")
     print("=" * 70)
-    print(f"    - comparacion_ecoli_vs_salmonella.json   (comparacion completa)")
-    print(f"    - metricas_comparacion.csv              (metricas lado a lado)")
-    print(f"    - genes_virulencia_salmonella.csv       (genes de patogenicidad)")
+    print(f"    - {nombre_comparacion}.json   (comparacion completa)")
+    print(f"    - metricas_{nombre_comparacion}.csv   (metricas lado a lado)")
+    print(f"    - genes_virulencia_{BASENAME_2}.csv   (genes de virulencia)")
 
     print("\n" + "=" * 70)
     print("[OK] Comparacion de genomas completada exitosamente")
-    print("=" * 70)
-    print("\n  Siguiente paso: Ejecuta visualizaciones.py para generar graficos")
-    print("                  de comparacion entre ambos genomas.\n")
+    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
