@@ -483,7 +483,8 @@ def analizar_genes_vs_cds(registro, genes_cds):
     print(f"")
     print(f"    [2] GENES CODIFICANTES - CDS ({total_cds:,}):")
     print(f"        Solo los genes que producen proteinas (Coding DNA Sequences).")
-    print(f"        Segun EcoCyc (2024): {VALORES_LITERATURA['genes_codificantes']:,} CDS en E. coli K-12 MG1655.")
+    if VALORES_LITERATURA.get('genes_codificantes'):
+        print(f"        Segun literatura: {VALORES_LITERATURA['genes_codificantes']:,} CDS esperados.")
     print(f"        Cada uno tiene: codon de inicio (ATG), codones, codon de parada.")
     print(f"")
     print(f"    [3] GENES NO CODIFICANTES ({total_genes_anotados - total_cds:,}):")
@@ -705,20 +706,22 @@ def comparar_con_literatura(estadisticas):
 
     print("\n  [INTERPRETACION DE RESULTADOS]")
 
-    # Evaluar diferencias
-    dif_genes = abs(estadisticas["total_genes"] - VALORES_LITERATURA["genes_codificantes"])
-    if dif_genes < 10:
-        print(f"  [OK] EXCELENTE: El numero de CDS ({estadisticas['total_genes']:,}) coincide con EcoCyc ({VALORES_LITERATURA['genes_codificantes']:,})")
-    elif dif_genes < 50:
-        print(f"  [OK] El numero de genes es muy cercano a la literatura (diferencia: {dif_genes})")
-    else:
-        print(f"  [INFO] Diferencia de {dif_genes} genes con literatura - verificar version del GenBank")
+    # Evaluar diferencias (solo si hay valores de literatura)
+    if VALORES_LITERATURA.get("genes_codificantes"):
+        dif_genes = abs(estadisticas["total_genes"] - VALORES_LITERATURA["genes_codificantes"])
+        if dif_genes < 10:
+            print(f"  [OK] EXCELENTE: El numero de CDS ({estadisticas['total_genes']:,}) coincide con literatura ({VALORES_LITERATURA['genes_codificantes']:,})")
+        elif dif_genes < 50:
+            print(f"  [OK] El numero de genes es muy cercano a la literatura (diferencia: {dif_genes})")
+        else:
+            print(f"  [INFO] Diferencia de {dif_genes} genes con literatura - verificar version del GenBank")
 
-    dif_densidad = abs(estadisticas["densidad_genica_porcentaje"] - VALORES_LITERATURA["densidad_genica"])
-    if dif_densidad < 2:
-        print(f"  [OK] La densidad genica ({estadisticas['densidad_genica_porcentaje']:.2f}%) es consistente con literatura ({VALORES_LITERATURA['densidad_genica']}%)")
-    else:
-        print(f"  [INFO] Diferencia de {dif_densidad:.1f}% en densidad genica")
+    if VALORES_LITERATURA.get("densidad_genica"):
+        dif_densidad = abs(estadisticas["densidad_genica_porcentaje"] - VALORES_LITERATURA["densidad_genica"])
+        if dif_densidad < 2:
+            print(f"  [OK] La densidad genica ({estadisticas['densidad_genica_porcentaje']:.2f}%) es consistente con literatura ({VALORES_LITERATURA['densidad_genica']}%)")
+        else:
+            print(f"  [INFO] Diferencia de {dif_densidad:.1f}% en densidad genica")
 
     print("")
     print("  [NOTA] Pequenas variaciones son normales debido a:")

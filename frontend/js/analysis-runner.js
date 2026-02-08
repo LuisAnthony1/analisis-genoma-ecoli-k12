@@ -121,13 +121,20 @@ const AnalysisRunner = {
         btn.disabled = false;
         btn.textContent = 'Analizar';
 
+        DashboardRenderer.clearCache();
+        AppState.resultsGenome = genome;
+
         if (errors === 0) {
             showNotification('Análisis completado', 'success');
-            DashboardRenderer.clearCache();
-            AppState.resultsGenome = genome;
-            setTimeout(() => showSection('results'), 2000);
+        } else if (errors < scripts.length) {
+            showNotification(`${scripts.length - errors} completados, ${errors} con errores`, 'warning');
         } else {
-            showNotification(`${errors} análisis con errores`, 'warning');
+            showNotification(`${errors} análisis con errores`, 'error');
+        }
+
+        // Ir a resultados si al menos un analisis fue exitoso
+        if (errors < scripts.length) {
+            setTimeout(() => showSection('results'), 2000);
         }
     }
 };
