@@ -25,6 +25,7 @@ datos/crudo/*.fasta
 Thumbs.db
 
 # API Keys
+claves_api.txt
 
 # Jupyter
 .ipynb_checkpoints/
