@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "fecha_analisis": "2026-02-09 15:07:58",
+    "script": "analisis_distancias_intergenicas.py",
+    "genoma": "vibrio_cholerae_strain_xxm_chromosome_2",
+    "organismo": "Vibrio cholerae strain XXM chromosome 2, complete sequence"
+  },
+  "estadisticas_generales": {
+    "total_pares_genes": 1027,
+    "genes_solapados": 97,
+    "genes_adyacentes": 4,
+    "genes_espaciados": 926,
+    "regiones_grandes": 41,
+    "porcentaje_solapados": 9.44,
+    "porcentaje_adyacentes": 0.39,
+    "porcentaje_espaciados": 90.17,
+    "porcentaje_grandes": 3.99,
+    "distancia_minima": 1,
+    "distancia_maxima": 1234,
+    "distancia_promedio": 181.16,
+    "distancia_mediana": 150.0,
+    "desviacion_std": 153.89,
+    "solapamiento_maximo": -41,
+    "solapamiento_promedio": -6.76
+  },
+  "estadisticas_por_hebra": {
+    "misma_hebra_total": 689,
+    "diferente_hebra_total": 338,
+    "misma_hebra_promedio": 165.21,
+    "misma_hebra_mediana": 143,
+    "diferente_hebra_promedio": 210.38,
+    "diferente_hebra_mediana": 174
+  },
+  "distribucion_tipos": {
+    "Normal (200-500 pb)": 282,
+    "Solapado": 97,
+    "Moderado (100-200 pb)": 305,
+    "Cercano (50-100 pb)": 126,
+    "Muy cercano (< 50 pb)": 172,
+    "Grande (> 500 pb)": 41,
+    "Adyacente": 4
+  },
+  "top_20_regiones_grandes": [
+    {
+      "gen1": "ACBD56_RS18370",
+      "gen2": "ACBD56_RS18375",
+      "distancia_pb": 1234,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS15105",
+      "gen2": "drt2",
+      "distancia_pb": 1014,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS14150",
+      "gen2": "hlyA",
+      "distancia_pb": 971,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS17045",
+      "gen2": "ACBD56_RS17050",
+      "distancia_pb": 892,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS13650",
+      "gen2": "ACBD56_RS13655",
+      "distancia_pb": 771,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS17050",
+      "gen2": "ACBD56_RS17055",
+      "distancia_pb": 748,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "dhiA",
+      "gen2": "ACBD56_RS15385",
+      "distancia_pb": 747,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "cydX",
+      "gen2": "ACBD56_RS17200",
+      "distancia_pb": 709,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ectA",
+      "gen2": "ACBD56_RS16990",
+      "distancia_pb": 679,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "ACBD56_RS18025",
+      "gen2": "ACBD56_RS18030",
+      "distancia_pb": 673,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "malE",
+      "gen2": "malK",
+      "distancia_pb": 672,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS16450",
+      "gen2": "ACBD56_RS16455",
+      "distancia_pb": 671,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS16415",
+      "gen2": "secF",
+      "distancia_pb": 670,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "tnpA",
+      "gen2": "yciH",
+      "distancia_pb": 666,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "ACBD56_RS14930",
+      "gen2": "ACBD56_RS14935",
+      "distancia_pb": 665,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS16655",
+      "gen2": "glpA",
+      "distancia_pb": 654,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "cspE",
+      "gen2": "ACBD56_RS17445",
+      "distancia_pb": 653,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS14585",
+      "gen2": "ACBD56_RS14590",
+      "distancia_pb": 649,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS14865",
+      "gen2": "ACBD56_RS14870",
+      "distancia_pb": 647,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ACBD56_RS14005",
+      "gen2": "ACBD56_RS14010",
+      "distancia_pb": 645,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    }
+  ]
+}

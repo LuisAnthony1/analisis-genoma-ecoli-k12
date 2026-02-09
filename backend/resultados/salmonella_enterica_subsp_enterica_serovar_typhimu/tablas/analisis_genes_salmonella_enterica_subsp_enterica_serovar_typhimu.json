@@ -1,0 +1,155 @@
+{
+  "fecha_analisis": "2026-02-09T04:23:15.010337",
+  "organismo": "Salmonella enterica serovar Typhimurium LT2",
+  "organismo_corto": "salmonella_enterica_subsp_enterica_serovar_typhimu",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/salmonella_enterica_subsp_enterica_serovar_typhimu.gb",
+  "estadisticas_generales": {
+    "total_genes": 4452,
+    "longitud_genoma_pb": 4857450,
+    "total_pb_codificante": 4220698,
+    "densidad_genica_porcentaje": 86.89,
+    "tamano_gen": {
+      "minimo_pb": 45,
+      "maximo_pb": 16680,
+      "promedio_pb": 948.05,
+      "mediana_pb": 825.0,
+      "desviacion_std": 669.45
+    },
+    "contenido_gc_cds": {
+      "promedio": 52.4,
+      "minimo": 23.19,
+      "maximo": 72.65
+    },
+    "distribucion_hebras": {
+      "forward": 2133,
+      "reverse": 2319,
+      "porcentaje_forward": 47.91,
+      "porcentaje_reverse": 52.09
+    }
+  },
+  "distribucion_tamanos": {
+    "0-300 pares de bases": {
+      "cantidad": 420,
+      "porcentaje": 9.43,
+      "descripcion": "muy cortos, <100 aminoacidos"
+    },
+    "301-600 pares de bases": {
+      "cantidad": 1005,
+      "porcentaje": 22.57,
+      "descripcion": "cortos, 100-200 aminoacidos"
+    },
+    "601-900 pares de bases": {
+      "cantidad": 1064,
+      "porcentaje": 23.9,
+      "descripcion": "medianos, 200-300 aminoacidos"
+    },
+    "901-1500 pares de bases": {
+      "cantidad": 1356,
+      "porcentaje": 30.46,
+      "descripcion": "largos, 300-500 aminoacidos"
+    },
+    "1501-3000 pares de bases": {
+      "cantidad": 554,
+      "porcentaje": 12.44,
+      "descripcion": "muy largos, 500-1000 aminoacidos"
+    },
+    ">3000 pares de bases": {
+      "cantidad": 53,
+      "porcentaje": 1.19,
+      "descripcion": "extra largos, >1000 aminoacidos"
+    }
+  },
+  "comparacion_literatura": {
+    "Total CDS": {
+      "observado": 4452,
+      "literatura": 4525,
+      "diferencia": -73,
+      "diferencia_porcentaje": -1.61,
+      "fuente": "EcoCyc"
+    },
+    "Densidad genica": {
+      "observado": 86.89,
+      "literatura": 86.8,
+      "diferencia": 0.09,
+      "diferencia_porcentaje": 0.1,
+      "fuente": "EcoCyc"
+    },
+    "GC en CDS": {
+      "observado": 52.4,
+      "literatura": 52.5,
+      "diferencia": -0.1,
+      "diferencia_porcentaje": -0.19,
+      "fuente": "NCBI"
+    },
+    "Tamano promedio": {
+      "observado": 948.05,
+      "literatura": 945,
+      "diferencia": 3.05,
+      "diferencia_porcentaje": 0.32,
+      "fuente": "EcoCyc"
+    }
+  },
+  "tipos_features": {
+    "source": 5,
+    "gene": 4608,
+    "CDS": 4452,
+    "regulatory": 4477,
+    "protein_bind": 397,
+    "rRNA": 22,
+    "tRNA": 85,
+    "ncRNA": 9,
+    "mobile_element": 6,
+    "tmRNA": 1
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4857450,
+    "genes_totales": 4525,
+    "genes_codificantes": 4525,
+    "genes_totales_anotados": 4747,
+    "contenido_gc_genoma": 52.22,
+    "contenido_gc_cds": 52.5,
+    "densidad_genica": 86.8,
+    "tamano_promedio_gen": 945
+  },
+  "referencias_bibliograficas": {
+    "ncbi_refseq": "NCBI Reference Sequence NC_003197.2",
+    "database": "SalmonellaDB / KEGG",
+    "paper": "McClelland M et al. (2001) Nature 413:852-856"
+  },
+  "analisis_genes_vs_cds": {
+    "genes_totales_anotados": 4608,
+    "genes_codificantes_cds": 4452,
+    "genes_no_codificantes": 156,
+    "desglose_rna": {
+      "rRNA": 22,
+      "tRNA": 85,
+      "ncRNA": 9,
+      "tmRNA": 1
+    },
+    "pseudogenes": 39,
+    "explicacion": "Los genes no codificantes producen ARN funcional (tRNA, rRNA) necesarios para la vida celular"
+  },
+  "genes_extremos": {
+    "gen_mas_largo": {
+      "locus_tag": "STM4261",
+      "nombre": "",
+      "longitud_pb": 16680,
+      "inicio": 4482489,
+      "fin": 4499169,
+      "producto": "putative inner membrane protein",
+      "primeros_10_nt": "ATGGGAAATA",
+      "ultimos_10_nt": "ACACGCATAA"
+    },
+    "gen_mas_corto": {
+      "locus_tag": "STM1722",
+      "nombre": "trpL",
+      "longitud_pb": 45,
+      "inicio": 1818404,
+      "fin": 1818449,
+      "producto": "trp operon leader peptide",
+      "primeros_10_nt": "ATGGCAGCGA",
+      "ultimos_10_nt": "CACTTCCTGA"
+    }
+  },
+  "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
+}

@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "fecha_analisis": "2026-02-09 13:39:57",
+    "script": "analisis_distancias_intergenicas.py",
+    "genoma": "escherichia_coli_str_k_12_substr_mg1655",
+    "organismo": "Escherichia coli str. K-12 substr. MG1655, complete genome"
+  },
+  "estadisticas_generales": {
+    "total_pares_genes": 4317,
+    "genes_solapados": 768,
+    "genes_adyacentes": 29,
+    "genes_espaciados": 3520,
+    "regiones_grandes": 199,
+    "porcentaje_solapados": 17.79,
+    "porcentaje_adyacentes": 0.67,
+    "porcentaje_espaciados": 81.54,
+    "porcentaje_grandes": 4.61,
+    "distancia_minima": 1,
+    "distancia_maxima": 6174,
+    "distancia_promedio": 185.78,
+    "distancia_mediana": 104.0,
+    "desviacion_std": 390.03,
+    "solapamiento_maximo": -6093,
+    "solapamiento_promedio": -79.77
+  },
+  "estadisticas_por_hebra": {
+    "misma_hebra_total": 3025,
+    "diferente_hebra_total": 1292,
+    "misma_hebra_promedio": 157.13,
+    "misma_hebra_mediana": 79.0,
+    "diferente_hebra_promedio": 243.18,
+    "diferente_hebra_mediana": 157.0
+  },
+  "distribucion_tipos": {
+    "Cercano (50-100 pb)": 623,
+    "Muy cercano (< 50 pb)": 1089,
+    "Adyacente": 29,
+    "Normal (200-500 pb)": 766,
+    "Moderado (100-200 pb)": 843,
+    "Solapado": 768,
+    "Grande (> 500 pb)": 199
+  },
+  "top_20_regiones_grandes": [
+    {
+      "gen1": "hipB",
+      "gen2": "lsrK",
+      "distancia_pb": 6174,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "yhdZ",
+      "gen2": "yrdA",
+      "distancia_pb": 6041,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "yieP",
+      "gen2": "hdfR",
+      "distancia_pb": 5800,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "murI",
+      "gen2": "murB",
+      "distancia_pb": 5771,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "gmhB",
+      "gen2": "dkgB",
+      "distancia_pb": 5758,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "hemG",
+      "gen2": "mobB",
+      "distancia_pb": 5752,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "purH",
+      "gen2": "yjaA",
+      "distancia_pb": 5701,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "yfiS",
+      "gen2": "clpB",
+      "distancia_pb": 5612,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "yfaQ",
+      "gen2": "yfaT",
+      "distancia_pb": 4538,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "ypjC",
+      "gen2": "glaH",
+      "distancia_pb": 3973,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "insI2",
+      "gen2": "pdxI",
+      "distancia_pb": 3711,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "ymgF",
+      "gen2": "ymgD",
+      "distancia_pb": 3103,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "yehF",
+      "gen2": "yehI",
+      "distancia_pb": 2980,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "yjiT",
+      "gen2": "mcrC",
+      "distancia_pb": 2980,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "yncH",
+      "gen2": "ydcD",
+      "distancia_pb": 2769,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "rayT",
+      "gen2": "dinB",
+      "distancia_pb": 2763,
+      "hebra_gen1": "+",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "yfcS",
+      "gen2": "yfcV",
+      "distancia_pb": 2746,
+      "hebra_gen1": "-",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "ydfD",
+      "gen2": "ynfP",
+      "distancia_pb": 2742,
+      "hebra_gen1": "+",
+      "hebra_gen2": "-"
+    },
+    {
+      "gen1": "thrS",
+      "gen2": "yniD",
+      "distancia_pb": 2594,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    },
+    {
+      "gen1": "topAI",
+      "gen2": "ythB",
+      "distancia_pb": 2543,
+      "hebra_gen1": "-",
+      "hebra_gen2": "+"
+    }
+  ]
+}

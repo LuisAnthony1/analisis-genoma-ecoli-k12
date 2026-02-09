@@ -1,0 +1,11 @@
+Metrica,Valor,Unidad,Valor_Literatura,Diferencia_Porcentaje
+Total_genes,4111,genes,-,-
+Densidad_genica,91.5,%,88.0,3.98
+GC_promedio_CDS,65.44,%,-,-
+Tamano_promedio_gen,981.9,pb,1000,-1.81
+Tamano_mediana_gen,831,pb,-,-
+Tamano_minimo_gen,57,pb,-,-
+Tamano_maximo_gen,12456,pb,-,-
+Genes_forward,2068,genes,-,-
+Genes_reverse,2043,genes,-,-
+Total_pb_codificante,4036588,pb,-,-

@@ -1,0 +1,658 @@
+{
+  "fecha_analisis": "2026-02-09T09:51:14.726849",
+  "organismos_comparados": {
+    "organismo_1": {
+      "nombre": "Salmonella enterica subsp. enterica serovar Typhimurium str. LT2",
+      "basename": "salmonella_enterica_subsp_enterica_serovar_typhimu"
+    },
+    "organismo_2": {
+      "nombre": "Escherichia coli",
+      "basename": "escherichia_coli_strain_sto_bone1b_chromosome"
+    }
+  },
+  "metricas_generales": {
+    "ecoli": {
+      "nombre": "Salmonella enterica subsp. enterica serovar Typhimurium str. LT2",
+      "longitud_genoma_pb": 4857450,
+      "contenido_gc_porcentaje": 52.22,
+      "total_genes_cds": 4452,
+      "pb_codificante": 4220698,
+      "densidad_genica_porcentaje": 86.89,
+      "tamano_promedio_gen_pb": 948.05
+    },
+    "salmonella": {
+      "nombre": "Escherichia coli",
+      "longitud_genoma_pb": 4832047,
+      "contenido_gc_porcentaje": 50.77,
+      "total_genes_cds": 4543,
+      "pb_codificante": 9099278,
+      "densidad_genica_porcentaje": 188.31,
+      "tamano_promedio_gen_pb": 2002.92
+    },
+    "diferencias": {
+      "longitud_pb": -25403,
+      "longitud_porcentaje": -0.52,
+      "contenido_gc": -1.45,
+      "total_genes": 91,
+      "densidad_genica": 101.42
+    }
+  },
+  "genes_virulencia": {
+    "ecoli": {
+      "total": 236,
+      "categorias": {
+        "Adhesion/Fimbrias": 51,
+        "Resistencia": 28,
+        "Sistema de secrecion": 38,
+        "Otros factores de virulencia": 41,
+        "Captacion de hierro": 22,
+        "Toxinas": 1,
+        "Motilidad/Flagelos": 33,
+        "Invasion celular": 22
+      },
+      "ejemplos": [
+        {
+          "locus": "STM0021",
+          "gen": "bcfA",
+          "producto": "fimbrial subunit"
+        },
+        {
+          "locus": "STM0022",
+          "gen": "bcfB",
+          "producto": "fimbrial chaparone"
+        },
+        {
+          "locus": "STM0023",
+          "gen": "bcfC",
+          "producto": "fimbrial usher"
+        },
+        {
+          "locus": "STM0024",
+          "gen": "bcfD",
+          "producto": "fimbrial subunit"
+        },
+        {
+          "locus": "STM0025",
+          "gen": "bcfE",
+          "producto": "fimbrial subunit"
+        },
+        {
+          "locus": "STM0026",
+          "gen": "bcfF",
+          "producto": "fimbrial subunit"
+        },
+        {
+          "locus": "STM0027",
+          "gen": "bcfG",
+          "producto": "fimbrial chaparone"
+        },
+        {
+          "locus": "STM0090",
+          "gen": "ksgA",
+          "producto": "S-adenosylmethionine-6-N',N'-adenosyl (rRNA) dimethyltransferase; kasugamycin resistance"
+        },
+        {
+          "locus": "STM0136",
+          "gen": "secA",
+          "producto": "preprotein translocase; secretion protein of IISP family"
+        },
+        {
+          "locus": "STM0142",
+          "gen": "hofC",
+          "producto": "putative component in type IV pilin biogenesis"
+        },
+        {
+          "locus": "STM0172",
+          "gen": "yadG",
+          "producto": "putative ABC-type multidrug transport system, ATPase component"
+        },
+        {
+          "locus": "STM0174",
+          "gen": "stiH",
+          "producto": "putative fimbriae"
+        },
+        {
+          "locus": "STM0175",
+          "gen": "stiC",
+          "producto": "putative fimbrial usher"
+        },
+        {
+          "locus": "STM0176",
+          "gen": "stiB",
+          "producto": "putative fimbrial chaparone"
+        },
+        {
+          "locus": "STM0177",
+          "gen": "stiA",
+          "producto": "putative fimbrial subunit"
+        }
+      ]
+    },
+    "salmonella": {
+      "total": 354,
+      "categorias": {
+        "Toxinas": 62,
+        "Captacion de hierro": 29,
+        "Resistencia": 34,
+        "Otros factores de virulencia": 46,
+        "Adhesion/Fimbrias": 67,
+        "Sistema de secrecion": 69,
+        "Motilidad/Flagelos": 43,
+        "Invasion celular": 4
+      },
+      "ejemplos": [
+        {
+          "locus": "HRS04_RS00505",
+          "gen": "ecnA",
+          "producto": "lipoprotein antitoxin entericidin A"
+        },
+        {
+          "locus": "HRS04_RS00510",
+          "gen": "ecnB",
+          "producto": "lipoprotein toxin entericidin B"
+        },
+        {
+          "locus": "HRS04_RS00540",
+          "gen": "frdB",
+          "producto": "fumarate reductase iron-sulfur protein"
+        },
+        {
+          "locus": "HRS04_RS00735",
+          "gen": "bsmA",
+          "producto": "biofilm peroxide resistance protein BsmA"
+        },
+        {
+          "locus": "HRS04_RS00835",
+          "gen": "ytfE",
+          "producto": "iron-sulfur cluster repair protein YtfE"
+        },
+        {
+          "locus": "HRS04_RS01020",
+          "gen": "tabA",
+          "producto": "toxin-antitoxin biofilm protein TabA"
+        },
+        {
+          "locus": "HRS04_RS01140",
+          "gen": "virK",
+          "producto": "virulence factor VirK"
+        },
+        {
+          "locus": "HRS04_RS01175",
+          "gen": "fecC",
+          "producto": "iron-dicitrate ABC transporter permease FecC"
+        },
+        {
+          "locus": "HRS04_RS01310",
+          "gen": "agn43",
+          "producto": "autotransporter adhesin Ag43"
+        },
+        {
+          "locus": "HRS04_RS01350",
+          "gen": "",
+          "producto": "type IV toxin-antitoxin system YeeU family antitoxin"
+        },
+        {
+          "locus": "HRS04_RS01355",
+          "gen": "",
+          "producto": "TA system toxin CbtA family protein"
+        },
+        {
+          "locus": "HRS04_RS01385",
+          "gen": "",
+          "producto": "fimbrial protein"
+        },
+        {
+          "locus": "HRS04_RS01490",
+          "gen": "mdtM",
+          "producto": "multidrug efflux MFS transporter MdtM"
+        },
+        {
+          "locus": "HRS04_RS01625",
+          "gen": "fhuF",
+          "producto": "siderophore-iron reductase FhuF"
+        },
+        {
+          "locus": "HRS04_RS01900",
+          "gen": "mokC",
+          "producto": "type I toxin-antitoxin system toxin MokC"
+        }
+      ]
+    },
+    "diferencia_total": 118
+  },
+  "distancias_intergenicas": {
+    "ecoli": {
+      "promedio_pb": 178.78,
+      "mediana_pb": 101,
+      "minima_pb": 1,
+      "maxima_pb": 12152,
+      "desviacion_std": 387.51,
+      "total_regiones_intergenicas": 3625,
+      "regiones_grandes_5kb": 8,
+      "detalle_regiones_grandes": [
+        {
+          "gen_anterior": "STM0248",
+          "gen_siguiente": "STM0255",
+          "distancia_pb": 6258,
+          "posicion_inicio": 288811,
+          "posicion_fin": 295069
+        },
+        {
+          "gen_anterior": "STM2655",
+          "gen_siguiente": "STM2660",
+          "distancia_pb": 5880,
+          "posicion_inicio": 2796238,
+          "posicion_fin": 2802118
+        },
+        {
+          "gen_anterior": "STM2688",
+          "gen_siguiente": "STM2690",
+          "distancia_pb": 12152,
+          "posicion_inicio": 2826969,
+          "posicion_fin": 2839121
+        },
+        {
+          "gen_anterior": "STM3392",
+          "gen_siguiente": "STM3399",
+          "distancia_pb": 6638,
+          "posicion_inicio": 3565850,
+          "posicion_fin": 3572488
+        },
+        {
+          "gen_anterior": "STM3888",
+          "gen_siguiente": "STM3897",
+          "distancia_pb": 5893,
+          "posicion_inicio": 4099664,
+          "posicion_fin": 4105557
+        },
+        {
+          "gen_anterior": "STM3987",
+          "gen_siguiente": "STM3993",
+          "distancia_pb": 6002,
+          "posicion_inicio": 4195694,
+          "posicion_fin": 4201696
+        },
+        {
+          "gen_anterior": "STM4131",
+          "gen_siguiente": "STM4137",
+          "distancia_pb": 5921,
+          "posicion_inicio": 4350763,
+          "posicion_fin": 4356684
+        },
+        {
+          "gen_anterior": "STM4176",
+          "gen_siguiente": "STM4181",
+          "distancia_pb": 6195,
+          "posicion_inicio": 4394064,
+          "posicion_fin": 4400259
+        }
+      ]
+    },
+    "salmonella": {
+      "promedio_pb": 151.2,
+      "mediana_pb": 94.0,
+      "minima_pb": 1,
+      "maxima_pb": 5879,
+      "desviacion_std": 290.61,
+      "total_regiones_intergenicas": 3756,
+      "regiones_grandes_5kb": 7,
+      "detalle_regiones_grandes": [
+        {
+          "gen_anterior": "HRS04_RS02820",
+          "gen_siguiente": "HRS04_RS02855",
+          "distancia_pb": 5759,
+          "posicion_inicio": 559128,
+          "posicion_fin": 564887
+        },
+        {
+          "gen_anterior": "HRS04_RS15120",
+          "gen_siguiente": "HRS04_RS15145",
+          "distancia_pb": 5775,
+          "posicion_inicio": 3101232,
+          "posicion_fin": 3107007
+        },
+        {
+          "gen_anterior": "HRS04_RS18635",
+          "gen_siguiente": "HRS04_RS18675",
+          "distancia_pb": 5879,
+          "posicion_inicio": 3830282,
+          "posicion_fin": 3836161
+        },
+        {
+          "gen_anterior": "HRS04_RS21335",
+          "gen_siguiente": "HRS04_RS21370",
+          "distancia_pb": 5800,
+          "posicion_inicio": 4389322,
+          "posicion_fin": 4395122
+        },
+        {
+          "gen_anterior": "HRS04_RS21800",
+          "gen_siguiente": "HRS04_RS21830",
+          "distancia_pb": 5580,
+          "posicion_inicio": 4481438,
+          "posicion_fin": 4487018
+        },
+        {
+          "gen_anterior": "HRS04_RS22420",
+          "gen_siguiente": "HRS04_RS22445",
+          "distancia_pb": 5685,
+          "posicion_inicio": 4616779,
+          "posicion_fin": 4622464
+        },
+        {
+          "gen_anterior": "HRS04_RS22610",
+          "gen_siguiente": "HRS04_RS22635",
+          "distancia_pb": 5742,
+          "posicion_inicio": 4656998,
+          "posicion_fin": 4662740
+        }
+      ]
+    }
+  },
+  "uso_codones": {
+    "ecoli": {
+      "total_codones": 1406899,
+      "top_10": [
+        {
+          "codon": "CAG",
+          "conteo": 60210,
+          "frecuencia": 4.28
+        },
+        {
+          "codon": "CTG",
+          "conteo": 58039,
+          "frecuencia": 4.125
+        },
+        {
+          "codon": "CGC",
+          "conteo": 46859,
+          "frecuencia": 3.331
+        },
+        {
+          "codon": "GCG",
+          "conteo": 46127,
+          "frecuencia": 3.279
+        },
+        {
+          "codon": "GCC",
+          "conteo": 45821,
+          "frecuencia": 3.257
+        },
+        {
+          "codon": "GGC",
+          "conteo": 45201,
+          "frecuencia": 3.213
+        },
+        {
+          "codon": "GAT",
+          "conteo": 39599,
+          "frecuencia": 2.815
+        },
+        {
+          "codon": "ATC",
+          "conteo": 39528,
+          "frecuencia": 2.81
+        },
+        {
+          "codon": "TTT",
+          "conteo": 39275,
+          "frecuencia": 2.792
+        },
+        {
+          "codon": "AAA",
+          "conteo": 38256,
+          "frecuencia": 2.719
+        }
+      ]
+    },
+    "salmonella": {
+      "total_codones": 3033026,
+      "top_10": [
+        {
+          "codon": "CAG",
+          "conteo": 94857,
+          "frecuencia": 3.127
+        },
+        {
+          "codon": "CTG",
+          "conteo": 93339,
+          "frecuencia": 3.077
+        },
+        {
+          "codon": "CGC",
+          "conteo": 78858,
+          "frecuencia": 2.6
+        },
+        {
+          "codon": "GCG",
+          "conteo": 77968,
+          "frecuencia": 2.571
+        },
+        {
+          "codon": "TTT",
+          "conteo": 77402,
+          "frecuencia": 2.552
+        },
+        {
+          "codon": "AAA",
+          "conteo": 77119,
+          "frecuencia": 2.543
+        },
+        {
+          "codon": "GCC",
+          "conteo": 70928,
+          "frecuencia": 2.339
+        },
+        {
+          "codon": "ATC",
+          "conteo": 70804,
+          "frecuencia": 2.334
+        },
+        {
+          "codon": "GGC",
+          "conteo": 70124,
+          "frecuencia": 2.312
+        },
+        {
+          "codon": "GAT",
+          "conteo": 69608,
+          "frecuencia": 2.295
+        }
+      ]
+    },
+    "mayores_diferencias": [
+      {
+        "codon": "CAG",
+        "frecuencia_1": 4.28,
+        "frecuencia_2": 3.127,
+        "diferencia_abs": 1.153
+      },
+      {
+        "codon": "CTG",
+        "frecuencia_1": 4.125,
+        "frecuencia_2": 3.077,
+        "diferencia_abs": 1.048
+      },
+      {
+        "codon": "GCC",
+        "frecuencia_1": 3.257,
+        "frecuencia_2": 2.339,
+        "diferencia_abs": 0.918
+      },
+      {
+        "codon": "GGC",
+        "frecuencia_1": 3.213,
+        "frecuencia_2": 2.312,
+        "diferencia_abs": 0.901
+      },
+      {
+        "codon": "TCA",
+        "frecuencia_1": 0.36,
+        "frecuencia_2": 1.186,
+        "diferencia_abs": 0.826
+      },
+      {
+        "codon": "TGA",
+        "frecuencia_1": 0.356,
+        "frecuencia_2": 1.168,
+        "diferencia_abs": 0.812
+      },
+      {
+        "codon": "TGC",
+        "frecuencia_1": 0.98,
+        "frecuencia_2": 1.719,
+        "diferencia_abs": 0.739
+      },
+      {
+        "codon": "CGC",
+        "frecuencia_1": 3.331,
+        "frecuencia_2": 2.6,
+        "diferencia_abs": 0.731
+      },
+      {
+        "codon": "GCA",
+        "frecuencia_1": 0.981,
+        "frecuencia_2": 1.708,
+        "diferencia_abs": 0.727
+      },
+      {
+        "codon": "GCG",
+        "frecuencia_1": 3.279,
+        "frecuencia_2": 2.571,
+        "diferencia_abs": 0.708
+      },
+      {
+        "codon": "TGG",
+        "frecuencia_1": 1.026,
+        "frecuencia_2": 1.547,
+        "diferencia_abs": 0.521
+      },
+      {
+        "codon": "GAT",
+        "frecuencia_1": 2.815,
+        "frecuencia_2": 2.295,
+        "diferencia_abs": 0.52
+      },
+      {
+        "codon": "GTC",
+        "frecuencia_1": 1.924,
+        "frecuencia_2": 1.416,
+        "diferencia_abs": 0.508
+      },
+      {
+        "codon": "GAC",
+        "frecuencia_1": 1.918,
+        "frecuencia_2": 1.426,
+        "diferencia_abs": 0.492
+      },
+      {
+        "codon": "ATC",
+        "frecuencia_1": 2.81,
+        "frecuencia_2": 2.334,
+        "diferencia_abs": 0.476
+      }
+    ]
+  },
+  "distribucion_tamanos": {
+    "ecoli": {
+      "estadisticas": {
+        "promedio": 948.0,
+        "mediana": 825.0,
+        "minimo": 45,
+        "maximo": 16680,
+        "desviacion_std": 669.5,
+        "q25": 504,
+        "q75": 1221
+      },
+      "rangos": {
+        "<300": 405,
+        "300-600": 1012,
+        "600-900": 1056,
+        "900-1200": 809,
+        "1200-1500": 562,
+        ">1500": 608
+      }
+    },
+    "salmonella": {
+      "estadisticas": {
+        "promedio": 2002.9,
+        "mediana": 819,
+        "minimo": 45,
+        "maximo": 4832047,
+        "desviacion_std": 71679.3,
+        "q25": 480,
+        "q75": 1233
+      },
+      "rangos": {
+        "<300": 567,
+        "300-600": 932,
+        "600-900": 1019,
+        "900-1200": 815,
+        "1200-1500": 570,
+        ">1500": 640
+      }
+    }
+  },
+  "distribucion_gc": {
+    "ecoli": {
+      "estadisticas": {
+        "promedio": 52.4,
+        "mediana": 53.49,
+        "minimo": 23.19,
+        "maximo": 72.65,
+        "desviacion_std": 5.4
+      },
+      "rangos": {
+        "<40%": 164,
+        "40-45%": 261,
+        "45-50%": 654,
+        "50-55%": 1859,
+        "55-60%": 1387,
+        ">60%": 127
+      }
+    },
+    "salmonella": {
+      "estadisticas": {
+        "promedio": 50.73,
+        "mediana": 51.98,
+        "minimo": 20.29,
+        "maximo": 63.31,
+        "desviacion_std": 5.39
+      },
+      "rangos": {
+        "<40%": 240,
+        "40-45%": 335,
+        "45-50%": 872,
+        "50-55%": 2335,
+        "55-60%": 733,
+        ">60%": 28
+      }
+    }
+  },
+  "resumen_interpretativo": {
+    "titulo": "Comparacion genomica: Salmonella enterica subsp. enterica serovar Typhimurium str. LT2 vs Escherichia coli",
+    "diferencias_clave": [
+      {
+        "aspecto": "Tamano del genoma",
+        "observacion": "Diferencia de 25,403 pb",
+        "significado": "ADN adicional puede contener genes de adaptacion"
+      },
+      {
+        "aspecto": "Genes de virulencia",
+        "observacion": "Diferencia de 118 genes de virulencia",
+        "significado": "Genes para invasion celular, toxinas, evasion inmune"
+      },
+      {
+        "aspecto": "Regiones intergenicas grandes",
+        "observacion": "Genoma 1: 8, Genoma 2: 7 regiones >5kb",
+        "significado": "Regiones grandes pueden indicar islas genomicas adquiridas"
+      }
+    ],
+    "conclusiones": [
+      "La comparacion genomica revela diferencias en contenido genico y organizacion",
+      "Las diferencias en genes de virulencia indican distintas capacidades patogenicas",
+      "Las regiones intergenicas grandes pueden indicar adquisicion horizontal de genes"
+    ]
+  },
+  "interpretacion_ia": "La diferencia en el tamaño del genoma entre *Salmonella enterica* serovar Typhimurium LT2 y *Escherichia coli* (aproximadamente 25,000 pares de bases) es relativamente pequeña, pero significativa en términos evolutivos. El contenido de genes codificantes de proteínas (CDS) es similar, lo que sugiere que ambas bacterias han mantenido una complejidad funcional comparable. Las ligeras variaciones en tamaño podrían deberse a la ganancia o pérdida de elementos genéticos móviles, como plásmidos o islas genómicas, que son comunes en patógenos bacterianos y contribuyen a la adaptación a diferentes nichos y huéspedes.\n\nEl contenido de GC% (guanina-citosina) es ligeramente superior en *Salmonella* (52.22%) en comparación con *E. coli* (50.77%). Un mayor contenido de GC se asocia a menudo con una mayor estabilidad del ADN y a menudo se observa en organismos que viven en ambientes de mayor temperatura, aunque esta correlación no es universal. Evolutivamente, las diferencias en el contenido de GC pueden reflejar historias de recombinación, mutación y selección distintas. Por ejemplo, la mayor proporción de GC en *Salmonella* podría indicar una mayor presión selectiva para mantener ciertas regiones genómicas o una historia evolutiva con un sesgo mutacional diferente.\n\nLa notable diferencia en el número de genes de virulencia (236 en *Salmonella* vs. 354 en *E. coli*) es una de las distinciones biológicas más importantes. *E. coli* presenta un repertorio significativamente mayor de genes asociados a la virulencia. Esto sugiere que, en general, las cepas de *E. coli* bajo comparación poseen una mayor capacidad intrínseca para infectar y causar enfermedad, probablemente a través de una gama más amplia de mecanismos patogénicos, como la producción de toxinas, la adhesión a tejidos o la evasión del sistema inmune. *Salmonella* Typhimurium LT2, aunque es un patógeno conocido, podría depender de un conjunto más específico y quizás menos extenso de factores de virulencia para su patogenicidad.\n\nEn conclusión, aunque ambas bacterias comparten una arquitectura genómica similar y son patógenos importantes, las diferencias sutiles en tamaño, contenido de GC y, de manera crucial, en la cantidad de genes de virulencia, apuntan a trayectorias evolutivas y estrategias patogénicas distintas. *E. coli*, con su mayor arsenal de genes de virulencia, parece ser inherentemente más versátil en su capacidad patogénica. *Salmonella* Typhimurium LT2, si bien es patógena, podría haber optimizado un conjunto más enfocado de factores de virulencia para su nicho ecológico y su ciclo de infección."
+}

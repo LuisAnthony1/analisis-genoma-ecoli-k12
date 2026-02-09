@@ -1,0 +1,85 @@
+============================================================
+  GenomeHub - Servidor Local
+============================================================
+  Puerto:    8080
+  Directorio: /home/ubuntu/ecoli_k12_analysis
+  Genomas:   datos/crudo/
+  Email NCBI: 194522@unsaac.edu.pe
+
+  Abre en tu navegador:
+  >>> http://localhost:8080
+
+  Presiona Ctrl+C para detener
+============================================================
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[ANÁLISIS] Ejecutando analisis_genes (genoma: salmonella_enterica_subsp_enterica_serovar_typhimu)...
+[RESULTADOS] 3 archivos movidos a salmonella_enterica_subsp_enterica_serovar_typhimu/
+[ANÁLISIS] Completado en 1.3s
+[HTTP] "POST /api/run_analysis HTTP/1.1" 200 -
+[ANÁLISIS] Ejecutando analisis_codones (genoma: salmonella_enterica_subsp_enterica_serovar_typhimu)...
+[RESULTADOS] 3 archivos movidos a salmonella_enterica_subsp_enterica_serovar_typhimu/
+[ANÁLISIS] Completado en 7.66s
+[HTTP] "POST /api/run_analysis HTTP/1.1" 200 -
+[ANÁLISIS] Ejecutando analisis_distancias_intergenicas (genoma: salmonella_enterica_subsp_enterica_serovar_typhimu)...
+[RESULTADOS] 3 archivos movidos a salmonella_enterica_subsp_enterica_serovar_typhimu/
+[ANÁLISIS] Completado en 1.52s
+[HTTP] "POST /api/run_analysis HTTP/1.1" 200 -
+[ANÁLISIS] Ejecutando visualizaciones (genoma: salmonella_enterica_subsp_enterica_serovar_typhimu)...
+[RESULTADOS] 7 archivos movidos a salmonella_enterica_subsp_enterica_serovar_typhimu/
+[ANÁLISIS] Completado en 4.92s
+[HTTP] "POST /api/run_analysis HTTP/1.1" 200 -
+[HTTP] "GET /api/results_genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=analisis_genes_salmonella_enterica_subsp_enterica_serovar_typhimu.json HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=analisis_codones_salmonella_enterica_subsp_enterica_serovar_typhimu.json HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=analisis_distancias_salmonella_enterica_subsp_enterica_serovar_typhimu.json HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=tablas&genome=salmonella_enterica_subsp_enterica_serovar_typhimu HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=figuras&genome=salmonella_enterica_subsp_enterica_serovar_typhimu HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=codones_64_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=distancias_intergenicas_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=estadisticas_genes_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=codones_conteo_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=lista_genes_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=salmonella_enterica_subsp_enterica_serovar_typhimu&file=regiones_intergenicas_grandes_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=tablas&genome=salmonella_enterica_subsp_enterica_serovar_typhimu HTTP/1.1" 200 -
+[HTTP] "POST /api/chat HTTP/1.1" 200 -
+[HTTP] "POST /api/chat HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=tablas&genome=salmonella_enterica_subsp_enterica_serovar_typhimu HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[ANÁLISIS] Ejecutando comparar_genomas (genoma: escherichia_coli_str_k_12_substr_mg1655)...
+[RESULTADOS] 3 archivos movidos a escherichia_coli_str_k_12_substr_mg1655/
+[ANÁLISIS] Completado en 7.49s
+[HTTP] "POST /api/run_analysis HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=comparacion_escherichia_coli_str_k_12_substr_mg1655_vs_salmonella_enterica_subsp_enterica_serovar_typhimu.json HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/results_genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=analisis_genes_escherichia_coli_str_k_12_substr_mg1655.json HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=analisis_codones_escherichia_coli_str_k_12_substr_mg1655.json HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=analisis_distancias_escherichia_coli_str_k_12_substr_mg1655.json HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=tablas&genome=escherichia_coli_str_k_12_substr_mg1655 HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=figuras&genome=escherichia_coli_str_k_12_substr_mg1655 HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=codones_64_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=codones_conteo_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=distancias_intergenicas_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=lista_genes_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=genes_virulencia_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=estadisticas_genes_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=metricas_comparacion_escherichia_coli_str_k_12_substr_mg1655_vs_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=regiones_intergenicas_grandes_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/results_genomes HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=figuras&genome=escherichia_coli_str_k_12_substr_mg1655 HTTP/1.1" 200 -
+[HTTP] "GET /api/results?type=tablas&genome=escherichia_coli_str_k_12_substr_mg1655 HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=codones_64_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=codones_conteo_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=distancias_intergenicas_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=estadisticas_genes_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=genes_virulencia_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=lista_genes_escherichia_coli_str_k_12_substr_mg1655.csv HTTP/1.1" 200 -
+[HTTP] "GET /api/result_data?genome=escherichia_coli_str_k_12_substr_mg1655&file=metricas_comparacion_escherichia_coli_str_k_12_substr_mg1655_vs_salmonella_enterica_subsp_enterica_serovar_typhimu.csv HTTP/1.1" 200 -

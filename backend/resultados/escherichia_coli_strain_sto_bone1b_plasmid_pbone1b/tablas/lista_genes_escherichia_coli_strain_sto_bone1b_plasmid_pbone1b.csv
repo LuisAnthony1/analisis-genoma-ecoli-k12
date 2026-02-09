@@ -1,0 +1,12 @@
+locus_tag,nombre_gen,inicio,fin,longitud_pb,num_aminoacidos,hebra,contenido_gc,producto,proteina_id
+HRS04_RS00020,,0,10552,10552,3517,+,52.69,recombinase family protein,WP_001235713.1
+HRS04_RS00025,,286,1147,861,287,+,49.01,broad-spectrum class A beta-lactamase TEM-1,WP_000027057.1
+HRS04_RS00030,,2072,2306,234,78,-,52.99,MbeD family mobilization/exclusion protein,WP_000137445.1
+HRS04_RS00035,,2312,2831,519,173,-,52.22,MbeB family mobilization protein,WP_000067500.1
+HRS04_RS00040,,3198,3519,321,107,-,54.83,plasmid mobilization relaxase MbeA,
+HRS04_RS00045,,3508,3832,324,108,-,61.73,MobC family plasmid mobilization relaxosome protein,WP_052895110.1
+HRS04_RS00050,,3896,4088,192,64,+,52.08,Rop family plasmid primer RNA-binding protein,WP_042634456.1
+HRS04_RS00055,,5199,5556,357,119,-,38.1,HigA family addiction module antitoxin,WP_052895113.1
+HRS04_RS00060,,5759,6077,318,106,-,43.4,type II toxin-antitoxin system RelE/ParE family toxin,WP_001183575.1
+HRS04_RS00065,,6263,6506,243,81,+,41.56,hypothetical protein,WP_052895112.1
+HRS04_RS00070,,6929,9935,3006,1002,-,51.6,Tn3-like element Tn3 family transposase,WP_001143760.1

@@ -1,0 +1,16 @@
+{
+  "fecha_descarga": "2026-02-09T14:26:06.744096",
+  "fuente": "NCBI",
+  "id_acceso": "NZ_CP200024.1",
+  "organismo_config": "Mycobacterium tuberculosis strain UTB-4 chromosome",
+  "genoma": {
+    "id": "NZ_CP200024.1",
+    "nombre": "NZ_CP200024",
+    "descripcion": "Mycobacterium tuberculosis strain UTB-4 chromosome, complete genome",
+    "longitud": 4411656,
+    "organismo": "Mycobacterium tuberculosis",
+    "fecha_actualizacion": "31-JAN-2026",
+    "num_features": 8338,
+    "nombre_corto": "mycobacterium_tuberculosis_strain_utb_4_chromosome"
+  }
+}

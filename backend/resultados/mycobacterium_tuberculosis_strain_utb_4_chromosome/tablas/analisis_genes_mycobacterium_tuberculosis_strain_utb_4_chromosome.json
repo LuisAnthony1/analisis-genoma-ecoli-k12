@@ -1,0 +1,147 @@
+{
+  "fecha_analisis": "2026-02-09T14:26:14.994041",
+  "organismo": "Mycobacterium Tuberculosis Strain Utb 4 Chromosome",
+  "organismo_corto": "mycobacterium_tuberculosis_strain_utb_4_chromosome",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/mycobacterium_tuberculosis_strain_utb_4_chromosome.gb",
+  "estadisticas_generales": {
+    "total_genes": 4111,
+    "longitud_genoma_pb": 4411656,
+    "total_pb_codificante": 4036588,
+    "densidad_genica_porcentaje": 91.5,
+    "tamano_gen": {
+      "minimo_pb": 57,
+      "maximo_pb": 12456,
+      "promedio_pb": 981.9,
+      "mediana_pb": 831,
+      "desviacion_std": 806.5
+    },
+    "contenido_gc_cds": {
+      "promedio": 65.44,
+      "minimo": 47.06,
+      "maximo": 82.84
+    },
+    "distribucion_hebras": {
+      "forward": 2068,
+      "reverse": 2043,
+      "porcentaje_forward": 50.3,
+      "porcentaje_reverse": 49.7
+    }
+  },
+  "distribucion_tamanos": {
+    "0-300 pares de bases": {
+      "cantidad": 479,
+      "porcentaje": 11.65,
+      "descripcion": "muy cortos, <100 aminoacidos"
+    },
+    "301-600 pares de bases": {
+      "cantidad": 884,
+      "porcentaje": 21.5,
+      "descripcion": "cortos, 100-200 aminoacidos"
+    },
+    "601-900 pares de bases": {
+      "cantidad": 886,
+      "porcentaje": 21.55,
+      "descripcion": "medianos, 200-300 aminoacidos"
+    },
+    "901-1500 pares de bases": {
+      "cantidad": 1237,
+      "porcentaje": 30.09,
+      "descripcion": "largos, 300-500 aminoacidos"
+    },
+    "1501-3000 pares de bases": {
+      "cantidad": 537,
+      "porcentaje": 13.06,
+      "descripcion": "muy largos, 500-1000 aminoacidos"
+    },
+    ">3000 pares de bases": {
+      "cantidad": 88,
+      "porcentaje": 2.14,
+      "descripcion": "extra largos, >1000 aminoacidos"
+    }
+  },
+  "comparacion_literatura": {
+    "Total CDS": {
+      "observado": 4111,
+      "literatura": 4411,
+      "diferencia": -300,
+      "diferencia_porcentaje": -6.8,
+      "fuente": "EcoCyc"
+    },
+    "Densidad genica": {
+      "observado": 91.5,
+      "literatura": 88.0,
+      "diferencia": 3.5,
+      "diferencia_porcentaje": 3.98,
+      "fuente": "EcoCyc"
+    },
+    "Tamano promedio": {
+      "observado": 981.9,
+      "literatura": 1000,
+      "diferencia": -18.1,
+      "diferencia_porcentaje": -1.81,
+      "fuente": "EcoCyc"
+    }
+  },
+  "tipos_features": {
+    "source": 1,
+    "gene": 4162,
+    "CDS": 4111,
+    "tRNA": 45,
+    "regulatory": 11,
+    "rRNA": 3,
+    "ncRNA": 2,
+    "repeat_region": 2,
+    "tmRNA": 1
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4411529,
+    "genes_codificantes": 4411,
+    "contenido_gc_genoma": 65.6,
+    "densidad_genica": 88.0,
+    "tamano_promedio_gen": 1000
+  },
+  "referencias_bibliograficas": {
+    "fuente": "Valores obtenidos via IA (Gemini)",
+    "referencias_ia": [
+      "Genomic sequence of Mycobacterium tuberculosis H37Rv. Cole, S.T., Brosch, R., Parkhill, J., Garnier, T., Churcher, C., Harris, D., Gordon, S.V., Eiglmeier, K., Gas, S., Barry, C.E. 3rd, et al. (1998). Nature, 393(6685), 537-544.",
+      "The complete genome sequence of Mycobacterium tuberculosis. Camus, J.C., Pryor, M., Médigue, C., Cole, S.T. (2002). Nucleic Acids Research, 30(20), 4677-4683.",
+      "Genome-wide analysis of gene expression in Mycobacterium tuberculosis during the early stages of infection. Gordon, S.V., Brosch, R., Garnier, T., Cole, S.T. (2002). Molecular Microbiology, 43(3), 581-592."
+    ]
+  },
+  "analisis_genes_vs_cds": {
+    "genes_totales_anotados": 4162,
+    "genes_codificantes_cds": 4111,
+    "genes_no_codificantes": 51,
+    "desglose_rna": {
+      "tRNA": 45,
+      "rRNA": 3,
+      "ncRNA": 2,
+      "tmRNA": 1
+    },
+    "pseudogenes": 219,
+    "explicacion": "Los genes no codificantes producen ARN funcional (tRNA, rRNA) necesarios para la vida celular"
+  },
+  "genes_extremos": {
+    "gen_mas_largo": {
+      "locus_tag": "ACUCMD_RS10865",
+      "nombre": "",
+      "longitud_pb": 12456,
+      "inicio": 2294765,
+      "fin": 2307221,
+      "producto": "type I polyketide synthase",
+      "primeros_10_nt": "ATGGTTGATC",
+      "ultimos_10_nt": "CGACGAGTAG"
+    },
+    "gen_mas_corto": {
+      "locus_tag": "ACUCMD_RS12695",
+      "nombre": "",
+      "longitud_pb": 57,
+      "inicio": 2684794,
+      "fin": 2684851,
+      "producto": "Ms4527A family Cys-rich leader peptide",
+      "primeros_10_nt": "GTGGCTCGGC",
+      "ultimos_10_nt": "TCGGCCTTGA"
+    }
+  },
+  "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
+}

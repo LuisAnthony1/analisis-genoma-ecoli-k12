@@ -1,0 +1,601 @@
+{
+  "fecha_analisis": "2026-02-09T15:16:07.167843",
+  "genoma": "escherichia_coli_strain_sto_bone1b_plasmid_pbone1b",
+  "archivo_fuente": "escherichia_coli_strain_sto_bone1b_plasmid_pbone1b.fasta",
+  "conteo_64_codones": {
+    "total_codones_contados": 10550,
+    "codones_detalle": {
+      "AAA": {
+        "conteo": 230,
+        "frecuencia_porcentaje": 2.1801,
+        "aminoacido": "Lys (K)",
+        "densidad_por_kb": 21.7968
+      },
+      "AAC": {
+        "conteo": 190,
+        "frecuencia_porcentaje": 1.8009,
+        "aminoacido": "Asn (N)",
+        "densidad_por_kb": 18.0061
+      },
+      "AAG": {
+        "conteo": 154,
+        "frecuencia_porcentaje": 1.4597,
+        "aminoacido": "Lys (K)",
+        "densidad_por_kb": 14.5944
+      },
+      "AAT": {
+        "conteo": 172,
+        "frecuencia_porcentaje": 1.6303,
+        "aminoacido": "Asn (N)",
+        "densidad_por_kb": 16.3002
+      },
+      "ACA": {
+        "conteo": 152,
+        "frecuencia_porcentaje": 1.4408,
+        "aminoacido": "Thr (T)",
+        "densidad_por_kb": 14.4049
+      },
+      "ACC": {
+        "conteo": 156,
+        "frecuencia_porcentaje": 1.4787,
+        "aminoacido": "Thr (T)",
+        "densidad_por_kb": 14.7839
+      },
+      "ACG": {
+        "conteo": 136,
+        "frecuencia_porcentaje": 1.2891,
+        "aminoacido": "Thr (T)",
+        "densidad_por_kb": 12.8886
+      },
+      "ACT": {
+        "conteo": 132,
+        "frecuencia_porcentaje": 1.2512,
+        "aminoacido": "Thr (T)",
+        "densidad_por_kb": 12.5095
+      },
+      "AGA": {
+        "conteo": 171,
+        "frecuencia_porcentaje": 1.6209,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 16.2055
+      },
+      "AGC": {
+        "conteo": 208,
+        "frecuencia_porcentaje": 1.9716,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 19.7119
+      },
+      "AGG": {
+        "conteo": 143,
+        "frecuencia_porcentaje": 1.3555,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 13.5519
+      },
+      "AGT": {
+        "conteo": 129,
+        "frecuencia_porcentaje": 1.2227,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 12.2252
+      },
+      "ATA": {
+        "conteo": 156,
+        "frecuencia_porcentaje": 1.4787,
+        "aminoacido": "Ile (I)",
+        "densidad_por_kb": 14.7839
+      },
+      "ATC": {
+        "conteo": 199,
+        "frecuencia_porcentaje": 1.8863,
+        "aminoacido": "Ile (I)",
+        "densidad_por_kb": 18.859
+      },
+      "ATG": {
+        "conteo": 166,
+        "frecuencia_porcentaje": 1.5735,
+        "aminoacido": "Met (M)",
+        "densidad_por_kb": 15.7316
+      },
+      "ATT": {
+        "conteo": 166,
+        "frecuencia_porcentaje": 1.5735,
+        "aminoacido": "Ile (I)",
+        "densidad_por_kb": 15.7316
+      },
+      "CAA": {
+        "conteo": 163,
+        "frecuencia_porcentaje": 1.545,
+        "aminoacido": "Gln (Q)",
+        "densidad_por_kb": 15.4473
+      },
+      "CAC": {
+        "conteo": 160,
+        "frecuencia_porcentaje": 1.5166,
+        "aminoacido": "His (H)",
+        "densidad_por_kb": 15.163
+      },
+      "CAG": {
+        "conteo": 301,
+        "frecuencia_porcentaje": 2.8531,
+        "aminoacido": "Gln (Q)",
+        "densidad_por_kb": 28.5254
+      },
+      "CAT": {
+        "conteo": 184,
+        "frecuencia_porcentaje": 1.7441,
+        "aminoacido": "His (H)",
+        "densidad_por_kb": 17.4375
+      },
+      "CCA": {
+        "conteo": 196,
+        "frecuencia_porcentaje": 1.8578,
+        "aminoacido": "Pro (P)",
+        "densidad_por_kb": 18.5747
+      },
+      "CCC": {
+        "conteo": 178,
+        "frecuencia_porcentaje": 1.6872,
+        "aminoacido": "Pro (P)",
+        "densidad_por_kb": 16.8688
+      },
+      "CCG": {
+        "conteo": 174,
+        "frecuencia_porcentaje": 1.6493,
+        "aminoacido": "Pro (P)",
+        "densidad_por_kb": 16.4898
+      },
+      "CCT": {
+        "conteo": 159,
+        "frecuencia_porcentaje": 1.5071,
+        "aminoacido": "Pro (P)",
+        "densidad_por_kb": 15.0682
+      },
+      "CGA": {
+        "conteo": 106,
+        "frecuencia_porcentaje": 1.0047,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 10.0455
+      },
+      "CGC": {
+        "conteo": 148,
+        "frecuencia_porcentaje": 1.4028,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 14.0258
+      },
+      "CGG": {
+        "conteo": 193,
+        "frecuencia_porcentaje": 1.8294,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 18.2904
+      },
+      "CGT": {
+        "conteo": 144,
+        "frecuencia_porcentaje": 1.3649,
+        "aminoacido": "Arg (R)",
+        "densidad_por_kb": 13.6467
+      },
+      "CTA": {
+        "conteo": 60,
+        "frecuencia_porcentaje": 0.5687,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 5.6861
+      },
+      "CTC": {
+        "conteo": 175,
+        "frecuencia_porcentaje": 1.6588,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 16.5845
+      },
+      "CTG": {
+        "conteo": 233,
+        "frecuencia_porcentaje": 2.2085,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 22.0811
+      },
+      "CTT": {
+        "conteo": 155,
+        "frecuencia_porcentaje": 1.4692,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 14.6892
+      },
+      "GAA": {
+        "conteo": 193,
+        "frecuencia_porcentaje": 1.8294,
+        "aminoacido": "Glu (E)",
+        "densidad_por_kb": 18.2904
+      },
+      "GAC": {
+        "conteo": 131,
+        "frecuencia_porcentaje": 1.2417,
+        "aminoacido": "Asp (D)",
+        "densidad_por_kb": 12.4147
+      },
+      "GAG": {
+        "conteo": 121,
+        "frecuencia_porcentaje": 1.1469,
+        "aminoacido": "Glu (E)",
+        "densidad_por_kb": 11.467
+      },
+      "GAT": {
+        "conteo": 176,
+        "frecuencia_porcentaje": 1.6682,
+        "aminoacido": "Asp (D)",
+        "densidad_por_kb": 16.6793
+      },
+      "GCA": {
+        "conteo": 211,
+        "frecuencia_porcentaje": 2.0,
+        "aminoacido": "Ala (A)",
+        "densidad_por_kb": 19.9962
+      },
+      "GCC": {
+        "conteo": 179,
+        "frecuencia_porcentaje": 1.6967,
+        "aminoacido": "Ala (A)",
+        "densidad_por_kb": 16.9636
+      },
+      "GCG": {
+        "conteo": 146,
+        "frecuencia_porcentaje": 1.3839,
+        "aminoacido": "Ala (A)",
+        "densidad_por_kb": 13.8362
+      },
+      "GCT": {
+        "conteo": 171,
+        "frecuencia_porcentaje": 1.6209,
+        "aminoacido": "Ala (A)",
+        "densidad_por_kb": 16.2055
+      },
+      "GGA": {
+        "conteo": 147,
+        "frecuencia_porcentaje": 1.3934,
+        "aminoacido": "Gly (G)",
+        "densidad_por_kb": 13.931
+      },
+      "GGC": {
+        "conteo": 172,
+        "frecuencia_porcentaje": 1.6303,
+        "aminoacido": "Gly (G)",
+        "densidad_por_kb": 16.3002
+      },
+      "GGG": {
+        "conteo": 111,
+        "frecuencia_porcentaje": 1.0521,
+        "aminoacido": "Gly (G)",
+        "densidad_por_kb": 10.5193
+      },
+      "GGT": {
+        "conteo": 154,
+        "frecuencia_porcentaje": 1.4597,
+        "aminoacido": "Gly (G)",
+        "densidad_por_kb": 14.5944
+      },
+      "GTA": {
+        "conteo": 136,
+        "frecuencia_porcentaje": 1.2891,
+        "aminoacido": "Val (V)",
+        "densidad_por_kb": 12.8886
+      },
+      "GTC": {
+        "conteo": 129,
+        "frecuencia_porcentaje": 1.2227,
+        "aminoacido": "Val (V)",
+        "densidad_por_kb": 12.2252
+      },
+      "GTG": {
+        "conteo": 134,
+        "frecuencia_porcentaje": 1.2701,
+        "aminoacido": "Val (V)",
+        "densidad_por_kb": 12.699
+      },
+      "GTT": {
+        "conteo": 174,
+        "frecuencia_porcentaje": 1.6493,
+        "aminoacido": "Val (V)",
+        "densidad_por_kb": 16.4898
+      },
+      "TAA": {
+        "conteo": 160,
+        "frecuencia_porcentaje": 1.5166,
+        "aminoacido": "Stop",
+        "densidad_por_kb": 15.163
+      },
+      "TAC": {
+        "conteo": 95,
+        "frecuencia_porcentaje": 0.9005,
+        "aminoacido": "Tyr (Y)",
+        "densidad_por_kb": 9.003
+      },
+      "TAG": {
+        "conteo": 75,
+        "frecuencia_porcentaje": 0.7109,
+        "aminoacido": "Stop",
+        "densidad_por_kb": 7.1077
+      },
+      "TAT": {
+        "conteo": 155,
+        "frecuencia_porcentaje": 1.4692,
+        "aminoacido": "Tyr (Y)",
+        "densidad_por_kb": 14.6892
+      },
+      "TCA": {
+        "conteo": 249,
+        "frecuencia_porcentaje": 2.3602,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 23.5974
+      },
+      "TCC": {
+        "conteo": 194,
+        "frecuencia_porcentaje": 1.8389,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 18.3851
+      },
+      "TCG": {
+        "conteo": 135,
+        "frecuencia_porcentaje": 1.2796,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 12.7938
+      },
+      "TCT": {
+        "conteo": 161,
+        "frecuencia_porcentaje": 1.5261,
+        "aminoacido": "Ser (S)",
+        "densidad_por_kb": 15.2578
+      },
+      "TGA": {
+        "conteo": 197,
+        "frecuencia_porcentaje": 1.8673,
+        "aminoacido": "Stop",
+        "densidad_por_kb": 18.6694
+      },
+      "TGC": {
+        "conteo": 180,
+        "frecuencia_porcentaje": 1.7062,
+        "aminoacido": "Cys (C)",
+        "densidad_por_kb": 17.0584
+      },
+      "TGG": {
+        "conteo": 137,
+        "frecuencia_porcentaje": 1.2986,
+        "aminoacido": "Trp (W)",
+        "densidad_por_kb": 12.9833
+      },
+      "TGT": {
+        "conteo": 146,
+        "frecuencia_porcentaje": 1.3839,
+        "aminoacido": "Cys (C)",
+        "densidad_por_kb": 13.8362
+      },
+      "TTA": {
+        "conteo": 133,
+        "frecuencia_porcentaje": 1.2607,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 12.6042
+      },
+      "TTC": {
+        "conteo": 236,
+        "frecuencia_porcentaje": 2.237,
+        "aminoacido": "Phe (F)",
+        "densidad_por_kb": 22.3654
+      },
+      "TTG": {
+        "conteo": 126,
+        "frecuencia_porcentaje": 1.1943,
+        "aminoacido": "Leu (L)",
+        "densidad_por_kb": 11.9409
+      },
+      "TTT": {
+        "conteo": 297,
+        "frecuencia_porcentaje": 2.8152,
+        "aminoacido": "Phe (F)",
+        "densidad_por_kb": 28.1463
+      }
+    },
+    "por_aminoacido": {
+      "Lys (K)": {
+        "codones": {
+          "AAA": 230,
+          "AAG": 154
+        },
+        "total": 384
+      },
+      "Asn (N)": {
+        "codones": {
+          "AAC": 190,
+          "AAT": 172
+        },
+        "total": 362
+      },
+      "Thr (T)": {
+        "codones": {
+          "ACA": 152,
+          "ACC": 156,
+          "ACG": 136,
+          "ACT": 132
+        },
+        "total": 576
+      },
+      "Arg (R)": {
+        "codones": {
+          "AGA": 171,
+          "AGG": 143,
+          "CGA": 106,
+          "CGC": 148,
+          "CGG": 193,
+          "CGT": 144
+        },
+        "total": 905
+      },
+      "Ser (S)": {
+        "codones": {
+          "AGC": 208,
+          "AGT": 129,
+          "TCA": 249,
+          "TCC": 194,
+          "TCG": 135,
+          "TCT": 161
+        },
+        "total": 1076
+      },
+      "Ile (I)": {
+        "codones": {
+          "ATA": 156,
+          "ATC": 199,
+          "ATT": 166
+        },
+        "total": 521
+      },
+      "Met (M)": {
+        "codones": {
+          "ATG": 166
+        },
+        "total": 166
+      },
+      "Gln (Q)": {
+        "codones": {
+          "CAA": 163,
+          "CAG": 301
+        },
+        "total": 464
+      },
+      "His (H)": {
+        "codones": {
+          "CAC": 160,
+          "CAT": 184
+        },
+        "total": 344
+      },
+      "Pro (P)": {
+        "codones": {
+          "CCA": 196,
+          "CCC": 178,
+          "CCG": 174,
+          "CCT": 159
+        },
+        "total": 707
+      },
+      "Leu (L)": {
+        "codones": {
+          "CTA": 60,
+          "CTC": 175,
+          "CTG": 233,
+          "CTT": 155,
+          "TTA": 133,
+          "TTG": 126
+        },
+        "total": 882
+      },
+      "Glu (E)": {
+        "codones": {
+          "GAA": 193,
+          "GAG": 121
+        },
+        "total": 314
+      },
+      "Asp (D)": {
+        "codones": {
+          "GAC": 131,
+          "GAT": 176
+        },
+        "total": 307
+      },
+      "Ala (A)": {
+        "codones": {
+          "GCA": 211,
+          "GCC": 179,
+          "GCG": 146,
+          "GCT": 171
+        },
+        "total": 707
+      },
+      "Gly (G)": {
+        "codones": {
+          "GGA": 147,
+          "GGC": 172,
+          "GGG": 111,
+          "GGT": 154
+        },
+        "total": 584
+      },
+      "Val (V)": {
+        "codones": {
+          "GTA": 136,
+          "GTC": 129,
+          "GTG": 134,
+          "GTT": 174
+        },
+        "total": 573
+      },
+      "Stop": {
+        "codones": {
+          "TAA": 160,
+          "TAG": 75,
+          "TGA": 197
+        },
+        "total": 432
+      },
+      "Tyr (Y)": {
+        "codones": {
+          "TAC": 95,
+          "TAT": 155
+        },
+        "total": 250
+      },
+      "Cys (C)": {
+        "codones": {
+          "TGC": 180,
+          "TGT": 146
+        },
+        "total": 326
+      },
+      "Trp (W)": {
+        "codones": {
+          "TGG": 137
+        },
+        "total": 137
+      },
+      "Phe (F)": {
+        "codones": {
+          "TTC": 236,
+          "TTT": 297
+        },
+        "total": 533
+      }
+    }
+  },
+  "codones_inicio": {
+    "codon": "ATG",
+    "conteo_total": 166,
+    "longitud_genoma_pb": 10552,
+    "densidad_por_kb": 15.7316,
+    "genes_anotados_literatura": 0,
+    "ratio_atg_por_gen": 0
+  },
+  "codones_parada": {
+    "conteos": {
+      "TAA": 160,
+      "TAG": 75,
+      "TGA": 197
+    },
+    "total_codones_parada": 432,
+    "densidades_por_kb": {
+      "TAA": 15.163,
+      "TAG": 7.1077,
+      "TGA": 18.6694
+    },
+    "proporciones_porcentaje": {
+      "TAA": 37.04,
+      "TAG": 17.36,
+      "TGA": 45.6
+    }
+  },
+  "contenido_gc": {
+    "conteo_nucleotidos": {
+      "A": 2660,
+      "T": 2676,
+      "G": 2486,
+      "C": 2730
+    },
+    "contenido_gc_porcentaje": 49.43,
+    "contenido_at_porcentaje": 50.57
+  }
+}

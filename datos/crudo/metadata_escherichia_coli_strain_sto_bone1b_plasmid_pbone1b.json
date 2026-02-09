@@ -1,0 +1,16 @@
+{
+  "fecha_descarga": "2026-02-09T15:15:58.475131",
+  "fuente": "NCBI",
+  "id_acceso": "NZ_CP054168.1",
+  "organismo_config": "Escherichia coli strain STO_Bone1B plasmid pBone1B_3",
+  "genoma": {
+    "id": "NZ_CP054168.1",
+    "nombre": "NZ_CP054168",
+    "descripcion": "Escherichia coli strain STO_Bone1B plasmid pBone1B_3, complete sequence",
+    "longitud": 10552,
+    "organismo": "Escherichia coli",
+    "fecha_actualizacion": "06-FEB-2026",
+    "num_features": 23,
+    "nombre_corto": "escherichia_coli_strain_sto_bone1b_plasmid_pbone1b"
+  }
+}

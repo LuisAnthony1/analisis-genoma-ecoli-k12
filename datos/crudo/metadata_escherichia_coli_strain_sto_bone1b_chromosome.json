@@ -1,0 +1,16 @@
+{
+  "fecha_descarga": "2026-02-09T15:15:57.743397",
+  "fuente": "NCBI",
+  "id_acceso": "NZ_CP054169.1",
+  "organismo_config": "Escherichia coli strain STO_Bone1B chromosome",
+  "genoma": {
+    "id": "NZ_CP054169.1",
+    "nombre": "NZ_CP054169",
+    "descripcion": "Escherichia coli strain STO_Bone1B chromosome, complete genome",
+    "longitud": 4832047,
+    "organismo": "Escherichia coli",
+    "fecha_actualizacion": "06-FEB-2026",
+    "num_features": 9344,
+    "nombre_corto": "escherichia_coli_strain_sto_bone1b_chromosome"
+  }
+}

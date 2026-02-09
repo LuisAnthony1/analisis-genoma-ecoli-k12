@@ -1,0 +1,155 @@
+{
+  "fecha_analisis": "2026-02-09T14:20:07.546710",
+  "organismo": "Escherichia coli K-12 MG1655",
+  "organismo_corto": "escherichia_coli_strain_sto_bone1b_chromosome",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/escherichia_coli_strain_sto_bone1b_chromosome.gb",
+  "estadisticas_generales": {
+    "total_genes": 4543,
+    "longitud_genoma_pb": 4832047,
+    "total_pb_codificante": 9099278,
+    "densidad_genica_porcentaje": 188.31,
+    "tamano_gen": {
+      "minimo_pb": 45,
+      "maximo_pb": 4832047,
+      "promedio_pb": 2002.92,
+      "mediana_pb": 819,
+      "desviacion_std": 71679.32
+    },
+    "contenido_gc_cds": {
+      "promedio": 50.73,
+      "minimo": 20.29,
+      "maximo": 63.31
+    },
+    "distribucion_hebras": {
+      "forward": 2236,
+      "reverse": 2307,
+      "porcentaje_forward": 49.22,
+      "porcentaje_reverse": 50.78
+    }
+  },
+  "distribucion_tamanos": {
+    "0-300 pares de bases": {
+      "cantidad": 574,
+      "porcentaje": 12.63,
+      "descripcion": "muy cortos, <100 aminoacidos"
+    },
+    "301-600 pares de bases": {
+      "cantidad": 934,
+      "porcentaje": 20.56,
+      "descripcion": "cortos, 100-200 aminoacidos"
+    },
+    "601-900 pares de bases": {
+      "cantidad": 1025,
+      "porcentaje": 22.56,
+      "descripcion": "medianos, 200-300 aminoacidos"
+    },
+    "901-1500 pares de bases": {
+      "cantidad": 1375,
+      "porcentaje": 30.27,
+      "descripcion": "largos, 300-500 aminoacidos"
+    },
+    "1501-3000 pares de bases": {
+      "cantidad": 566,
+      "porcentaje": 12.46,
+      "descripcion": "muy largos, 500-1000 aminoacidos"
+    },
+    ">3000 pares de bases": {
+      "cantidad": 69,
+      "porcentaje": 1.52,
+      "descripcion": "extra largos, >1000 aminoacidos"
+    }
+  },
+  "comparacion_literatura": {
+    "Total CDS": {
+      "observado": 4543,
+      "literatura": 4319,
+      "diferencia": 224,
+      "diferencia_porcentaje": 5.19,
+      "fuente": "EcoCyc"
+    },
+    "Densidad genica": {
+      "observado": 188.31,
+      "literatura": 87.8,
+      "diferencia": 100.51,
+      "diferencia_porcentaje": 114.48,
+      "fuente": "EcoCyc"
+    },
+    "GC en CDS": {
+      "observado": 50.73,
+      "literatura": 51.06,
+      "diferencia": -0.33,
+      "diferencia_porcentaje": -0.65,
+      "fuente": "NCBI"
+    },
+    "Tamano promedio": {
+      "observado": 2002.92,
+      "literatura": 940,
+      "diferencia": 1062.92,
+      "diferencia_porcentaje": 113.08,
+      "fuente": "EcoCyc"
+    }
+  },
+  "tipos_features": {
+    "source": 1,
+    "gene": 4663,
+    "CDS": 4543,
+    "tRNA": 88,
+    "misc_feature": 8,
+    "regulatory": 7,
+    "rRNA": 22,
+    "ncRNA": 9,
+    "tmRNA": 1,
+    "repeat_region": 2
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4641652,
+    "genes_totales": 4319,
+    "genes_codificantes": 4319,
+    "genes_totales_anotados": 4651,
+    "contenido_gc_genoma": 50.79,
+    "contenido_gc_cds": 51.06,
+    "densidad_genica": 87.8,
+    "tamano_promedio_gen": 940
+  },
+  "referencias_bibliograficas": {
+    "ncbi_refseq": "NCBI Reference Sequence NC_000913.3",
+    "database": "EcoCyc Database (https://ecocyc.org/)",
+    "paper": "Blattner FR et al. (1997) Science 277:1453-1462"
+  },
+  "analisis_genes_vs_cds": {
+    "genes_totales_anotados": 4663,
+    "genes_codificantes_cds": 4543,
+    "genes_no_codificantes": 120,
+    "desglose_rna": {
+      "tRNA": 88,
+      "rRNA": 22,
+      "ncRNA": 9,
+      "tmRNA": 1
+    },
+    "pseudogenes": 228,
+    "explicacion": "Los genes no codificantes producen ARN funcional (tRNA, rRNA) necesarios para la vida celular"
+  },
+  "genes_extremos": {
+    "gen_mas_largo": {
+      "locus_tag": "HRS04_RS00075",
+      "nombre": "acnB",
+      "longitud_pb": 4832047,
+      "inicio": 0,
+      "fin": 4832047,
+      "producto": "bifunctional aconitate hydratase 2/2-methylisocitrate dehydratase",
+      "primeros_10_nt": "ATGTTAAAAG",
+      "ultimos_10_nt": "TGTGGTTTAA"
+    },
+    "gen_mas_corto": {
+      "locus_tag": "HRS04_RS11540",
+      "nombre": "yecV",
+      "longitud_pb": 45,
+      "inicio": 2358641,
+      "fin": 2358686,
+      "producto": "protein YecV",
+      "primeros_10_nt": "ATGTCCATTT",
+      "ultimos_10_nt": "AAAAGCCTGA"
+    }
+  },
+  "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
+}

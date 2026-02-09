@@ -1,6 +1,6 @@
-# API Keys de Gemini (una por linea)
-# Se selecciona aleatoriamente, si una falla por cuota se prueba la siguiente
-# Obtener claves en: https://aistudio.google.com/apikey
-#
-# Ejemplo:
-# AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q
+AIzaSyCNvgXcbz66lbvZnmUuTFGL_OsUOG2COTs
+AIzaSyBFroWUwMDwWG58oBaUa0oYg9toDqsOzz0
+AIzaSyBSb8iahQAgzGXXsEruk_iT6kUusNKS_AM
+AIzaSyAU2bIhtcOy5nrqWZrENbn2EJbNLql1yQI
+AIzaSyDvMrL59LSUbDrDbLBi80oKF9C8AZbSVBk
+

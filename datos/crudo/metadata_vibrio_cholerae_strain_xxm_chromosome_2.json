@@ -1,0 +1,16 @@
+{
+  "fecha_descarga": "2026-02-09T14:52:09.974837",
+  "fuente": "NCBI",
+  "id_acceso": "NZ_CP166973.1",
+  "organismo_config": "Vibrio cholerae strain XXM chromosome 2",
+  "genoma": {
+    "id": "NZ_CP166973.1",
+    "nombre": "NZ_CP166973",
+    "descripcion": "Vibrio cholerae strain XXM chromosome 2, complete sequence",
+    "longitud": 1090283,
+    "organismo": "Vibrio cholerae",
+    "fecha_actualizacion": "05-FEB-2026",
+    "num_features": 2068,
+    "nombre_corto": "vibrio_cholerae_strain_xxm_chromosome_2"
+  }
+}

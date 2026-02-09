@@ -1,0 +1,535 @@
+{
+  "fecha_analisis": "2026-02-09T15:08:04.854881",
+  "organismo": "Vibrio cholerae",
+  "genoma_basename": "vibrio_cholerae_strain_xxm_chromosome_2",
+  "longitud_genoma": 1090283,
+  "composicion_genomica": {
+    "codificante_cds": {
+      "bases": 922167,
+      "porcentaje": 84.58
+    },
+    "tRNA": {
+      "bases": 310,
+      "porcentaje": 0.03
+    },
+    "rRNA": {
+      "bases": 0,
+      "porcentaje": 0.0
+    },
+    "regiones_repetitivas": {
+      "bases": 0,
+      "porcentaje": 0.0
+    },
+    "otro_RNA_funcional": {
+      "bases": 0,
+      "porcentaje": 0.0
+    },
+    "intergenico": {
+      "bases": 167806,
+      "porcentaje": 15.39
+    }
+  },
+  "features_anotados": {
+    "source": 1,
+    "gene": 1032,
+    "CDS": 1028,
+    "regulatory": 3,
+    "tRNA": 4
+  },
+  "gc_por_region": {
+    "gc_total": 46.85,
+    "gc_codificante": 47.62,
+    "gc_no_codificante": 42.59,
+    "diferencia_gc": 5.03
+  },
+  "operones_putativos": {
+    "total": 103,
+    "genes_en_operones": 255,
+    "porcentaje_genes_en_operones": 24.8,
+    "operon_mas_grande": 7,
+    "umbral_distancia_pb": 50,
+    "operones": [
+      {
+        "numero": 1,
+        "genes": [
+          "ACBD56_RS13440",
+          "phrB",
+          "ACBD56_RS13450"
+        ],
+        "num_genes": 3,
+        "hebra": "+",
+        "inicio": 10234,
+        "fin": 13380,
+        "longitud_total": 3146
+      },
+      {
+        "numero": 2,
+        "genes": [
+          "ACBD56_RS13470",
+          "ACBD56_RS13475"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 17813,
+        "fin": 22271,
+        "longitud_total": 4458
+      },
+      {
+        "numero": 3,
+        "genes": [
+          "pstC",
+          "pstA",
+          "pstB"
+        ],
+        "num_genes": 3,
+        "hebra": "+",
+        "inicio": 27313,
+        "fin": 29887,
+        "longitud_total": 2574
+      },
+      {
+        "numero": 4,
+        "genes": [
+          "ACBD56_RS13605",
+          "ACBD56_RS13610"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 49360,
+        "fin": 51334,
+        "longitud_total": 1974
+      },
+      {
+        "numero": 5,
+        "genes": [
+          "pncB",
+          "ACBD56_RS13625"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 52461,
+        "fin": 54840,
+        "longitud_total": 2379
+      },
+      {
+        "numero": 6,
+        "genes": [
+          "ACBD56_RS13630",
+          "ACBD56_RS13635"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 54876,
+        "fin": 56804,
+        "longitud_total": 1928
+      },
+      {
+        "numero": 7,
+        "genes": [
+          "tssB",
+          "tssC",
+          "tssE",
+          "tssF"
+        ],
+        "num_genes": 4,
+        "hebra": "+",
+        "inicio": 63794,
+        "fin": 68035,
+        "longitud_total": 4241
+      },
+      {
+        "numero": 8,
+        "genes": [
+          "tssG",
+          "tagH",
+          "tssJ",
+          "tssK",
+          "icmH",
+          "tssH",
+          "vasH"
+        ],
+        "num_genes": 7,
+        "hebra": "+",
+        "inicio": 67998,
+        "fin": 77331,
+        "longitud_total": 9333
+      },
+      {
+        "numero": 9,
+        "genes": [
+          "vasI",
+          "vasJ",
+          "tssM",
+          "ACBD56_RS13735"
+        ],
+        "num_genes": 4,
+        "hebra": "+",
+        "inicio": 77327,
+        "fin": 84277,
+        "longitud_total": 6950
+      },
+      {
+        "numero": 10,
+        "genes": [
+          "rbsD",
+          "rbsA",
+          "rbsC"
+        ],
+        "num_genes": 3,
+        "hebra": "+",
+        "inicio": 88639,
+        "fin": 91586,
+        "longitud_total": 2947
+      },
+      {
+        "numero": 11,
+        "genes": [
+          "rbsK",
+          "ACBD56_RS13780"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 92662,
+        "fin": 94601,
+        "longitud_total": 1939
+      },
+      {
+        "numero": 12,
+        "genes": [
+          "ACBD56_RS13860",
+          "ACBD56_RS13865",
+          "ACBD56_RS13870"
+        ],
+        "num_genes": 3,
+        "hebra": "-",
+        "inicio": 116762,
+        "fin": 118810,
+        "longitud_total": 2048
+      },
+      {
+        "numero": 13,
+        "genes": [
+          "ACBD56_RS13970",
+          "ACBD56_RS13975",
+          "ACBD56_RS13980"
+        ],
+        "num_genes": 3,
+        "hebra": "-",
+        "inicio": 138836,
+        "fin": 142141,
+        "longitud_total": 3305
+      },
+      {
+        "numero": 14,
+        "genes": [
+          "ACBD56_RS13985",
+          "ACBD56_RS13990"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 142137,
+        "fin": 144030,
+        "longitud_total": 1893
+      },
+      {
+        "numero": 15,
+        "genes": [
+          "ACBD56_RS14060",
+          "ACBD56_RS14065"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 158092,
+        "fin": 160061,
+        "longitud_total": 1969
+      },
+      {
+        "numero": 16,
+        "genes": [
+          "ACBD56_RS14165",
+          "ACBD56_RS14170"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 187101,
+        "fin": 188904,
+        "longitud_total": 1803
+      },
+      {
+        "numero": 17,
+        "genes": [
+          "vctG",
+          "vctC"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 195742,
+        "fin": 197460,
+        "longitud_total": 1718
+      },
+      {
+        "numero": 18,
+        "genes": [
+          "gcvH",
+          "ACBD56_RS14245"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 206953,
+        "fin": 208678,
+        "longitud_total": 1725
+      },
+      {
+        "numero": 19,
+        "genes": [
+          "rpmI",
+          "rplT"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 213941,
+        "fin": 214531,
+        "longitud_total": 590
+      },
+      {
+        "numero": 20,
+        "genes": [
+          "ACBD56_RS14315",
+          "ACBD56_RS14320"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 219348,
+        "fin": 219927,
+        "longitud_total": 579
+      },
+      {
+        "numero": 21,
+        "genes": [
+          "ACBD56_RS14495",
+          "ACBD56_RS14500"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 241345,
+        "fin": 241924,
+        "longitud_total": 579
+      },
+      {
+        "numero": 22,
+        "genes": [
+          "ACBD56_RS15430",
+          "ACBD56_RS15435"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 358154,
+        "fin": 358525,
+        "longitud_total": 371
+      },
+      {
+        "numero": 23,
+        "genes": [
+          "nrdD",
+          "nrdG"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 372334,
+        "fin": 374927,
+        "longitud_total": 2593
+      },
+      {
+        "numero": 24,
+        "genes": [
+          "fruA",
+          "pfkB",
+          "fruB"
+        ],
+        "num_genes": 3,
+        "hebra": "-",
+        "inicio": 377203,
+        "fin": 381125,
+        "longitud_total": 3922
+      },
+      {
+        "numero": 25,
+        "genes": [
+          "ACBD56_RS15565",
+          "ACBD56_RS15570"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 382497,
+        "fin": 386680,
+        "longitud_total": 4183
+      },
+      {
+        "numero": 26,
+        "genes": [
+          "ACBD56_RS15750",
+          "ACBD56_RS15755"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 431311,
+        "fin": 431974,
+        "longitud_total": 663
+      },
+      {
+        "numero": 27,
+        "genes": [
+          "ACBD56_RS15760",
+          "pntB"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 432266,
+        "fin": 435193,
+        "longitud_total": 2927
+      },
+      {
+        "numero": 28,
+        "genes": [
+          "vxrB",
+          "ACBD56_RS15780"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 436767,
+        "fin": 438311,
+        "longitud_total": 1544
+      },
+      {
+        "numero": 29,
+        "genes": [
+          "ACBD56_RS15785",
+          "ACBD56_RS15790"
+        ],
+        "num_genes": 2,
+        "hebra": "+",
+        "inicio": 438371,
+        "fin": 439740,
+        "longitud_total": 1369
+      },
+      {
+        "numero": 30,
+        "genes": [
+          "yciH",
+          "ACBD56_RS15805"
+        ],
+        "num_genes": 2,
+        "hebra": "-",
+        "inicio": 440976,
+        "fin": 441679,
+        "longitud_total": 703
+      }
+    ],
+    "total_cds_analizados": 1028
+  },
+  "educativo": {
+    "titulo": "Estructura del Gen Bacteriano vs Eucariota",
+    "por_que_no_intrones": {
+      "titulo": "Por que las bacterias no tienen intrones?",
+      "explicacion": [
+        "Las bacterias carecen del complejo de splicing (spliceosoma) necesario para procesar intrones. Este complejo de ribonucleoproteinas es exclusivo de celulas eucariotas.",
+        "En bacterias, la transcripcion y traduccion ocurren simultaneamente (acoplamiento transcripcion-traduccion). No hay tiempo para eliminar intrones entre ambos procesos.",
+        "La presion evolutiva favorece genomas compactos en procariotas. Los intrones representarian ADN 'extra' que consume energia sin beneficio directo, lo cual es desfavorable en organismos con alta tasa de replicacion.",
+        "Los genes bacterianos se organizan frecuentemente en operones: multiples genes bajo un mismo promotor transcritos como un solo ARNm policistronico. Esta organizacion maximiza la eficiencia y es incompatible con el splicing de intrones.",
+        "La densidad genica en bacterias es muy alta (85-90% del genoma codifica), a diferencia de eucariotas donde solo el 1-2% del genoma es codificante."
+      ],
+      "nota": "Excepcion: Algunos intrones del Grupo I y II se encuentran raramente en bacterias, especialmente en genes de ARNr y ARNt, pero son autocataliticos (se eliminan solos) y no requieren spliceosoma."
+    },
+    "estructura_gen_bacteriano": {
+      "titulo": "Estructura de un Gen Bacteriano Tipico",
+      "elementos": [
+        {
+          "nombre": "Promotor",
+          "posicion": "Upstream (-35 y -10)",
+          "descripcion": "Region de reconocimiento por la ARN polimerasa. Contiene la caja -35 (TTGACA) y la caja -10 o Pribnow (TATAAT).",
+          "color": "#f59e0b"
+        },
+        {
+          "nombre": "RBS (Shine-Dalgarno)",
+          "posicion": "~8 pb antes del ATG",
+          "descripcion": "Sitio de union al ribosoma. Secuencia consenso AGGAGG complementaria al ARNr 16S. Esencial para el inicio de la traduccion.",
+          "color": "#8b5cf6"
+        },
+        {
+          "nombre": "Codon de Inicio (ATG)",
+          "posicion": "Inicio del CDS",
+          "descripcion": "Marca el inicio de la secuencia codificante. En bacterias, casi siempre es ATG (codifica formil-metionina, fMet).",
+          "color": "#10b981"
+        },
+        {
+          "nombre": "CDS (Secuencia Codificante)",
+          "posicion": "Cuerpo del gen",
+          "descripcion": "Region continua sin intrones que codifica la proteina. Cada 3 nucleotidos forman un codon que especifica un aminoacido.",
+          "color": "#3b82f6"
+        },
+        {
+          "nombre": "Codon de Parada",
+          "posicion": "Final del CDS",
+          "descripcion": "Senala el fin de la traduccion. En bacterias los mas comunes son TAA (mas frecuente), TGA y TAG.",
+          "color": "#ef4444"
+        },
+        {
+          "nombre": "Terminador",
+          "posicion": "Downstream del CDS",
+          "descripcion": "Estructura de horquilla (stem-loop) en el ARNm que causa la disociacion de la ARN polimerasa. Puede ser Rho-dependiente o Rho-independiente.",
+          "color": "#6b7280"
+        }
+      ]
+    },
+    "comparacion_eucariota": {
+      "titulo": "Diferencias con Genes Eucariotas",
+      "diferencias": [
+        {
+          "aspecto": "Intrones",
+          "bacteria": "Ausentes (gen continuo)",
+          "eucariota": "Presentes (requieren splicing)"
+        },
+        {
+          "aspecto": "ARNm",
+          "bacteria": "Policistronico (multiples genes)",
+          "eucariota": "Monocistronico (un gen)"
+        },
+        {
+          "aspecto": "Procesamiento",
+          "bacteria": "Minimo (sin cap ni poly-A)",
+          "eucariota": "Complejo (cap 5', poly-A 3', splicing)"
+        },
+        {
+          "aspecto": "Transcripcion-Traduccion",
+          "bacteria": "Simultaneas (acopladas)",
+          "eucariota": "Separadas (nucleo vs citoplasma)"
+        },
+        {
+          "aspecto": "Densidad genica",
+          "bacteria": "Alta (~87% codificante)",
+          "eucariota": "Baja (~1.5% codificante en humanos)"
+        },
+        {
+          "aspecto": "Operones",
+          "bacteria": "Frecuentes",
+          "eucariota": "Raros (solo en nematodos)"
+        },
+        {
+          "aspecto": "Tamano genoma",
+          "bacteria": "Compacto (1-10 Mb)",
+          "eucariota": "Grande (10 Mb - 150 Gb)"
+        }
+      ]
+    }
+  },
+  "estadisticas": {
+    "total_cds": 1028,
+    "total_trna": 4,
+    "total_rrna": 0,
+    "total_repeat_region": 0,
+    "total_ncrna": 0,
+    "densidad_codificante": 84.58,
+    "total_operones": 103,
+    "genes_en_operones": 255
+  }
+}

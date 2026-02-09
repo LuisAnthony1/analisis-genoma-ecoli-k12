@@ -1,0 +1,139 @@
+{
+  "fecha_analisis": "2026-02-09T15:07:55.598099",
+  "organismo": "Vibrio Cholerae Strain Xxm Chromosome 2",
+  "organismo_corto": "vibrio_cholerae_strain_xxm_chromosome_2",
+  "archivo_fuente": "/home/ubuntu/ecoli_k12_analysis/datos/crudo/vibrio_cholerae_strain_xxm_chromosome_2.gb",
+  "estadisticas_generales": {
+    "total_genes": 1028,
+    "longitud_genoma_pb": 1090283,
+    "total_pb_codificante": 922823,
+    "densidad_genica_porcentaje": 84.64,
+    "tamano_gen": {
+      "minimo_pb": 45,
+      "maximo_pb": 9786,
+      "promedio_pb": 897.69,
+      "mediana_pb": 732.0,
+      "desviacion_std": 717.38
+    },
+    "contenido_gc_cds": {
+      "promedio": 46.31,
+      "minimo": 29.15,
+      "maximo": 55.86
+    },
+    "distribucion_hebras": {
+      "forward": 625,
+      "reverse": 403,
+      "porcentaje_forward": 60.8,
+      "porcentaje_reverse": 39.2
+    }
+  },
+  "distribucion_tamanos": {
+    "0-300 pares de bases": {
+      "cantidad": 159,
+      "porcentaje": 15.47,
+      "descripcion": "muy cortos, <100 aminoacidos"
+    },
+    "301-600 pares de bases": {
+      "cantidad": 263,
+      "porcentaje": 25.58,
+      "descripcion": "cortos, 100-200 aminoacidos"
+    },
+    "601-900 pares de bases": {
+      "cantidad": 184,
+      "porcentaje": 17.9,
+      "descripcion": "medianos, 200-300 aminoacidos"
+    },
+    "901-1500 pares de bases": {
+      "cantidad": 272,
+      "porcentaje": 26.46,
+      "descripcion": "largos, 300-500 aminoacidos"
+    },
+    "1501-3000 pares de bases": {
+      "cantidad": 138,
+      "porcentaje": 13.42,
+      "descripcion": "muy largos, 500-1000 aminoacidos"
+    },
+    ">3000 pares de bases": {
+      "cantidad": 12,
+      "porcentaje": 1.17,
+      "descripcion": "extra largos, >1000 aminoacidos"
+    }
+  },
+  "comparacion_literatura": {
+    "Total CDS": {
+      "observado": 1028,
+      "literatura": 4000,
+      "diferencia": -2972,
+      "diferencia_porcentaje": -74.3,
+      "fuente": "EcoCyc"
+    },
+    "Densidad genica": {
+      "observado": 84.64,
+      "literatura": 88.0,
+      "diferencia": -3.36,
+      "diferencia_porcentaje": -3.82,
+      "fuente": "EcoCyc"
+    },
+    "Tamano promedio": {
+      "observado": 897.69,
+      "literatura": 1008,
+      "diferencia": -110.31,
+      "diferencia_porcentaje": -10.94,
+      "fuente": "EcoCyc"
+    }
+  },
+  "tipos_features": {
+    "source": 1,
+    "gene": 1032,
+    "CDS": 1028,
+    "regulatory": 3,
+    "tRNA": 4
+  },
+  "valores_literatura": {
+    "longitud_genoma": 4032000,
+    "genes_codificantes": 4000,
+    "contenido_gc_genoma": 48.3,
+    "densidad_genica": 88.0,
+    "tamano_promedio_gen": 1008
+  },
+  "referencias_bibliograficas": {
+    "fuente": "Valores obtenidos via IA (Gemini)",
+    "referencias_ia": [
+      "Alain, B., & Rodolphe, H. (2015). Vibrio cholerae: From environmental reservoirs to human disease. In The Biology of Vibrios (pp. 1-30). Springer, Cham.",
+      "World Health Organization. (2018). Cholera. Fact sheet."
+    ]
+  },
+  "analisis_genes_vs_cds": {
+    "genes_totales_anotados": 1032,
+    "genes_codificantes_cds": 1028,
+    "genes_no_codificantes": 4,
+    "desglose_rna": {
+      "tRNA": 4
+    },
+    "pseudogenes": 24,
+    "explicacion": "Los genes no codificantes producen ARN funcional (tRNA, rRNA) necesarios para la vida celular"
+  },
+  "genes_extremos": {
+    "gen_mas_largo": {
+      "locus_tag": "ACBD56_RS17080",
+      "nombre": "",
+      "longitud_pb": 9786,
+      "inicio": 730225,
+      "fin": 740011,
+      "producto": "retention module-containing protein",
+      "primeros_10_nt": "ATGCAGTCTC",
+      "ultimos_10_nt": "TCACGACTAA"
+    },
+    "gen_mas_corto": {
+      "locus_tag": "ACBD56_RS14430",
+      "nombre": "",
+      "longitud_pb": 45,
+      "inicio": 234202,
+      "fin": 234247,
+      "producto": "hypothetical protein",
+      "primeros_10_nt": "TTGTTTGATG",
+      "ultimos_10_nt": "AAAAGGCTGC"
+    }
+  },
+  "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
+}
