@@ -908,9 +908,16 @@ if __name__ == "__main__":
     print("  Presiona Ctrl+C para detener")
     print("=" * 60)
 
+    import socket as _socket
+
+    class ReusableHTTPServer(http.server.HTTPServer):
+        allow_reuse_address = True
+        def server_bind(self):
+            self.socket.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
+            super().server_bind()
+
     try:
-        http.server.HTTPServer.allow_reuse_address = True
-        server = http.server.HTTPServer(("", PUERTO), GenomeHubHandler)
+        server = ReusableHTTPServer(("", PUERTO), GenomeHubHandler)
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n[INFO] Servidor detenido")
