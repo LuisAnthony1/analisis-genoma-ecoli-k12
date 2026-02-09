@@ -795,11 +795,13 @@ const DashboardRenderer = {
             </div>
         `;
 
-        // Cargar previews de JSON
+        // Cargar previews de JSON y CSV
         setTimeout(() => {
             (tablas || []).forEach(file => {
                 if (file.extension === 'json') {
                     this._cargarPreviewJSON(file, genome);
+                } else if (file.extension === 'csv') {
+                    this._cargarPreviewCSV(file, genome);
                 }
             });
         }, 100);
@@ -844,6 +846,55 @@ const DashboardRenderer = {
                 html += `<p class="text-slate-400 mt-1">... y ${Object.keys(data).length - 10} campos mas</p>`;
             }
             html += '</div>';
+            el.innerHTML = html;
+        } catch {
+            el.innerHTML = '<p class="text-slate-400">Error al cargar preview</p>';
+        }
+    },
+
+    async _cargarPreviewCSV(file, genome) {
+        const previewId = `preview-${file.filename.replace(/\./g, '-')}`;
+        const el = document.getElementById(previewId);
+        if (!el) return;
+
+        try {
+            const resp = await fetch(`/api/result_data?genome=${genome}&file=${file.filename}`);
+            const result = await resp.json();
+            const rows = result.data || result.rows || [];
+            if (!result.success || rows.length === 0) {
+                el.innerHTML = '<p class="text-slate-400">Sin datos</p>';
+                return;
+            }
+
+            const headers = result.headers || Object.keys(rows[0]);
+            const maxRows = Math.min(rows.length, 8);
+            const maxCols = Math.min(headers.length, 6);
+
+            let html = '<div class="overflow-x-auto"><table class="w-full text-xs">';
+            html += '<thead><tr>';
+            for (let i = 0; i < maxCols; i++) {
+                html += `<th class="text-left px-2 py-1 text-violet-400 border-b border-slate-300 dark:border-slate-600">${headers[i]}</th>`;
+            }
+            if (headers.length > maxCols) html += `<th class="px-2 py-1 text-slate-400 border-b border-slate-300">...</th>`;
+            html += '</tr></thead><tbody>';
+
+            for (let r = 0; r < maxRows; r++) {
+                const row = rows[r];
+                html += '<tr>';
+                for (let i = 0; i < maxCols; i++) {
+                    const val = row[headers[i]] || '';
+                    const display = String(val).substring(0, 30) + (String(val).length > 30 ? '...' : '');
+                    html += `<td class="px-2 py-1 text-secondary border-b border-slate-100 dark:border-slate-700">${display}</td>`;
+                }
+                if (headers.length > maxCols) html += '<td class="px-2 py-1 text-slate-400">...</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+
+            if (rows.length > maxRows) {
+                html += `<p class="text-slate-400 text-center mt-2">... y ${rows.length - maxRows} filas mas</p>`;
+            }
+
             el.innerHTML = html;
         } catch {
             el.innerHTML = '<p class="text-slate-400">Error al cargar preview</p>';

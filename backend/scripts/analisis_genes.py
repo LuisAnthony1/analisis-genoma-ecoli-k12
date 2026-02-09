@@ -109,9 +109,18 @@ def seleccionar_organismo():
 
     basename = sys.argv[1]
 
-    # Buscar en organismos conocidos por nombre_corto
+    # Buscar en organismos conocidos por nombre_corto (exacto o parcial)
     for num, org in ORGANISMOS.items():
-        if org["nombre_corto"] == basename:
+        nombre_corto = org["nombre_corto"]
+        # Match exacto
+        if nombre_corto == basename:
+            return num
+        # Match parcial: si el basename contiene el nombre corto o viceversa
+        if nombre_corto in basename or basename in nombre_corto:
+            return num
+        # Match por palabras clave del organismo
+        keywords = org["nombre"].lower().split()[:2]  # primeras 2 palabras (ej: "escherichia", "coli")
+        if all(kw in basename.lower() for kw in keywords):
             return num
 
     # Genoma desconocido - retornar basename como string
