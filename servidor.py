@@ -280,6 +280,8 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 120},
         "visualizaciones": {"file": "visualizaciones.py", "timeout": 180},
         "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
+        "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 120},
+        "generar_informe": {"file": "generar_informe.py", "timeout": 300},
     }
 
     if script_name not in scripts_permitidos:
@@ -410,6 +412,45 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/api/results_genomes":
             resultado = listar_genomas_con_resultados()
+            self._json_response(resultado)
+            return
+
+        if path == "/api/generar_informe":
+            genome = query.get("genome", [""])[0]
+            if not genome:
+                self._json_response({"success": False, "error": "Falta el genoma"}, 400)
+                return
+            # Ejecutar script de generacion de informe
+            resultado = ejecutar_analisis("generar_informe", genome_basename=genome)
+            if resultado.get("success") and resultado.get("return_code") == 0:
+                # Verificar que el PDF se genero
+                pdf_path = os.path.join(RUTA_RESULTADOS, genome, f"informe_{genome}.pdf")
+                if os.path.exists(pdf_path):
+                    # Servir el PDF como descarga
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/pdf")
+                    self.send_header("Content-Disposition", f'attachment; filename="informe_{genome}.pdf"')
+                    self.send_header("Content-Length", str(os.path.getsize(pdf_path)))
+                    self.end_headers()
+                    with open(pdf_path, "rb") as f:
+                        self.wfile.write(f.read())
+                    return
+                else:
+                    self._json_response({"success": False, "error": "El PDF no se genero correctamente", "output": resultado.get("output", "")})
+            else:
+                self._json_response({"success": False, "error": resultado.get("error", "Error al generar informe"), "output": resultado.get("output", "")})
+            return
+
+        if path == "/api/buscar_secuencia":
+            genome = query.get("genome", [""])[0]
+            secuencia = query.get("secuencia", [""])[0].upper().strip()
+            if not genome or not secuencia:
+                self._json_response({"success": False, "error": "Faltan genome y secuencia"}, 400)
+                return
+            if len(secuencia) < 4:
+                self._json_response({"success": False, "error": "La secuencia debe tener al menos 4 nucleotidos"}, 400)
+                return
+            resultado = buscar_secuencia_en_genoma(genome, secuencia)
             self._json_response(resultado)
             return
 
@@ -727,6 +768,95 @@ def listar_resultados(tipo="tablas", genome=None):
         })
 
     return {"success": True, "type": tipo, "genome": genome, "count": len(resultados), "results": resultados}
+
+
+def buscar_secuencia_en_genoma(genome_basename, secuencia):
+    """Busca una secuencia de nucleotidos en el genoma y devuelve posiciones."""
+    archivo_gb = os.path.join(RUTA_DATOS_CRUDO, f"{genome_basename}.gb")
+    if not os.path.exists(archivo_gb):
+        return {"success": False, "error": "Genoma no encontrado"}
+
+    try:
+        from Bio.Seq import Seq
+        registro = SeqIO.read(archivo_gb, "genbank")
+        seq_str = str(registro.seq).upper()
+        secuencia = secuencia.upper()
+
+        # Construir indice de genes
+        genes_idx = []
+        for feature in registro.features:
+            if feature.type == "CDS":
+                genes_idx.append({
+                    "start": int(feature.location.start),
+                    "end": int(feature.location.end),
+                    "strand": "+" if feature.location.strand == 1 else "-",
+                    "gene": feature.qualifiers.get("gene", [""])[0],
+                    "locus_tag": feature.qualifiers.get("locus_tag", [""])[0],
+                    "product": feature.qualifiers.get("product", [""])[0]
+                })
+
+        def find_gene_context(pos_start, pos_end):
+            for g in genes_idx:
+                if g["start"] <= pos_start < g["end"] or g["start"] < pos_end <= g["end"]:
+                    return {
+                        "nombre": g["gene"] or g["locus_tag"],
+                        "producto": g["product"],
+                        "hebra": g["strand"],
+                        "inicio": g["start"],
+                        "fin": g["end"]
+                    }
+            return {"nombre": "Intergenico", "producto": "Fuera de CDS", "hebra": "N/A"}
+
+        matches = []
+
+        # Buscar en hebra forward
+        start = 0
+        while True:
+            pos = seq_str.find(secuencia, start)
+            if pos == -1:
+                break
+            context_gene = find_gene_context(pos, pos + len(secuencia))
+            context_seq = seq_str[max(0, pos - 20):pos + len(secuencia) + 20]
+            matches.append({
+                "posicion": pos + 1,
+                "fin": pos + len(secuencia),
+                "hebra": "+",
+                "gen": context_gene,
+                "contexto": context_seq
+            })
+            start = pos + 1
+            if len(matches) > 500:
+                break
+
+        # Buscar reverse complement
+        rev_comp = str(Seq(secuencia).reverse_complement())
+        start = 0
+        while True:
+            pos = seq_str.find(rev_comp, start)
+            if pos == -1:
+                break
+            context_gene = find_gene_context(pos, pos + len(rev_comp))
+            context_seq = seq_str[max(0, pos - 20):pos + len(rev_comp) + 20]
+            matches.append({
+                "posicion": pos + 1,
+                "fin": pos + len(rev_comp),
+                "hebra": "-",
+                "gen": context_gene,
+                "contexto": context_seq
+            })
+            start = pos + 1
+            if len(matches) > 500:
+                break
+
+        return {
+            "success": True,
+            "secuencia_buscada": secuencia,
+            "longitud_genoma": len(seq_str),
+            "total_matches": len(matches),
+            "matches": matches[:200]
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 def leer_resultado(genome, filename):

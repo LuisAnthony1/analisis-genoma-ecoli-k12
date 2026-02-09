@@ -246,11 +246,18 @@ async function loadDashboard(analysisType) {
         return;
     }
 
+    // Tab especial: buscar secuencia (no necesita JSON)
+    if (analysisType === 'buscar') {
+        DashboardRenderer.renderBusquedaSecuencia(genome, container);
+        return;
+    }
+
     // Mapear tab a archivo JSON
     const fileMap = {
         genes: `analisis_genes_${genome}.json`,
         codones: `analisis_codones_${genome}.json`,
-        distancias: `analisis_distancias_${genome}.json`
+        distancias: `analisis_distancias_${genome}.json`,
+        estructura: `analisis_estructura_${genome}.json`
     };
 
     const filename = fileMap[analysisType];
@@ -276,6 +283,8 @@ async function loadDashboard(analysisType) {
         DashboardRenderer.renderCodonesDashboard(data, container);
     } else if (analysisType === 'distancias') {
         DashboardRenderer.renderDistanciasDashboard(data, container);
+    } else if (analysisType === 'estructura') {
+        DashboardRenderer.renderEstructuraDashboard(data, genome, container);
     }
 }
 
@@ -451,6 +460,59 @@ async function runComparison() {
 
 
 // =============================================================================
+// GENERAR INFORME PDF
+// =============================================================================
+
+async function generarInforme() {
+    const genome = currentResultsGenome;
+    if (!genome) {
+        showNotification('Selecciona un genoma primero en la seccion Resultados', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('generate-report-btn');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Generando informe... (puede tardar varios minutos)';
+    btn.classList.add('opacity-70', 'cursor-wait');
+
+    showNotification('Generando informe PDF con IA... esto puede tardar unos minutos', 'info');
+
+    try {
+        const response = await fetch(`/api/generar_informe?genome=${genome}`);
+
+        if (response.ok && response.headers.get('Content-Type')?.includes('application/pdf')) {
+            // El servidor devolvio el PDF directamente
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `informe_${genome}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Informe PDF descargado exitosamente', 'success');
+        } else {
+            const data = await response.json();
+            const errorMsg = data.error || 'Error desconocido';
+            showNotification(`Error: ${errorMsg}`, 'error');
+            if (data.output) {
+                console.error('Output del script:', data.output);
+            }
+        }
+    } catch (error) {
+        showNotification(`Error al generar informe: ${error.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generar Informe PDF (IEEE)';
+        btn.classList.remove('opacity-70', 'cursor-wait');
+    }
+}
+
+
+// =============================================================================
 // EVENT LISTENERS
 // =============================================================================
 
@@ -475,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsGenome.addEventListener('change', () => {
             currentResultsGenome = resultsGenome.value;
             DashboardRenderer.clearCache();
+            if (typeof ChatIA !== 'undefined') ChatIA.destroy();
             loadDashboard('genes');
             // Reset tabs
             document.querySelectorAll('.dashboard-tab').forEach(t => {

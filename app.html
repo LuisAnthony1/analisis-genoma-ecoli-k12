@@ -286,6 +286,11 @@
                                     <span class="text-sm text-primary">Generar Graficos</span>
                                     <span class="text-xs text-secondary">(matplotlib)</span>
                                 </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_estructura_gen" checked>
+                                    <span class="text-sm text-primary">Estructura Genomica</span>
+                                    <span class="text-xs text-secondary">(regiones, operones)</span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -406,6 +411,12 @@
                         <button id="tab-distancias" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="distancias">
                             Distancias Intergénicas
                         </button>
+                        <button id="tab-estructura" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="estructura">
+                            Estructura
+                        </button>
+                        <button id="tab-buscar" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="buscar">
+                            Localizar
+                        </button>
                         <button id="tab-archivos" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="archivos">
                             Archivos
                         </button>
@@ -425,10 +436,10 @@
                     <!-- Botón Generar Informe -->
                     <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-700">
                         <div class="text-center">
-                            <button id="generate-report-btn" class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-xl font-semibold text-lg transition shadow-lg opacity-70 cursor-not-allowed" disabled>
-                                Generar Informe
+                            <button id="generate-report-btn" class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-xl font-semibold text-lg transition shadow-lg hover:shadow-xl" onclick="generarInforme()">
+                                Generar Informe PDF (IEEE)
                             </button>
-                            <p class="text-sm text-secondary mt-3">Próximamente</p>
+                            <p class="text-sm text-secondary mt-3">Genera un informe completo de 20-40 paginas con interpretaciones de IA</p>
                         </div>
                     </div>
 

@@ -19,6 +19,15 @@ const ChatIA = {
         }
 
         this.analysisType = analysisType || 'genes';
+
+        // Si es el mismo genoma y el modal ya existe, solo mostrarlo
+        if (this.genome === genome && this.modal) {
+            this.modal.style.display = 'flex';
+            setTimeout(() => document.getElementById('chat-ia-input')?.focus(), 100);
+            return;
+        }
+
+        // Nuevo genoma o primera vez: resetear todo
         this.genome = genome;
         this.historial = [];
         this.contextData = null;
@@ -75,6 +84,22 @@ const ChatIA = {
                             <p class="text-xs text-secondary">Cargando datos del analisis...</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="px-6 py-2 border-t border-slate-100 dark:border-slate-800 flex gap-2 flex-wrap">
+                    <button onclick="ChatIA._quickAction('crispr')" class="px-3 py-1.5 bg-violet-500/10 text-violet-500 text-xs font-medium rounded-lg hover:bg-violet-500/20 transition">
+                        Sitios CRISPR-Cas9
+                    </button>
+                    <button onclick="ChatIA._quickAction('mutacion')" class="px-3 py-1.5 bg-amber-500/10 text-amber-500 text-xs font-medium rounded-lg hover:bg-amber-500/20 transition">
+                        Mutaciones clave
+                    </button>
+                    <button onclick="ChatIA._quickAction('resumen')" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-xs font-medium rounded-lg hover:bg-emerald-500/20 transition">
+                        Resumen completo
+                    </button>
+                    <button onclick="ChatIA._quickAction('patogenicidad')" class="px-3 py-1.5 bg-red-500/10 text-red-500 text-xs font-medium rounded-lg hover:bg-red-500/20 transition">
+                        Patogenicidad
+                    </button>
                 </div>
 
                 <!-- Input -->
@@ -357,10 +382,35 @@ IMPORTANTE: Se te proporcionan datos REALES del analisis. USA ESOS DATOS para re
         if (el) el.remove();
     },
 
+    _quickAction(type) {
+        const genomeName = this.genome.replace(/_/g, ' ');
+        const prompts = {
+            crispr: `Basandote en los datos del genoma ${genomeName}, sugiere 3-5 posibles sitios CRISPR-Cas9 para modificacion genomica. Para cada sitio indica:\n1. Gen objetivo y su funcion\n2. Secuencia guia (sgRNA) sugerida de 20nt + PAM (NGG)\n3. Justificacion biologica\n4. Efectos fenotipicos esperados de la mutacion\nConsidera genes de virulencia, metabolismo y resistencia.`,
+            mutacion: `Analiza los genes mas importantes del genoma ${genomeName} y describe las implicaciones biologicas de mutaciones en los 5 genes mas criticos. Para cada gen: funcion normal, que pasaria si se inactiva (knockout), y aplicaciones potenciales en biotecnologia.`,
+            resumen: `Genera un resumen ejecutivo completo del analisis genomico de ${genomeName}. Incluye: hallazgos principales, metricas clave, comparacion con organismos similares, y conclusiones biologicas relevantes. Usa los datos reales proporcionados.`,
+            patogenicidad: `Analiza la patogenicidad de ${genomeName} basandote en los datos del analisis. Evalua: genes de virulencia encontrados, factores de patogenicidad, islas de patogenicidad potenciales, y riesgo biologico. Compara con organismos patogenos conocidos si hay datos de comparacion.`
+        };
+
+        const input = document.getElementById('chat-ia-input');
+        if (input && prompts[type]) {
+            input.value = prompts[type];
+            this.enviar();
+        }
+    },
+
     close() {
+        if (this.modal) {
+            this.modal.style.display = 'none';
+        }
+    },
+
+    destroy() {
         if (this.modal) {
             this.modal.remove();
             this.modal = null;
         }
+        this.historial = [];
+        this.contextData = null;
+        this.genome = '';
     }
 };

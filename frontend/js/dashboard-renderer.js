@@ -902,6 +902,469 @@ const DashboardRenderer = {
     },
 
     // =========================================================================
+    // DASHBOARD DE ESTRUCTURA GENOMICA
+    // =========================================================================
+
+    async renderEstructuraDashboard(data, genome, container) {
+        const comp = data.composicion_genomica || {};
+        const stats = data.estadisticas || {};
+        const operones = data.operones_putativos || {};
+        const edu = data.educativo || {};
+        const gcReg = data.gc_por_region || {};
+
+        container.innerHTML = `
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Codificante (CDS)', (comp.codificante_cds?.porcentaje || 0) + '%', this.fmt(comp.codificante_cds?.bases || 0) + ' pb')}
+                ${this.statsCard('Intergenico', (comp.intergenico?.porcentaje || 0) + '%', this.fmt(comp.intergenico?.bases || 0) + ' pb', 'amber')}
+                ${this.statsCard('Operones Putativos', this.fmt(operones.total || 0), (operones.porcentaje_genes_en_operones || 0) + '% de genes', 'violet')}
+                ${this.statsCard('GC Codificante', (gcReg.gc_codificante || 0) + '%', 'No-cod: ' + (gcReg.gc_no_codificante || 0) + '%', 'cyan')}
+            </div>
+
+            <!-- Graficos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Composicion genomica -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Composicion del Genoma</h3>
+                    <canvas id="chart-estructura-comp" height="280"></canvas>
+                </div>
+
+                <!-- Features anotados -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Features Anotados</h3>
+                    <canvas id="chart-estructura-features" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- Mapa del genoma -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Mapa Lineal del Genoma</h3>
+                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes forward (+) arriba, reverse (-) abajo. Pase el cursor para ver detalles.</p>
+                <div class="flex gap-2 mb-3">
+                    <button onclick="DashboardRenderer._zoomGenomeMap(1.5)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom +</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMap(0.67)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom -</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reset</button>
+                    <span class="text-xs text-secondary ml-2 self-center" id="genome-map-zoom-label">100%</span>
+                </div>
+                <div id="genome-map-container" class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-lg" style="min-height: 180px;">
+                    <p class="text-center text-secondary text-sm py-8">Cargando mapa del genoma...</p>
+                </div>
+            </div>
+
+            <!-- Seccion educativa -->
+            <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                <h3 class="text-lg font-bold text-primary mb-4">${edu.por_que_no_intrones?.titulo || 'Estructura del Gen Bacteriano'}</h3>
+                <div class="space-y-3 text-sm text-secondary leading-relaxed">
+                    ${(edu.por_que_no_intrones?.explicacion || []).map(p => `<p>${p}</p>`).join('')}
+                    ${edu.por_que_no_intrones?.nota ? `<p class="text-xs italic text-amber-600 dark:text-amber-400 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">${edu.por_que_no_intrones.nota}</p>` : ''}
+                </div>
+
+                <!-- Diagrama de estructura del gen bacteriano -->
+                <h4 class="text-sm font-semibold text-primary mt-6 mb-3">${edu.estructura_gen_bacteriano?.titulo || 'Estructura del Gen'}</h4>
+                <div class="flex items-center gap-1 overflow-x-auto pb-2">
+                    ${(edu.estructura_gen_bacteriano?.elementos || []).map(el => `
+                        <div class="flex flex-col items-center min-w-[100px]">
+                            <div class="w-full h-12 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-md" style="background: ${el.color}">${el.nombre}</div>
+                            <p class="text-[10px] text-secondary mt-1 text-center">${el.posicion}</p>
+                        </div>
+                        <div class="text-slate-300 text-lg flex-shrink-0">→</div>
+                    `).join('').replace(/→<\/div>$/, '</div>')}
+                </div>
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    ${(edu.estructura_gen_bacteriano?.elementos || []).map(el => `
+                        <div class="flex items-start gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800">
+                            <div class="w-3 h-3 rounded-sm flex-shrink-0 mt-0.5" style="background: ${el.color}"></div>
+                            <div>
+                                <span class="text-xs font-semibold text-primary">${el.nombre}:</span>
+                                <span class="text-xs text-secondary ml-1">${el.descripcion}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Comparacion eucariota vs procariota -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">${edu.comparacion_eucariota?.titulo || 'Comparacion'}</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-left px-3 py-2 border-b border-slate-200 text-secondary">Aspecto</th>
+                                <th class="text-left px-3 py-2 border-b border-slate-200 text-emerald-500">Bacteria</th>
+                                <th class="text-left px-3 py-2 border-b border-slate-200 text-violet-500">Eucariota</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(edu.comparacion_eucariota?.diferencias || []).map(d => `
+                                <tr>
+                                    <td class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${d.aspecto}</td>
+                                    <td class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary">${d.bacteria}</td>
+                                    <td class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary">${d.eucariota}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tabla de operones -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">Operones Putativos (Top 20)</h3>
+                <p class="text-xs text-secondary mb-3">Grupos de genes adyacentes en la misma hebra con distancia intergenica < 50 pb</p>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 bg-card">
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">#</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Genes</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">N</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Hebra</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Inicio</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Fin</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Longitud</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(operones.operones || []).sort((a, b) => b.num_genes - a.num_genes).slice(0, 20).map(op => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${op.numero}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-primary">${op.genes.slice(0, 6).join(', ')}${op.genes.length > 6 ? ' ...' : ''}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-emerald-500">${op.num_genes}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${op.hebra}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.inicio)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.fin)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.longitud_total)} pb</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // Renderizar charts
+        this._renderChartEstructuraComp(comp);
+        this._renderChartEstructuraFeatures(data.features_anotados || {});
+
+        // Cargar mapa del genoma (necesita CSV de genes)
+        this._cargarMapaGenoma(genome, data.longitud_genoma);
+    },
+
+    _renderChartEstructuraComp(comp) {
+        const labels = [];
+        const values = [];
+        const colors = ['#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#6b7280'];
+
+        const tipos = [
+            ['codificante_cds', 'CDS'],
+            ['intergenico', 'Intergenico'],
+            ['rRNA', 'rRNA'],
+            ['tRNA', 'tRNA'],
+            ['otro_RNA_funcional', 'Otro RNA'],
+            ['regiones_repetitivas', 'Repetitivo']
+        ];
+
+        for (const [key, label] of tipos) {
+            if (comp[key] && comp[key].porcentaje > 0) {
+                labels.push(label + ' (' + comp[key].porcentaje + '%)');
+                values.push(comp[key].porcentaje);
+            }
+        }
+
+        this.createChart('chart-estructura-comp', {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, values.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                }
+            }
+        });
+    },
+
+    _renderChartEstructuraFeatures(features) {
+        const exclude = ['source', 'gene'];
+        const labels = [];
+        const values = [];
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#6b7280'];
+
+        for (const [tipo, count] of Object.entries(features)) {
+            if (!exclude.includes(tipo) && count > 0) {
+                labels.push(tipo);
+                values.push(count);
+            }
+        }
+
+        // Ordenar por count descendente
+        const sorted = labels.map((l, i) => ({ l, v: values[i] })).sort((a, b) => b.v - a.v).slice(0, 8);
+
+        this.createChart('chart-estructura-features', {
+            type: 'bar',
+            data: {
+                labels: sorted.map(x => x.l),
+                datasets: [{
+                    label: 'Cantidad',
+                    data: sorted.map(x => x.v),
+                    backgroundColor: colors.slice(0, sorted.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: 'Cantidad' } }
+                }
+            }
+        });
+    },
+
+    _genomeMapZoom: 1,
+
+    async _cargarMapaGenoma(genome, genomeLength) {
+        const mapContainer = document.getElementById('genome-map-container');
+        if (!mapContainer) return;
+
+        try {
+            const csvFile = `lista_genes_${genome}.csv`;
+            const resp = await fetch(`/api/result_data?genome=${genome}&file=${csvFile}`);
+            const result = await resp.json();
+
+            if (!result.success || !result.data || result.data.length === 0) {
+                mapContainer.innerHTML = '<p class="text-center text-secondary text-sm py-4">No hay datos de genes para el mapa. Ejecuta el analisis de genes primero.</p>';
+                return;
+            }
+
+            const genes = result.data;
+            this._genomeMapZoom = 1;
+            this._renderGenomeMapSVG(genes, genomeLength, mapContainer);
+        } catch (e) {
+            mapContainer.innerHTML = '<p class="text-center text-red-400 text-sm py-4">Error cargando mapa del genoma</p>';
+        }
+    },
+
+    _renderGenomeMapSVG(genes, genomeLength, container) {
+        const width = Math.max(container.clientWidth - 20, 800) * this._genomeMapZoom;
+        const height = 160;
+        const margin = 30;
+        const trackFwd = 35;
+        const trackCenter = 75;
+        const trackRev = 115;
+        const geneH = 28;
+
+        let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="min-width: ${width}px">`;
+
+        // Fondo
+        svg += `<rect width="${width}" height="${height}" fill="transparent"/>`;
+
+        // Linea central del cromosoma
+        svg += `<line x1="${margin}" y1="${trackCenter}" x2="${width - margin}" y2="${trackCenter}" stroke="#475569" stroke-width="2" stroke-dasharray="4,2"/>`;
+
+        // Marcas de escala
+        const scaleStep = Math.pow(10, Math.floor(Math.log10(genomeLength / 10)));
+        for (let pos = 0; pos <= genomeLength; pos += scaleStep) {
+            const x = margin + (pos / genomeLength) * (width - 2 * margin);
+            svg += `<line x1="${x}" y1="${trackCenter - 5}" x2="${x}" y2="${trackCenter + 5}" stroke="#64748b" stroke-width="1"/>`;
+            if (pos % (scaleStep * 2) === 0) {
+                const label = pos >= 1000000 ? (pos / 1000000).toFixed(1) + ' Mb' : pos >= 1000 ? (pos / 1000).toFixed(0) + ' kb' : pos;
+                svg += `<text x="${x}" y="${height - 5}" text-anchor="middle" fill="#94a3b8" font-size="9">${label}</text>`;
+            }
+        }
+
+        // Genes como rectangulos
+        for (const gene of genes) {
+            const inicio = parseInt(gene.inicio || gene.start || 0);
+            const fin = parseInt(gene.fin || gene.end || 0);
+            const hebra = gene.hebra || gene.strand || '+';
+            const nombre = gene.nombre_gen || gene.gene || gene.locus_tag || '';
+
+            const x = margin + (inicio / genomeLength) * (width - 2 * margin);
+            const w = Math.max(1, ((fin - inicio) / genomeLength) * (width - 2 * margin));
+            const y = hebra === '+' || hebra === '1' ? trackFwd : trackRev;
+            const color = hebra === '+' || hebra === '1' ? '#10b981' : '#06b6d4';
+
+            svg += `<rect x="${x}" y="${y}" width="${w}" height="${geneH}" fill="${color}" opacity="0.6" rx="1">`;
+            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra})\n${this.fmt(fin - inicio)} pb</title>`;
+            svg += `</rect>`;
+        }
+
+        // Labels de hebras
+        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Forward (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
+        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Reverse (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
+
+        svg += '</svg>';
+        container.innerHTML = svg;
+    },
+
+    _zoomGenomeMap(factor) {
+        const container = document.getElementById('genome-map-container');
+        const label = document.getElementById('genome-map-zoom-label');
+        if (!container) return;
+
+        if (factor === 0) {
+            this._genomeMapZoom = 1;
+        } else {
+            this._genomeMapZoom = Math.max(0.5, Math.min(10, this._genomeMapZoom * factor));
+        }
+
+        if (label) label.textContent = Math.round(this._genomeMapZoom * 100) + '%';
+
+        // Re-render con el zoom actual
+        const svg = container.querySelector('svg');
+        if (svg) {
+            const currentWidth = parseFloat(svg.getAttribute('width'));
+            const baseWidth = currentWidth / (this._genomeMapZoom / (factor === 0 ? 1 : factor));
+            const newWidth = Math.max(800, baseWidth) * this._genomeMapZoom;
+            svg.setAttribute('width', newWidth);
+            svg.setAttribute('viewBox', `0 0 ${newWidth} 160`);
+            svg.style.minWidth = newWidth + 'px';
+        }
+    },
+
+    // =========================================================================
+    // BUSQUEDA DE SECUENCIA
+    // =========================================================================
+
+    renderBusquedaSecuencia(genome, container) {
+        container.innerHTML = `
+            <div class="max-w-4xl mx-auto">
+                <!-- Input de busqueda -->
+                <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                    <h3 class="text-lg font-bold text-primary mb-2">Localizar Secuencia en el Genoma</h3>
+                    <p class="text-sm text-secondary mb-4">Busca una secuencia de nucleotidos y encuentra su posicion exacta, en que gen cae y en que hebra se encuentra.</p>
+
+                    <div class="flex gap-3">
+                        <input
+                            type="text"
+                            id="buscar-secuencia-input"
+                            placeholder="Ingresa secuencia (ej: ATGCGATCGA, min 4 nucleotidos)"
+                            class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm text-primary font-mono uppercase"
+                            onkeydown="if(event.key==='Enter') DashboardRenderer._buscarSecuencia('${genome}')"
+                        >
+                        <button
+                            onclick="DashboardRenderer._buscarSecuencia('${genome}')"
+                            class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-xl font-medium text-sm transition shadow-lg"
+                        >
+                            Buscar
+                        </button>
+                    </div>
+                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras (forward y reverse complement). Maximo 200 resultados.</p>
+                </div>
+
+                <!-- Resultados -->
+                <div id="buscar-secuencia-resultados"></div>
+            </div>
+        `;
+    },
+
+    async _buscarSecuencia(genome) {
+        const input = document.getElementById('buscar-secuencia-input');
+        const resultContainer = document.getElementById('buscar-secuencia-resultados');
+        const secuencia = (input?.value || '').trim().toUpperCase().replace(/[^ATGCN]/g, '');
+
+        if (secuencia.length < 4) {
+            resultContainer.innerHTML = '<p class="text-amber-500 text-sm text-center py-4">La secuencia debe tener al menos 4 nucleotidos (A, T, G, C)</p>';
+            return;
+        }
+
+        resultContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p class="text-secondary text-sm">Buscando "${secuencia}" en el genoma...</p>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch(`/api/buscar_secuencia?genome=${genome}&secuencia=${secuencia}`);
+            const data = await resp.json();
+
+            if (!data.success) {
+                resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${data.error}</p>`;
+                return;
+            }
+
+            if (data.total_matches === 0) {
+                resultContainer.innerHTML = `
+                    <div class="bg-card rounded-xl p-6 border border-slate-200 text-center">
+                        <div class="text-4xl mb-2">🔍</div>
+                        <p class="text-primary font-medium">No se encontro la secuencia</p>
+                        <p class="text-sm text-secondary mt-1">"${secuencia}" no fue encontrada en ninguna hebra del genoma (${this.fmt(data.longitud_genoma)} pb)</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-primary">Resultados de Busqueda</h4>
+                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-medium">
+                            ${data.total_matches} coincidencia${data.total_matches > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    <p class="text-xs text-secondary mb-3">Secuencia: <span class="font-mono text-primary">${secuencia}</span> (${secuencia.length} nt) en genoma de ${this.fmt(data.longitud_genoma)} pb</p>
+
+                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <thead class="sticky top-0 bg-card">
+                                <tr>
+                                    <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">#</th>
+                                    <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Posicion</th>
+                                    <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Hebra</th>
+                                    <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
+                                    <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Producto</th>
+                                    <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Contexto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            for (let i = 0; i < data.matches.length; i++) {
+                const m = data.matches[i];
+                const genNombre = m.gen?.nombre || 'Intergenico';
+                const genProducto = m.gen?.producto || '';
+                const hebraColor = m.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500';
+
+                // Resaltar match en contexto
+                let contexto = m.contexto || '';
+                const matchIdx = contexto.toUpperCase().indexOf(secuencia);
+                if (matchIdx >= 0) {
+                    contexto = contexto.substring(0, matchIdx) +
+                        '<span class="bg-yellow-200 dark:bg-yellow-800 font-bold">' +
+                        contexto.substring(matchIdx, matchIdx + secuencia.length) +
+                        '</span>' + contexto.substring(matchIdx + secuencia.length);
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${i + 1}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono">${this.fmt(m.posicion)}-${this.fmt(m.fin)}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold ${hebraColor}">${m.hebra}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${genNombre}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary max-w-[200px] truncate">${genProducto}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-[10px]">${contexto}</td>
+                    </tr>
+                `;
+            }
+
+            html += '</tbody></table></div></div>';
+            resultContainer.innerHTML = html;
+        } catch (e) {
+            resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
+        }
+    },
+
+    // =========================================================================
     // UTILIDADES
     // =========================================================================
 
