@@ -909,6 +909,7 @@ if __name__ == "__main__":
     print("=" * 60)
 
     try:
+        http.server.HTTPServer.allow_reuse_address = True
         server = http.server.HTTPServer(("", PUERTO), GenomeHubHandler)
         server.serve_forever()
     except KeyboardInterrupt:
