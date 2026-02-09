@@ -1130,6 +1130,8 @@ const DashboardRenderer = {
     },
 
     _genomeMapZoom: 1,
+    _lastGenomeMapGenes: null,
+    _lastGenomeMapLength: null,
 
     async _cargarMapaGenoma(genome, genomeLength) {
         const mapContainer = document.getElementById('genome-map-container');
@@ -1147,6 +1149,8 @@ const DashboardRenderer = {
 
             const genes = result.data;
             this._genomeMapZoom = 1;
+            this._lastGenomeMapGenes = genes;
+            this._lastGenomeMapLength = genomeLength;
             this._renderGenomeMapSVG(genes, genomeLength, mapContainer);
         } catch (e) {
             mapContainer.innerHTML = '<p class="text-center text-red-400 text-sm py-4">Error cargando mapa del genoma</p>';
@@ -1219,15 +1223,9 @@ const DashboardRenderer = {
 
         if (label) label.textContent = Math.round(this._genomeMapZoom * 100) + '%';
 
-        // Re-render con el zoom actual
-        const svg = container.querySelector('svg');
-        if (svg) {
-            const currentWidth = parseFloat(svg.getAttribute('width'));
-            const baseWidth = currentWidth / (this._genomeMapZoom / (factor === 0 ? 1 : factor));
-            const newWidth = Math.max(800, baseWidth) * this._genomeMapZoom;
-            svg.setAttribute('width', newWidth);
-            svg.setAttribute('viewBox', `0 0 ${newWidth} 160`);
-            svg.style.minWidth = newWidth + 'px';
+        // Re-render usando los datos almacenados para que todo se recalule con el nuevo zoom
+        if (this._lastGenomeMapGenes && this._lastGenomeMapLength) {
+            this._renderGenomeMapSVG(this._lastGenomeMapGenes, this._lastGenomeMapLength, container);
         }
     },
 
