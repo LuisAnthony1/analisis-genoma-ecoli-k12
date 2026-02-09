@@ -41,21 +41,41 @@ RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", "figuras")
 # Parametro de linea de comandos (basename del genoma)
 GENOME_BASENAME = sys.argv[1] if len(sys.argv) >= 2 else None
 
-# Archivos de entrada - buscar por basename si se proporciono
+# Archivos de entrada - buscar en carpeta del genoma primero, luego en tablas legacy
+def buscar_archivo(nombre_archivo):
+    """Busca archivo en carpeta del genoma o en tablas legacy."""
+    if GENOME_BASENAME:
+        # Primero buscar en resultados/{genome}/tablas/
+        ruta_genoma = os.path.join(DIRECTORIO_BASE, "resultados", GENOME_BASENAME, "tablas", nombre_archivo)
+        if os.path.exists(ruta_genoma):
+            return ruta_genoma
+    # Fallback a resultados/tablas/
+    ruta_legacy = os.path.join(RUTA_RESULTADOS_TABLAS, nombre_archivo)
+    if os.path.exists(ruta_legacy):
+        return ruta_legacy
+    return ruta_legacy  # retornar la ruta aunque no exista, para el mensaje de error
+
 if GENOME_BASENAME:
-    ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, f"analisis_codones_{GENOME_BASENAME}.json")
-    ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, f"analisis_genes_{GENOME_BASENAME}.json")
+    ARCHIVO_ANALISIS_CODONES = buscar_archivo(f"analisis_codones_{GENOME_BASENAME}.json")
+    ARCHIVO_ANALISIS_GENES = buscar_archivo(f"analisis_genes_{GENOME_BASENAME}.json")
 else:
     ARCHIVO_ANALISIS_CODONES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_codones_completo.json")
     ARCHIVO_ANALISIS_GENES = os.path.join(RUTA_RESULTADOS_TABLAS, "analisis_genes_completo.json")
 
-# Archivos de comparacion entre organismos (buscar cualquier archivo de comparacion)
+# Archivos de comparacion - buscar en carpeta del genoma y en tablas legacy
 ARCHIVO_COMPARACION = None
-if os.path.exists(RUTA_RESULTADOS_TABLAS):
-    for f in os.listdir(RUTA_RESULTADOS_TABLAS):
-        if f.startswith("comparacion_") and f.endswith(".json"):
-            ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, f)
-            break
+dirs_buscar = []
+if GENOME_BASENAME:
+    dirs_buscar.append(os.path.join(DIRECTORIO_BASE, "resultados", GENOME_BASENAME, "tablas"))
+dirs_buscar.append(RUTA_RESULTADOS_TABLAS)
+for dir_buscar in dirs_buscar:
+    if os.path.exists(dir_buscar):
+        for f in os.listdir(dir_buscar):
+            if f.startswith("comparacion_") and f.endswith(".json"):
+                ARCHIVO_COMPARACION = os.path.join(dir_buscar, f)
+                break
+    if ARCHIVO_COMPARACION:
+        break
 if ARCHIVO_COMPARACION is None:
     ARCHIVO_COMPARACION = os.path.join(RUTA_RESULTADOS_TABLAS, "comparacion_ecoli_vs_salmonella.json")
 
@@ -1107,13 +1127,8 @@ def main():
         datos_genes = cargar_datos_json(ARCHIVO_ANALISIS_GENES)
         print(f"[OK] Datos de genes cargados")
     except FileNotFoundError:
-        # Fallback: usar archivo de E. coli si existe
-        try:
-            datos_genes = cargar_datos_json(ARCHIVO_ANALISIS_ECOLI)
-            print(f"[OK] Datos de genes cargados (desde analisis E. coli)")
-        except FileNotFoundError:
-            print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_GENES}")
-            print("       Ejecuta analisis_genes.py para generar graficos de genes")
+        print(f"[WARN] No se encontro: {ARCHIVO_ANALISIS_GENES}")
+        print("       Ejecuta analisis_genes.py para generar graficos de genes")
 
     # Cargar datos de comparacion (si existen)
     try:
