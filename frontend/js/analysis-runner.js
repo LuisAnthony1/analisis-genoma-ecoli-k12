@@ -474,13 +474,58 @@ async function generarInforme() {
     if (!btn) return;
 
     btn.disabled = true;
-    btn.textContent = 'Generando informe... (puede tardar varios minutos)';
+    btn.textContent = 'Generando informe...';
     btn.classList.add('opacity-70', 'cursor-wait');
+
+    // Mostrar barra de progreso
+    const progressContainer = document.getElementById('report-progress-container');
+    const progressBar = document.getElementById('report-progress-bar');
+    const progressPercent = document.getElementById('report-progress-percent');
+    const progressText = document.getElementById('report-progress-text');
+    
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    progressText.textContent = 'Recopilando datos de análisis...';
+
+    // Simular progreso en incrementos
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        if (progress < 30) {
+            progress += Math.random() * 5;
+        } else if (progress < 60) {
+            progress += Math.random() * 3;
+        } else if (progress < 90) {
+            progress += Math.random() * 1.5;
+        }
+        progress = Math.min(progress, 90);
+        updateProgressBar(progress);
+    }, 500);
+
+    // Actualizar barra de progreso
+    function updateProgressBar(percent) {
+        percent = Math.min(percent, 100);
+        progressBar.style.width = percent + '%';
+        progressPercent.textContent = Math.round(percent) + '%';
+        
+        if (percent < 30) {
+            progressText.textContent = 'Recopilando datos de análisis...';
+        } else if (percent < 60) {
+            progressText.textContent = 'Generando interpretaciones con IA...';
+        } else if (percent < 90) {
+            progressText.textContent = 'Construyendo documento PDF...';
+        } else {
+            progressText.textContent = 'Finalizando generación...';
+        }
+    }
 
     showNotification('Generando informe PDF con IA... esto puede tardar unos minutos', 'info');
 
     try {
         const response = await fetch(`/api/generar_informe?genome=${genome}`);
+
+        clearInterval(progressInterval);
+        updateProgressBar(95);
 
         if (response.ok && response.headers.get('Content-Type')?.includes('application/pdf')) {
             // El servidor devolvio el PDF directamente
@@ -493,16 +538,25 @@ async function generarInforme() {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showNotification('Informe PDF descargado exitosamente', 'success');
+            
+            updateProgressBar(100);
+            setTimeout(() => {
+                showNotification('Informe PDF descargado exitosamente', 'success');
+                progressContainer.classList.add('hidden');
+            }, 500);
         } else {
             const data = await response.json();
             const errorMsg = data.error || 'Error desconocido';
+            clearInterval(progressInterval);
+            progressContainer.classList.add('hidden');
             showNotification(`Error: ${errorMsg}`, 'error');
             if (data.output) {
                 console.error('Output del script:', data.output);
             }
         }
     } catch (error) {
+        clearInterval(progressInterval);
+        progressContainer.classList.add('hidden');
         showNotification(`Error al generar informe: ${error.message}`, 'error');
     } finally {
         btn.disabled = false;

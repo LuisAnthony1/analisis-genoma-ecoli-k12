@@ -440,6 +440,18 @@
                                 Generar Informe PDF (IEEE)
                             </button>
                             <p class="text-sm text-secondary mt-3">Genera un informe completo de 20-40 paginas con interpretaciones de IA</p>
+                            
+                            <!-- Progress Bar -->
+                            <div id="report-progress-container" class="hidden mt-6">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-primary">Generando informe...</p>
+                                    <span id="report-progress-percent" class="text-xs text-secondary">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                                    <div id="report-progress-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                                </div>
+                                <p id="report-progress-text" class="text-xs text-secondary mt-2">Iniciando proceso...</p>
+                            </div>
                         </div>
                     </div>
 

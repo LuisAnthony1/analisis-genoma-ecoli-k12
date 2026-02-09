@@ -588,9 +588,17 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         }
 
         for fig_path in figuras:
-            fig_name = os.path.splitext(os.path.basename(fig_path))[0]
-            caption = fig_captions.get(fig_name, fig_name.replace("_", " ").title())
-            add_figure(fig_path, caption)
+            try:
+                if os.path.exists(fig_path):
+                    fig_name = os.path.splitext(os.path.basename(fig_path))[0]
+                    caption = fig_captions.get(fig_name, fig_name.replace("_", " ").title())
+                    add_figure(fig_path, caption)
+                else:
+                    print(f"  [WARN] Figura no encontrada: {fig_path}")
+                    elements.append(Paragraph(f"[Figura no encontrada: {os.path.basename(fig_path)}]", styles['IEEEBody']))
+            except Exception as e:
+                print(f"  [WARN] Error al agregar figura {fig_path}: {e}")
+                elements.append(Paragraph(f"[Error al procesar figura: {str(e)}]", styles['IEEEBody']))
 
     # =========================================================================
     # V. DISCUSION
@@ -638,8 +646,15 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
     # GENERAR PDF
     # =========================================================================
     print(f"\n  Generando PDF ({len(elements)} elementos)...")
-    doc.build(elements)
-    print(f"  [OK] PDF generado: {pdf_path}")
+    try:
+        doc.build(elements)
+        print(f"  [OK] PDF generado: {pdf_path}")
+    except Exception as e:
+        print(f"  [ERROR] Fallo al generar PDF con ReportLab:")
+        print(f"    {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
     return pdf_path
 
 
@@ -648,35 +663,43 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
 # =============================================================================
 
 def main():
-    print("\n" + "=" * 70)
-    print(f"GENERACION DE INFORME PDF - FORMATO IEEE")
-    print(f"Genoma: {GENOME_BASENAME}")
-    print("=" * 70)
-    print(f"  Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    try:
+        print("\n" + "=" * 70)
+        print(f"GENERACION DE INFORME PDF - FORMATO IEEE")
+        print(f"Genoma: {GENOME_BASENAME}")
+        print("=" * 70)
+        print(f"  Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Paso 1: Recopilar datos
-    print("\n[PASO 1/3] Recopilando datos de analisis...")
-    datos, figuras = recopilar_datos(GENOME_BASENAME)
-    print(f"  Total: {len(datos)} archivos JSON, {len(figuras)} figuras PNG")
+        # Paso 1: Recopilar datos
+        print("\n[PASO 1/3] Recopilando datos de analisis...")
+        datos, figuras = recopilar_datos(GENOME_BASENAME)
+        print(f"  Total: {len(datos)} archivos JSON, {len(figuras)} figuras PNG")
 
-    if not datos:
-        print("\n[ERROR] No se encontraron datos de analisis. Ejecuta los analisis primero.")
+        if not datos:
+            print("\n[ERROR] No se encontraron datos de analisis. Ejecuta los analisis primero.")
+            sys.exit(1)
+
+        # Paso 2: Generar interpretaciones IA
+        print("\n[PASO 2/3] Generando interpretaciones con IA...")
+        interpretaciones = generar_interpretaciones_ia(datos, GENOME_BASENAME)
+
+        # Paso 3: Construir PDF
+        print("\n[PASO 3/3] Construyendo PDF...")
+        pdf_path = construir_pdf(datos, interpretaciones, figuras, GENOME_BASENAME)
+
+        file_size = os.path.getsize(pdf_path)
+        print(f"\n" + "=" * 70)
+        print(f"[OK] Informe PDF generado exitosamente")
+        print(f"     Archivo: informe_{GENOME_BASENAME}.pdf")
+        print(f"     Tamano: {file_size / 1024:.1f} KB")
+        print("=" * 70 + "\n")
+    except Exception as e:
+        print(f"\n[ERROR] Excepcion durante la generacion del informe:")
+        print(f"  {type(e).__name__}: {str(e)}")
+        import traceback
+        print("\n[TRACEBACK]")
+        traceback.print_exc()
         sys.exit(1)
-
-    # Paso 2: Generar interpretaciones IA
-    print("\n[PASO 2/3] Generando interpretaciones con IA...")
-    interpretaciones = generar_interpretaciones_ia(datos, GENOME_BASENAME)
-
-    # Paso 3: Construir PDF
-    print("\n[PASO 3/3] Construyendo PDF...")
-    pdf_path = construir_pdf(datos, interpretaciones, figuras, GENOME_BASENAME)
-
-    file_size = os.path.getsize(pdf_path)
-    print(f"\n" + "=" * 70)
-    print(f"[OK] Informe PDF generado exitosamente")
-    print(f"     Archivo: informe_{GENOME_BASENAME}.pdf")
-    print(f"     Tamano: {file_size / 1024:.1f} KB")
-    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
