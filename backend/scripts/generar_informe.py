@@ -153,7 +153,7 @@ def generar_interpretaciones_ia(datos, genome):
 
 
 def generar_preguntas_ia(datos, genome):
-    """Genera preguntas y respuestas detalladas por cada archivo JSON usando Gemini.
+    """Genera preguntas y respuestas para los 2 JSONs mas importantes usando Gemini.
     Devuelve un diccionario {clave_json: texto_qa}.
     """
     qas = {}
@@ -166,13 +166,23 @@ def generar_preguntas_ia(datos, genome):
 
     nombre_genoma = genome.replace('_', ' ')
 
-    for key, data in datos.items():
+    # Solo los 2 JSONs mas relevantes para no exceder timeout
+    claves_prioritarias = []
+    for key in datos:
+        if "analisis_genes" in key:
+            claves_prioritarias.insert(0, key)
+        elif "analisis_codones" in key and len(claves_prioritarias) < 2:
+            claves_prioritarias.append(key)
+        elif "analisis_distancias" in key and len(claves_prioritarias) < 2:
+            claves_prioritarias.append(key)
+    claves_prioritarias = claves_prioritarias[:2]
+
+    for key in claves_prioritarias:
+        data = datos[key]
         prompt = (
-            f"Eres un investigador experto en genómica. Lee el siguiente resumen de datos llamado '{key}' "
-            f"correspondiente al genoma {nombre_genoma}. Genera una sección de preguntas y respuestas técnicas (al menos 8 preguntas) "
-            "que un revisor o colega podría hacer sobre estos resultados. Para cada pregunta, proporciona una respuesta concisa, precisa y basada en los datos. "
-            "Usa un tono de investigador (biólogo/ingeniero), sin prefacios ni explicaciones meta. Incluye referencias a métricas concretas cuando aplique.\n\n" 
-            f"Datos (JSON resumido):\n{json.dumps(data, indent=2)[:8000]}"
+            f"Investigador en genomica: genera 5 preguntas y respuestas tecnicas sobre '{key}' "
+            f"del genoma {nombre_genoma}. Tono academico, sin prefacios. Basate en los datos.\n\n"
+            f"Datos:\n{json.dumps(data, indent=2)[:4000]}"
         )
 
         print(f"  [IA-QA] Generando QA para {key}...")
@@ -182,7 +192,6 @@ def generar_preguntas_ia(datos, genome):
             print(f"  [OK] QA generado para {key} ({len(respuesta)} chars)")
         else:
             print(f"  [WARN] No se pudo generar QA para {key}: {error}")
-            qas[key] = "[QA no disponible]"
 
     return qas
 
@@ -320,12 +329,15 @@ def fmt_num(valor, decimales=0):
 
 
 def limpiar_texto_ia(texto):
-    """Limpia texto de IA para uso en ReportLab (quita markdown)."""
+    """Limpia texto de IA para uso en ReportLab (quita markdown y caracteres no soportados)."""
     if not texto:
         return ""
     texto = texto.replace("**", "").replace("*", "")
     texto = texto.replace("```", "").replace("`", "")
     texto = texto.replace("##", "").replace("#", "")
+    # Filtrar caracteres no soportados por Times-Roman (emojis, etc)
+    texto = "".join(c for c in texto if ord(c) < 0xFFFF and (ord(c) < 0x2600 or ord(c) > 0x27BF)
+                    and (ord(c) < 0x1F300 or ord(c) > 0x1FAFF))
     # Escapar caracteres especiales de XML
     texto = texto.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return texto
@@ -441,12 +453,12 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
     elements.append(Paragraph("Formato: IEEE", styles['IEEEAuthor']))
     elements.append(Spacer(1, 0.2 * inch))
     # Bloque institucional requerido por el usuario
-    elements.append(Paragraph('"curso": "Bioinformática",  "universidad": "UNSAAC"', styles['IEEEBody']))
+    elements.append(Paragraph('Curso: Bioinformatica', styles['IEEEBody']))
     elements.append(Spacer(1, 6))
-    elements.append(Paragraph('📁 carrera/  Ing. Informática y de Sistemas', styles['IEEEBody']))
-    elements.append(Paragraph('📁 ubicacion/  UNSAAC  —  Cusco, Perú', styles['IEEEBody']))
-    elements.append(Paragraph('📂 facultad/  Facultad de Ingeniería Eléctrica, Electrónica, Informática y Mecánica', styles['IEEEBody']))
-    elements.append(Paragraph('UNSAAC - Universidad Nacional San Antonio Abad del Cusco', styles['IEEEBody']))
+    elements.append(Paragraph('Carrera: Ing. Informatica y de Sistemas', styles['IEEEBody']))
+    elements.append(Paragraph('Universidad: UNSAAC - Cusco, Peru', styles['IEEEBody']))
+    elements.append(Paragraph('Facultad de Ingenieria Electrica, Electronica, Informatica y Mecanica', styles['IEEEBody']))
+    elements.append(Paragraph('Universidad Nacional San Antonio Abad del Cusco', styles['IEEEBody']))
     elements.append(PageBreak())
 
     # =========================================================================
@@ -537,7 +549,45 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         if extremos:
             mayor = extremos.get("gen_mas_largo", {})
             menor = extremos.get("gen_mas_corto", {})
-            add_body(f"El gen mas largo identificado fue {mayor.get('nombre_gen', 'N/A')} ({mayor.get('producto', 'N/A')}) con {fmt_num(mayor.get('longitud_pb', 0))} pb, mientras que el mas corto fue {menor.get('nombre_gen', 'N/A')} ({menor.get('producto', 'N/A')}) con {fmt_num(menor.get('longitud_pb', 0))} pb.")
+            add_body(f"El gen mas largo identificado fue {mayor.get('nombre', mayor.get('nombre_gen', 'N/A'))} ({mayor.get('producto', 'N/A')}) con {fmt_num(mayor.get('longitud_pb', 0))} pb, mientras que el mas corto fue {menor.get('nombre', menor.get('nombre_gen', 'N/A'))} ({menor.get('producto', 'N/A')}) con {fmt_num(menor.get('longitud_pb', 0))} pb.")
+
+            # Top 10 mas largos
+            top_largos = extremos.get("top_10_mas_largos", [])
+            if top_largos:
+                add_heading2("Top 10 Genes Mas Largos", "")
+                rows_largos = []
+                for i, g in enumerate(top_largos, 1):
+                    rows_largos.append([
+                        str(i),
+                        g.get("nombre", "") or g.get("locus_tag", ""),
+                        g.get("producto", "Sin anotacion")[:60],
+                        f"{fmt_num(g.get('longitud_pb', 0))} pb",
+                        str(g.get("num_aminoacidos", 0)) + " aa"
+                    ])
+                add_data_table(
+                    ["#", "Gen", "Proteina", "Tamano", "Aminoacidos"],
+                    rows_largos,
+                    "Los 10 genes codificantes mas largos del genoma."
+                )
+
+            # Top 10 mas cortos
+            top_cortos = extremos.get("top_10_mas_cortos", [])
+            if top_cortos:
+                add_heading2("Top 10 Genes Mas Cortos", "")
+                rows_cortos = []
+                for i, g in enumerate(top_cortos, 1):
+                    rows_cortos.append([
+                        str(i),
+                        g.get("nombre", "") or g.get("locus_tag", ""),
+                        g.get("producto", "Sin anotacion")[:60],
+                        f"{fmt_num(g.get('longitud_pb', 0))} pb",
+                        str(g.get("num_aminoacidos", 0)) + " aa"
+                    ])
+                add_data_table(
+                    ["#", "Gen", "Proteina", "Tamano", "Aminoacidos"],
+                    rows_cortos,
+                    "Los 10 genes codificantes mas cortos del genoma."
+                )
 
         # Comparacion con literatura
         lit = genes_data.get("comparacion_literatura", {})
@@ -591,6 +641,27 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         if stats_dist:
             add_body(f"Se analizaron {fmt_num(stats_dist.get('total_pares_adyacentes', 'N/A'))} pares de genes adyacentes. La distancia intergenica promedio fue de {fmt_num(stats_dist.get('distancia_promedio_pb', 0), 1)} pb con una mediana de {fmt_num(stats_dist.get('distancia_mediana_pb', 0), 1)} pb.")
             add_body(f"Se identificaron {fmt_num(stats_dist.get('genes_solapados', 0))} pares de genes solapados ({stats_dist.get('porcentaje_solapados', 0):.1f}% del total) y {stats_dist.get('regiones_grandes_5kb', 0)} regiones intergenicas mayores a 5 kb, que podrian representar islas genomicas o regiones regulatorias.")
+
+        # Top 20 regiones grandes con productos
+        top_reg = dist_data.get("top_20_regiones_grandes", [])
+        if top_reg:
+            rows_reg = []
+            for i, r in enumerate(top_reg[:15], 1):
+                gen1_prod = r.get("gen1_producto", "")
+                gen2_prod = r.get("gen2_producto", "")
+                rows_reg.append([
+                    str(i),
+                    r.get("gen1", ""),
+                    (gen1_prod[:40] if gen1_prod else "-"),
+                    r.get("gen2", ""),
+                    (gen2_prod[:40] if gen2_prod else "-"),
+                    f"{fmt_num(r.get('distancia_pb', 0))} pb"
+                ])
+            add_data_table(
+                ["#", "Gen 1", "Proteina Gen 1", "Gen 2", "Proteina Gen 2", "Distancia"],
+                rows_reg,
+                "Top 15 regiones intergenicas mas grandes (posibles islas genomicas)."
+            )
 
     # --- 3D. Estructura Genomica ---
     est_key = f"analisis_estructura_{genome}"

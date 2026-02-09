@@ -97,13 +97,116 @@ const DashboardRenderer = {
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
                     <h3 class="text-sm font-semibold text-primary mb-4">Genes Extremos</h3>
                     <canvas id="chart-genes-extremes" height="250"></canvas>
+                    ${extremos.gen_mas_largo ? `
+                    <div class="mt-3 space-y-2 text-xs">
+                        <div class="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                            <span class="font-bold text-emerald-600">Mas largo:</span>
+                            <span class="text-primary">${extremos.gen_mas_largo.nombre || extremos.gen_mas_largo.locus_tag}</span> -
+                            <span class="text-secondary">${extremos.gen_mas_largo.producto || 'Sin anotacion'}</span>
+                            <span class="text-emerald-500 font-bold">(${this.fmt(extremos.gen_mas_largo.longitud_pb)} pb)</span>
+                        </div>
+                        <div class="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                            <span class="font-bold text-amber-600">Mas corto:</span>
+                            <span class="text-primary">${extremos.gen_mas_corto.nombre || extremos.gen_mas_corto.locus_tag}</span> -
+                            <span class="text-secondary">${extremos.gen_mas_corto.producto || 'Sin anotacion'}</span>
+                            <span class="text-amber-500 font-bold">(${this.fmt(extremos.gen_mas_corto.longitud_pb)} pb)</span>
+                        </div>
+                    </div>` : ''}
                 </div>
             </div>
+
+            <!-- Top 10 genes mas largos -->
+            ${extremos.top_10_mas_largos ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Top 10 Genes Mas Largos</h3>
+                <p class="text-xs text-secondary mb-3">Los genes mas grandes del genoma. Haz click en una fila para ver mas detalles.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 dark:bg-slate-800">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">#</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Gen</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Proteina que codifica</th>
+                                <th class="px-3 py-2 text-right text-secondary font-medium">Tamano (pb)</th>
+                                <th class="px-3 py-2 text-right text-secondary font-medium">Aminoacidos</th>
+                                <th class="px-3 py-2 text-center text-secondary font-medium">Hebra</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${extremos.top_10_mas_largos.map((g, i) => `
+                                <tr class="border-t border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition" onclick="DashboardRenderer._toggleExpandRow('gene-largo-${i}')">
+                                    <td class="px-3 py-2 text-secondary">${i + 1}</td>
+                                    <td class="px-3 py-2 font-mono font-bold text-primary">${g.nombre || g.locus_tag}</td>
+                                    <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
+                                    <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(g.longitud_pb)}</td>
+                                    <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                </tr>
+                                <tr id="gene-largo-${i}" class="hidden">
+                                    <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                            <div><span class="text-secondary">Locus:</span> <span class="font-mono text-primary">${g.locus_tag}</span></div>
+                                            <div><span class="text-secondary">Posicion:</span> <span class="text-primary">${this.fmt(g.inicio)} - ${this.fmt(g.fin)}</span></div>
+                                            <div><span class="text-secondary">GC:</span> <span class="text-primary">${g.contenido_gc}%</span></div>
+                                            <div><span class="text-secondary">ID Proteina:</span> <span class="font-mono text-primary">${g.proteina_id || 'N/A'}</span></div>
+                                        </div>
+                                        <p class="text-xs text-secondary mt-2"><strong>Funcion:</strong> ${g.producto || 'Proteina hipotetica sin funcion conocida'}</p>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>` : ''}
+
+            <!-- Top 10 genes mas cortos -->
+            ${extremos.top_10_mas_cortos ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Top 10 Genes Mas Cortos</h3>
+                <p class="text-xs text-secondary mb-3">Los genes mas pequenos del genoma. Haz click en una fila para ver mas detalles.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 dark:bg-slate-800">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">#</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Gen</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Proteina que codifica</th>
+                                <th class="px-3 py-2 text-right text-secondary font-medium">Tamano (pb)</th>
+                                <th class="px-3 py-2 text-right text-secondary font-medium">Aminoacidos</th>
+                                <th class="px-3 py-2 text-center text-secondary font-medium">Hebra</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${extremos.top_10_mas_cortos.map((g, i) => `
+                                <tr class="border-t border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10 transition" onclick="DashboardRenderer._toggleExpandRow('gene-corto-${i}')">
+                                    <td class="px-3 py-2 text-secondary">${i + 1}</td>
+                                    <td class="px-3 py-2 font-mono font-bold text-primary">${g.nombre || g.locus_tag}</td>
+                                    <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
+                                    <td class="px-3 py-2 text-right font-bold text-amber-500">${this.fmt(g.longitud_pb)}</td>
+                                    <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                </tr>
+                                <tr id="gene-corto-${i}" class="hidden">
+                                    <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                            <div><span class="text-secondary">Locus:</span> <span class="font-mono text-primary">${g.locus_tag}</span></div>
+                                            <div><span class="text-secondary">Posicion:</span> <span class="text-primary">${this.fmt(g.inicio)} - ${this.fmt(g.fin)}</span></div>
+                                            <div><span class="text-secondary">GC:</span> <span class="text-primary">${g.contenido_gc}%</span></div>
+                                            <div><span class="text-secondary">ID Proteina:</span> <span class="font-mono text-primary">${g.proteina_id || 'N/A'}</span></div>
+                                        </div>
+                                        <p class="text-xs text-secondary mt-2"><strong>Funcion:</strong> ${g.producto || 'Proteina hipotetica sin funcion conocida'}</p>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>` : ''}
 
             <!-- Referencias bibliográficas -->
             ${Object.keys(refs).length > 0 ? `
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h3 class="text-sm font-semibold text-primary mb-3">Referencias Bibliográficas</h3>
+                <h3 class="text-sm font-semibold text-primary mb-3">Referencias Bibliograficas</h3>
                 <div class="space-y-2 text-sm text-secondary">
                     ${Object.entries(refs).map(([k, v]) => `<p><span class="font-medium">${k}:</span> ${v}</p>`).join('')}
                 </div>
@@ -374,26 +477,48 @@ const DashboardRenderer = {
             <!-- Tabla Top 20 regiones grandes -->
             ${top20.length > 0 ? `
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h3 class="text-sm font-semibold text-primary mb-4">Top 20 Regiones Intergénicas Grandes (posibles islas de patogenicidad)</h3>
-                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <h3 class="text-sm font-semibold text-primary mb-4">Top 20 Regiones Intergenicas Grandes (posibles islas de patogenicidad)</h3>
+                <p class="text-xs text-secondary mb-3">Haz click en una fila para ver mas detalles sobre los genes flanqueantes.</p>
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
                             <tr>
                                 <th class="px-3 py-2 text-left text-secondary font-medium">#</th>
                                 <th class="px-3 py-2 text-left text-secondary font-medium">Gen 1</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Codifica (Gen 1)</th>
                                 <th class="px-3 py-2 text-left text-secondary font-medium">Gen 2</th>
+                                <th class="px-3 py-2 text-left text-secondary font-medium">Codifica (Gen 2)</th>
                                 <th class="px-3 py-2 text-right text-secondary font-medium">Distancia (pb)</th>
                                 <th class="px-3 py-2 text-center text-secondary font-medium">Hebras</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${top20.map((r, i) => `
-                                <tr class="border-t border-slate-100 dark:border-slate-800">
+                                <tr class="border-t border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition" onclick="DashboardRenderer._toggleExpandRow('dist-detail-${i}')">
                                     <td class="px-3 py-2 text-secondary">${i + 1}</td>
-                                    <td class="px-3 py-2 font-mono text-primary">${r.gen1}</td>
-                                    <td class="px-3 py-2 font-mono text-primary">${r.gen2}</td>
+                                    <td class="px-3 py-2 font-mono font-bold text-primary">${r.gen1}</td>
+                                    <td class="px-3 py-2 text-secondary text-xs">${r.gen1_producto || 'Sin anotacion'}</td>
+                                    <td class="px-3 py-2 font-mono font-bold text-primary">${r.gen2}</td>
+                                    <td class="px-3 py-2 text-secondary text-xs">${r.gen2_producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(r.distancia_pb)}</td>
-                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1} → ${r.hebra_gen2}</td>
+                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1} -> ${r.hebra_gen2}</td>
+                                </tr>
+                                <tr id="dist-detail-${i}" class="hidden">
+                                    <td colspan="7" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                            <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
+                                                <p class="font-bold text-emerald-500 mb-1">Gen 1: ${r.gen1}</p>
+                                                <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen1_producto || 'No anotado'}</span></p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                            </div>
+                                            <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
+                                                <p class="font-bold text-cyan-500 mb-1">Gen 2: ${r.gen2}</p>
+                                                <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen2_producto || 'No anotado'}</span></p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-secondary mt-2">Distancia intergenica: <strong class="text-amber-500">${this.fmt(r.distancia_pb)} pb</strong> - Region grande que podria contener elementos regulatorios, islas genomicas o genes no anotados.</p>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1012,8 +1137,8 @@ const DashboardRenderer = {
             <!-- Tabla de operones -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h3 class="text-sm font-semibold text-primary mb-4">Operones Putativos (Top 20)</h3>
-                <p class="text-xs text-secondary mb-3">Grupos de genes adyacentes en la misma hebra con distancia intergenica < 50 pb</p>
-                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <p class="text-xs text-secondary mb-3">Grupos de genes adyacentes en la misma hebra con distancia intergenica < 50 pb. Haz click para ver todos los genes.</p>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
                     <table class="w-full text-xs">
                         <thead class="sticky top-0 bg-card">
                             <tr>
@@ -1027,8 +1152,8 @@ const DashboardRenderer = {
                             </tr>
                         </thead>
                         <tbody>
-                            ${(operones.operones || []).sort((a, b) => b.num_genes - a.num_genes).slice(0, 20).map(op => `
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                            ${(operones.operones || []).sort((a, b) => b.num_genes - a.num_genes).slice(0, 20).map((op, idx) => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition" onclick="DashboardRenderer._toggleExpandRow('operon-detail-${idx}')">
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${op.numero}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-primary">${op.genes.slice(0, 6).join(', ')}${op.genes.length > 6 ? ' ...' : ''}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-emerald-500">${op.num_genes}</td>
@@ -1036,6 +1161,15 @@ const DashboardRenderer = {
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.inicio)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.fin)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.longitud_total)} pb</td>
+                                </tr>
+                                <tr id="operon-detail-${idx}" class="hidden">
+                                    <td colspan="7" class="px-3 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <p class="text-xs font-semibold text-primary mb-2">Todos los genes del operon ${op.numero}:</p>
+                                        <div class="flex flex-wrap gap-1">
+                                            ${op.genes.map(g => `<span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded font-mono text-[10px]">${g}</span>`).join('')}
+                                        </div>
+                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? 'Forward' : 'Reverse'} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1366,6 +1500,20 @@ const DashboardRenderer = {
     // =========================================================================
     // UTILIDADES
     // =========================================================================
+
+    /**
+     * Toggle expand/collapse de una fila de detalle
+     */
+    _toggleExpandRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        if (row.classList.contains('hidden')) {
+            row.classList.remove('hidden');
+            row.style.animation = 'fadeIn 0.2s ease-out';
+        } else {
+            row.classList.add('hidden');
+        }
+    },
 
     // Cache de datos cargados
     _cache: {},

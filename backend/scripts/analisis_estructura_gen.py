@@ -434,10 +434,6 @@ def analizar_gc_por_region(registro, composicion):
 # FUNCION PRINCIPAL
 # =============================================================================
 
-# =============================================================================
-# FUNCION PRINCIPAL
-# =============================================================================
-
 def main():
     """Ejecuta el analisis de estructura genomica."""
     try:

@@ -147,10 +147,12 @@ def calcular_distancias_intergenicas(genes):
             "gen1_nombre": gen_actual["nombre_gen"],
             "gen1_fin": gen_actual["fin"],
             "gen1_hebra": gen_actual["hebra"],
+            "gen1_producto": gen_actual.get("producto", ""),
             "gen2_locus": gen_siguiente["locus_tag"],
             "gen2_nombre": gen_siguiente["nombre_gen"],
             "gen2_inicio": gen_siguiente["inicio"],
             "gen2_hebra": gen_siguiente["hebra"],
+            "gen2_producto": gen_siguiente.get("producto", ""),
             "distancia_pb": distancia,
             "tipo": clasificar_distancia(distancia),
             "misma_hebra": gen_actual["hebra"] == gen_siguiente["hebra"]
@@ -392,8 +394,8 @@ def exportar_distancias_csv(distancias, archivo_salida):
     
     with open(archivo_salida, 'w', newline='', encoding='utf-8') as f:
         campos = [
-            "gen1_locus", "gen1_nombre", "gen1_fin", "gen1_hebra",
-            "gen2_locus", "gen2_nombre", "gen2_inicio", "gen2_hebra",
+            "gen1_locus", "gen1_nombre", "gen1_producto", "gen1_fin", "gen1_hebra",
+            "gen2_locus", "gen2_nombre", "gen2_producto", "gen2_inicio", "gen2_hebra",
             "distancia_pb", "tipo", "misma_hebra"
         ]
         
@@ -418,6 +420,8 @@ def exportar_estadisticas_json(estadisticas_general, estadisticas_hebra,
         top_regiones.append({
             "gen1": region["gen1_nombre"] or region["gen1_locus"],
             "gen2": region["gen2_nombre"] or region["gen2_locus"],
+            "gen1_producto": region.get("gen1_producto", ""),
+            "gen2_producto": region.get("gen2_producto", ""),
             "distancia_pb": region["distancia_pb"],
             "hebra_gen1": region["gen1_hebra"],
             "hebra_gen2": region["gen2_hebra"]

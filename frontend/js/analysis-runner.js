@@ -574,7 +574,7 @@ async function generarInforme() {
 // =============================================================================
 
 async function explicarErrorAnalisis(analysisType, genome) {
-    const container = document.getElementById('dashboard-results');
+    const container = document.getElementById('dashboard-container');
     if (!container) return;
 
     container.innerHTML = `

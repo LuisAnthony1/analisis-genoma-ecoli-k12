@@ -443,6 +443,46 @@ def analizar_genes_extremos(genes):
     if gen_corto['producto']:
         print(f"    (Esta proteina tiene solo {gen_corto['num_aminoacidos']:,} aminoacidos - muy pequena)")
 
+    # Top 10 mas largos y mas cortos
+    top_10_largos = []
+    for g in genes_ordenados[:10]:
+        top_10_largos.append({
+            "locus_tag": g["locus_tag"],
+            "nombre": g["nombre_gen"],
+            "longitud_pb": g["longitud_pb"],
+            "num_aminoacidos": g.get("num_aminoacidos", g["longitud_pb"] // 3),
+            "inicio": g["inicio"],
+            "fin": g["fin"],
+            "hebra": g["hebra"],
+            "contenido_gc": g.get("contenido_gc", 0),
+            "producto": g["producto"],
+            "proteina_id": g.get("proteina_id", "")
+        })
+
+    top_10_cortos = []
+    for g in genes_ordenados[-10:]:
+        top_10_cortos.append({
+            "locus_tag": g["locus_tag"],
+            "nombre": g["nombre_gen"],
+            "longitud_pb": g["longitud_pb"],
+            "num_aminoacidos": g.get("num_aminoacidos", g["longitud_pb"] // 3),
+            "inicio": g["inicio"],
+            "fin": g["fin"],
+            "hebra": g["hebra"],
+            "contenido_gc": g.get("contenido_gc", 0),
+            "producto": g["producto"],
+            "proteina_id": g.get("proteina_id", "")
+        })
+    # Invertir cortos para que vayan del mas corto al menos corto
+    top_10_cortos.reverse()
+
+    print(f"\n  Top 10 genes mas largos:")
+    for i, g in enumerate(top_10_largos, 1):
+        print(f"    {i}. {g['nombre'] or g['locus_tag']} - {g['longitud_pb']:,} pb - {g['producto']}")
+    print(f"\n  Top 10 genes mas cortos:")
+    for i, g in enumerate(top_10_cortos, 1):
+        print(f"    {i}. {g['nombre'] or g['locus_tag']} - {g['longitud_pb']:,} pb - {g['producto']}")
+
     return {
         "gen_mas_largo": {
             "locus_tag": gen_largo["locus_tag"],
@@ -463,7 +503,9 @@ def analizar_genes_extremos(genes):
             "producto": gen_corto["producto"],
             "primeros_10_nt": primeros_10_corto,
             "ultimos_10_nt": ultimos_10_corto
-        }
+        },
+        "top_10_mas_largos": top_10_largos,
+        "top_10_mas_cortos": top_10_cortos
     }
 
 

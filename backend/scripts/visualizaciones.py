@@ -36,7 +36,10 @@ from datetime import datetime
 # Rutas de archivos
 DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
 RUTA_RESULTADOS_TABLAS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
-RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", "figuras")
+if GENOME_BASENAME:
+    RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", GENOME_BASENAME, "figuras")
+else:
+    RUTA_RESULTADOS_FIGURAS = os.path.join(DIRECTORIO_BASE, "resultados", "figuras")
 
 # Parametro de linea de comandos (basename del genoma)
 GENOME_BASENAME = sys.argv[1] if len(sys.argv) >= 2 else None
