@@ -139,12 +139,25 @@ def configurar_organismo(seleccion):
     if isinstance(seleccion, int) and seleccion in ORGANISMOS:
         # Organismo conocido
         config = ORGANISMOS[seleccion]
-        ORGANISMO_ACTUAL = config
-        ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
+        basename = sys.argv[1] if len(sys.argv) > 1 else config["nombre_corto"]
+
+        # Usar el archivo real del basename (puede diferir del nombre_corto)
+        archivo_real = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.gb")
+        archivo_config = os.path.join(RUTA_DATOS_CRUDO, config["archivo_genbank"])
+
+        if os.path.exists(archivo_real):
+            ARCHIVO_GENBANK = archivo_real
+        elif os.path.exists(archivo_config):
+            ARCHIVO_GENBANK = archivo_config
+        else:
+            ARCHIVO_GENBANK = archivo_real  # Dejará que falle más adelante con error claro
+
+        ORGANISMO_ACTUAL = {**config, "nombre_corto": basename}
         VALORES_LITERATURA = config["valores_literatura"]
         REFERENCIAS = config["referencias"]
         print(f"\n[OK] Organismo configurado: {config['nombre']}")
-        print(f"     Archivo: {config['archivo_genbank']}")
+        print(f"     Basename: {basename}")
+        print(f"     Archivo: {ARCHIVO_GENBANK}")
     else:
         # Genoma desconocido - configurar con valores genericos
         basename = str(seleccion)

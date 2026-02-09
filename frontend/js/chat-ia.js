@@ -108,53 +108,112 @@ const ChatIA = {
     },
 
     async _cargarContexto() {
-        const fileMap = {
-            genes: `analisis_genes_${this.genome}.json`,
-            codones: `analisis_codones_${this.genome}.json`,
-            distancias: `analisis_distancias_${this.genome}.json`
-        };
+        // Cargar TODOS los archivos JSON de resultados para dar contexto completo a la IA
+        const archivosBase = [
+            `analisis_genes_${this.genome}.json`,
+            `analisis_codones_${this.genome}.json`,
+            `analisis_distancias_${this.genome}.json`
+        ];
 
-        const filename = fileMap[this.analysisType];
-        if (!filename) {
-            this._removerLoadingContext();
-            return;
-        }
-
+        // Buscar comparaciones disponibles
         try {
-            const data = await DashboardRenderer.fetchResultData(this.genome, filename);
-            if (data) {
-                // Resumir datos para no exceder limite de tokens
-                this.contextData = this._resumirDatos(data);
+            const resp = await fetch(`/api/results?type=tablas&genome=${this.genome}`);
+            const listado = await resp.json();
+            if (listado.success && listado.results) {
+                for (const f of listado.results) {
+                    if (f.extension === 'json' && !archivosBase.includes(f.filename)) {
+                        archivosBase.push(f.filename);
+                    }
+                }
             }
         } catch (e) {
-            console.error('Error cargando contexto:', e);
+            console.error('Error listando archivos:', e);
+        }
+
+        const resumen = {};
+        let algoCargado = false;
+
+        // Cargar todos los JSON en paralelo
+        const promesas = archivosBase.map(async (filename) => {
+            try {
+                const data = await DashboardRenderer.fetchResultData(this.genome, filename);
+                if (data) {
+                    const key = filename.replace(`_${this.genome}`, '').replace('.json', '');
+                    resumen[key] = this._resumirDatos(data, filename);
+                    algoCargado = true;
+                }
+            } catch (e) {
+                // Archivo no existe, ignorar
+            }
+        });
+
+        await Promise.all(promesas);
+
+        if (algoCargado) {
+            this.contextData = resumen;
         }
 
         this._removerLoadingContext();
     },
 
-    _resumirDatos(data) {
-        // Crear resumen conciso de los datos para enviar como contexto
+    _resumirDatos(data, filename = '') {
+        // Crear resumen conciso segun tipo de archivo
         const resumen = {};
-        const copiarCampos = (obj, campos) => {
-            const r = {};
-            for (const c of campos) {
-                if (obj[c] !== undefined) r[c] = obj[c];
-            }
-            return r;
-        };
 
+        // Genes
         if (data.estadisticas_generales) {
-            resumen.estadisticas = data.estadisticas_generales;
+            resumen.estadisticas_generales = data.estadisticas_generales;
         }
-        if (data.comparacion_literatura) {
-            resumen.literatura = data.comparacion_literatura;
+        if (data.comparacion_literatura && Object.keys(data.comparacion_literatura).length > 0) {
+            resumen.comparacion_literatura = data.comparacion_literatura;
+        }
+        if (data.distribucion_tamanos) resumen.distribucion_tamanos = data.distribucion_tamanos;
+        if (data.genes_extremos) resumen.genes_extremos = data.genes_extremos;
+        if (data.analisis_genes_vs_cds) resumen.genes_vs_cds = data.analisis_genes_vs_cds;
+
+        // Codones
+        if (data.conteo_64_codones) {
+            // Solo top 10 codones para no exceder tokens
+            const top = data.conteo_64_codones.tabla_codones;
+            if (top) resumen.top_codones = top.slice(0, 10);
         }
         if (data.codones_inicio) resumen.codones_inicio = data.codones_inicio;
         if (data.codones_parada) resumen.codones_parada = data.codones_parada;
         if (data.contenido_gc) resumen.contenido_gc = data.contenido_gc;
-        if (data.distribucion_tipos) resumen.distribucion_distancias = data.distribucion_tipos;
-        if (data.genes_extremos) resumen.genes_extremos = data.genes_extremos;
+
+        // Distancias
+        if (data.estadisticas_generales && data.distribucion_tipos) {
+            resumen.distribucion_distancias = data.distribucion_tipos;
+        }
+
+        // Comparacion de genomas
+        if (data.organismos_comparados) resumen.organismos_comparados = data.organismos_comparados;
+        if (data.metricas_generales) resumen.metricas_generales = data.metricas_generales;
+        if (data.genes_virulencia) {
+            // Resumir virulencia (solo totales, no lista completa)
+            const vir = {};
+            for (const [k, v] of Object.entries(data.genes_virulencia)) {
+                if (typeof v === 'object' && v.total !== undefined) {
+                    vir[k] = { total: v.total, categorias: v.categorias || v.por_categoria };
+                } else {
+                    vir[k] = v;
+                }
+            }
+            resumen.genes_virulencia = vir;
+        }
+        if (data.resumen_interpretativo) resumen.resumen = data.resumen_interpretativo;
+        if (data.uso_codones) resumen.uso_codones = data.uso_codones;
+        if (data.distribucion_tamanos) resumen.distribucion_tamanos = data.distribucion_tamanos;
+        if (data.distribucion_gc) resumen.distribucion_gc = data.distribucion_gc;
+        if (data.interpretacion_ia) resumen.interpretacion_ia = data.interpretacion_ia;
+
+        // Si no se extrajo nada relevante, copiar campos de primer nivel (sin arrays largos)
+        if (Object.keys(resumen).length === 0) {
+            for (const [k, v] of Object.entries(data)) {
+                if (Array.isArray(v) && v.length > 20) continue; // Omitir arrays grandes
+                resumen[k] = v;
+            }
+        }
 
         return resumen;
     },
@@ -186,14 +245,22 @@ const ChatIA = {
         input.disabled = true;
 
         try {
+            const genomeName = this.genome.replace(/_/g, ' ');
             const contexto = this.contextData
-                ? `Datos del analisis de ${this.analysisType} del genoma ${this.genome}:\n${JSON.stringify(this.contextData, null, 1)}`
-                : `Genoma: ${this.genome}, Analisis: ${this.analysisType}`;
+                ? `RESULTADOS REALES DEL ANALISIS del genoma ${genomeName}:\n${JSON.stringify(this.contextData, null, 1)}`
+                : `Genoma: ${genomeName}, Analisis: ${this.analysisType} (sin datos cargados)`;
 
-            const systemPrompt = `Eres un especialista en genomica y bioinformatica. Responde en espanol.
-Estas analizando resultados de un analisis de ${this.analysisType} del genoma ${this.genome.replace(/_/g, ' ')}.
-Responde de forma clara y concisa. Usa datos especificos de los resultados cuando sea relevante.
-Si no tienes los datos exactos, indica que los datos no estan disponibles.`;
+            const systemPrompt = `Eres un especialista en genomica y bioinformatica. Responde SIEMPRE en espanol.
+Estas analizando resultados REALES de un analisis genomico de "${genomeName}".
+
+IMPORTANTE: Se te proporcionan datos REALES del analisis. USA ESOS DATOS para responder con valores especificos y exactos.
+- Cuando te pregunten "cuantos genes?", responde con el numero exacto de los datos (ej: total_genes)
+- Cuando te pregunten sobre GC%, da el valor exacto de los resultados
+- Interpreta los resultados biologicamente: que significan, si son normales, que implicaciones tienen
+- Si hay datos de comparacion, usalos para contextualizar
+- Si algo es patogeno o tiene genes de virulencia, explica las implicaciones
+- Se conciso pero informativo. Maximo 3-4 parrafos por respuesta.
+- No repitas "basandome en los datos proporcionados" cada vez, simplemente responde con los datos.`;
 
             const resp = await fetch('/api/chat', {
                 method: 'POST',
