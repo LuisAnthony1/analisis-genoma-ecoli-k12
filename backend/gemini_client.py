@@ -13,7 +13,8 @@ import urllib.error
 
 DIRECTORIO_PROYECTO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARCHIVO_CLAVES = os.path.join(DIRECTORIO_PROYECTO, "claves_api.txt")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 
 def cargar_claves():
@@ -85,13 +86,20 @@ def consultar_gemini(prompt, contexto=""):
             return None, "Respuesta vacia de Gemini"
 
         except urllib.error.HTTPError as e:
+            body = ""
+            try:
+                body = e.read().decode("utf-8", errors="replace")[:500]
+            except Exception:
+                pass
             if e.code == 429:
-                ultimo_error = f"Cuota excedida (429) - probando otra clave..."
+                ultimo_error = f"Cuota excedida (429) con clave ...{clave[-6:]}"
                 continue
             elif e.code == 400:
-                return None, f"Error 400: Solicitud invalida"
+                return None, f"Error 400: Solicitud invalida - {body}"
+            elif e.code == 404:
+                return None, f"Error 404: Modelo '{GEMINI_MODEL}' no encontrado - {body}"
             else:
-                ultimo_error = f"Error HTTP {e.code}"
+                ultimo_error = f"Error HTTP {e.code}: {body}"
                 continue
         except urllib.error.URLError as e:
             return None, f"Sin conexion: {e.reason}"
