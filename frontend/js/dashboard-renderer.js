@@ -710,6 +710,7 @@ const DashboardRenderer = {
             if (file.extension === 'json') return { icon: '📋', label: 'JSON', color: 'emerald' };
             if (file.extension === 'csv') return { icon: '📊', label: 'CSV', color: 'cyan' };
             if (file.extension === 'png') return { icon: '🖼️', label: 'Imagen', color: 'violet' };
+            if (file.extension === 'pdf') return { icon: '📑', label: 'PDF', color: 'red' };
             return { icon: '📄', label: 'Archivo', color: 'slate' };
         };
 

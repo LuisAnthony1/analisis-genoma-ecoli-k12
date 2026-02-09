@@ -749,23 +749,44 @@ def listar_resultados(tipo="tablas", genome=None):
         path_prefix = f"backend/resultados/{tipo}"
 
     if not os.path.exists(directorio):
-        return {"success": True, "type": tipo, "genome": genome, "count": 0, "results": []}
+        directorio_existe = False
+    else:
+        directorio_existe = True
 
     extensiones = {"tablas": [".json", ".csv"], "figuras": [".png"]}
     exts = extensiones.get(tipo, [".json"])
 
-    for archivo in sorted(os.listdir(directorio)):
-        if not any(archivo.endswith(e) for e in exts):
-            continue
+    # Para tablas, listar archivos del subdirectorio tablas
+    if directorio_existe:
+        for archivo in sorted(os.listdir(directorio)):
+            if not any(archivo.endswith(e) for e in exts):
+                continue
 
-        ruta = os.path.join(directorio, archivo)
-        resultados.append({
-            "filename": archivo,
-            "path": f"{path_prefix}/{archivo}",
-            "extension": os.path.splitext(archivo)[1][1:],
-            "size_kb": round(os.path.getsize(ruta) / 1024, 2),
-            "modified": datetime.fromtimestamp(os.path.getmtime(ruta)).strftime("%Y-%m-%d %H:%M:%S")
-        })
+            ruta = os.path.join(directorio, archivo)
+            resultados.append({
+                "filename": archivo,
+                "path": f"{path_prefix}/{archivo}",
+                "extension": os.path.splitext(archivo)[1][1:],
+                "size_kb": round(os.path.getsize(ruta) / 1024, 2),
+                "modified": datetime.fromtimestamp(os.path.getmtime(ruta)).strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+    # Para tablas, también buscar PDFs en el directorio raiz del genoma
+    if tipo == "tablas" and genome:
+        dir_genome_raiz = os.path.join(RUTA_RESULTADOS, genome)
+        if os.path.exists(dir_genome_raiz):
+            for archivo in sorted(os.listdir(dir_genome_raiz)):
+                if not archivo.endswith(".pdf"):
+                    continue
+                
+                ruta = os.path.join(dir_genome_raiz, archivo)
+                resultados.append({
+                    "filename": archivo,
+                    "path": f"backend/resultados/{genome}/{archivo}",
+                    "extension": "pdf",
+                    "size_kb": round(os.path.getsize(ruta) / 1024, 2),
+                    "modified": datetime.fromtimestamp(os.path.getmtime(ruta)).strftime("%Y-%m-%d %H:%M:%S")
+                })
 
     return {"success": True, "type": tipo, "genome": genome, "count": len(resultados), "results": resultados}
 
