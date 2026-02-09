@@ -75,33 +75,86 @@ def analizar_composicion_genomica(registro):
     longitud_genoma = len(registro.seq)
     print(f"\n  Longitud del genoma: {longitud_genoma:,} pb")
 
-    # Rastrear bases cubiertas por cada tipo de feature
-    tipos = {
-        "CDS": set(),
-        "tRNA": set(),
-        "rRNA": set(),
-        "repeat_region": set(),
-        "ncRNA": set(),
-        "misc_RNA": set(),
-        "tmRNA": set(),
+    # Manejar intervalos en lugar de conjuntos por base para ahorrar memoria
+    tipos_intervals = {
+        "CDS": [],
+        "tRNA": [],
+        "rRNA": [],
+        "repeat_region": [],
+        "ncRNA": [],
+        "misc_RNA": [],
+        "tmRNA": [],
     }
 
     for feature in registro.features:
         ft = feature.type
-        if ft in tipos:
+        if ft in tipos_intervals:
             start = int(feature.location.start)
             end = int(feature.location.end)
-            tipos[ft].update(range(start, end))
+            # Evitar intervalos vacios
+            if end > start:
+                tipos_intervals[ft].append((start, end))
 
-    # Calcular bases unicas por tipo (evitar doble conteo)
-    bases_cds = len(tipos["CDS"])
-    bases_trna = len(tipos["tRNA"] - tipos["CDS"])
-    bases_rrna = len(tipos["rRNA"] - tipos["CDS"] - tipos["tRNA"])
-    bases_repeat = len(tipos["repeat_region"] - tipos["CDS"] - tipos["tRNA"] - tipos["rRNA"])
-    bases_ncrna = len((tipos["ncRNA"] | tipos["misc_RNA"] | tipos["tmRNA"]) - tipos["CDS"] - tipos["tRNA"] - tipos["rRNA"])
+    # Helpers: merge intervals y calcular longitud total
+    def merge_intervals(intervals):
+        if not intervals:
+            return []
+        intervals = sorted(intervals, key=lambda x: x[0])
+        merged = [list(intervals[0])]
+        for s, e in intervals[1:]:
+            last = merged[-1]
+            if s <= last[1]:
+                # overlap or contiguous
+                last[1] = max(last[1], e)
+            else:
+                merged.append([s, e])
+        return [(s, e) for s, e in merged]
 
-    todas_anotadas = tipos["CDS"] | tipos["tRNA"] | tipos["rRNA"] | tipos["repeat_region"] | tipos["ncRNA"] | tipos["misc_RNA"] | tipos["tmRNA"]
-    bases_intergenico = longitud_genoma - len(todas_anotadas)
+    def intervals_length(intervals):
+        return sum(e - s for s, e in intervals)
+
+    def overlap_length(a_intervals, b_intervals):
+        # Both lists must be merged and sorted
+        i = j = 0
+        overlap = 0
+        while i < len(a_intervals) and j < len(b_intervals):
+            a_s, a_e = a_intervals[i]
+            b_s, b_e = b_intervals[j]
+            # Compute intersection
+            s = max(a_s, b_s)
+            e = min(a_e, b_e)
+            if e > s:
+                overlap += e - s
+            # Advance the interval with smaller end
+            if a_e <= b_e:
+                i += 1
+            else:
+                j += 1
+        return overlap
+
+    # Merge intervals for each tipo
+    merged = {k: merge_intervals(v) for k, v in tipos_intervals.items()}
+
+    # Calcular longitudes por tipo (sin solapamientos internos)
+    bases_cds = intervals_length(merged["CDS"])
+    bases_trna_total = intervals_length(merged["tRNA"])
+    bases_rrna_total = intervals_length(merged["rRNA"])
+    bases_repeat_total = intervals_length(merged["repeat_region"])
+    bases_ncrna_total = intervals_length(merged["ncRNA"]) + intervals_length(merged["misc_RNA"]) + intervals_length(merged["tmRNA"])
+
+    # Calcular exclusiones: tipo minus CDS (restar solapamiento con CDS)
+    bases_trna = bases_trna_total - overlap_length(merged["tRNA"], merged["CDS"]) if merged["tRNA"] else 0
+    bases_rrna = bases_rrna_total - overlap_length(merged["rRNA"], merged["CDS"]) - overlap_length(merged["rRNA"], merged["tRNA"]) if merged["rRNA"] else 0
+    bases_repeat = bases_repeat_total - overlap_length(merged["repeat_region"], merged["CDS"]) - overlap_length(merged["repeat_region"], merged["tRNA"]) - overlap_length(merged["repeat_region"], merged["rRNA"]) if merged["repeat_region"] else 0
+    bases_ncrna = bases_ncrna_total - overlap_length(merged.get("ncRNA", []), merged["CDS"]) - overlap_length(merged.get("misc_RNA", []), merged["CDS"]) - overlap_length(merged.get("tmRNA", []), merged["CDS"]) if (merged.get("ncRNA") or merged.get("misc_RNA") or merged.get("tmRNA")) else 0
+
+    # Union de todas las anotaciones para calcular intergenico
+    all_intervals = []
+    for k in merged:
+        all_intervals.extend(merged[k])
+    all_merged = merge_intervals(all_intervals)
+    bases_anotadas_total = intervals_length(all_merged)
+    bases_intergenico = max(0, longitud_genoma - bases_anotadas_total)
 
     composicion = {
         "codificante_cds": {

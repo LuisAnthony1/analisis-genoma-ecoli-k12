@@ -305,6 +305,8 @@ def graficar_contenido_gc(datos_codones):
     
     # Usar valores de literatura si están disponibles, sino solo mostrar observado
     gc_literatura = gc_datos.get('gc_literatura', None)
+    # Asegurar que la variable existe en todos los caminos de ejecución
+    barras_lit = []
     
     if gc_literatura is not None:
         literatura = [gc_literatura, 100 - gc_literatura]
@@ -338,13 +340,14 @@ def graficar_contenido_gc(datos_codones):
             axes[1].text(barra.get_x() + barra.get_width()/2., altura,
                         f'{altura:.1f}%', ha='center', va='bottom', fontsize=10)
 
-    # Valores sobre barras
-    for barra in barras_obs + barras_lit:
-        altura = barra.get_height()
-        axes[1].annotate(f'{altura:.1f}%',
-                        xy=(barra.get_x() + barra.get_width() / 2, altura),
-                        xytext=(0, 3), textcoords="offset points",
-                        ha='center', va='bottom', fontsize=9)
+    # Valores sobre barras (solo si hay comparacion con literatura)
+    if gc_literatura is not None:
+        for barra in list(barras_obs) + list(barras_lit):
+            altura = barra.get_height()
+            axes[1].annotate(f'{altura:.1f}%',
+                            xy=(barra.get_x() + barra.get_width() / 2, altura),
+                            xytext=(0, 3), textcoords="offset points",
+                            ha='center', va='bottom', fontsize=9)
 
     plt.suptitle('Contenido de GC - E. coli K-12 MG1655',
                 fontsize=14, fontweight='bold', y=1.02)
