@@ -485,6 +485,8 @@ def main():
         
         # *** Liberar memoria del genoma entero despues de procesar ***
         print("\n[MEMORIA] Limpiando registro GenBank de memoria...")
+        # Guardar datos que necesitamos luego (longitud) antes de eliminar el registro
+        longitud_genoma = len(registro.seq)
         del registro
         gc.collect()
 
@@ -500,7 +502,7 @@ def main():
             "fecha_analisis": datetime.now().isoformat(),
             "organismo": organismo,
             "genoma_basename": GENOME_BASENAME,
-            "longitud_genoma": len(registro.seq),
+            "longitud_genoma": longitud_genoma,
             "composicion_genomica": composicion,
             "features_anotados": features_conteo,
             "gc_por_region": gc_regiones,
