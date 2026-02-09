@@ -410,6 +410,232 @@ def comparar_distancias_intergenicas(genes_1, genes_2, nombre_1, nombre_2):
     return comparacion
 
 
+def comparar_uso_codones(registro_1, registro_2, genes_1, genes_2, nombre_1, nombre_2):
+    """
+    Compara el uso de codones entre ambos genomas.
+
+    Returns:
+        dict: Comparacion de uso de codones
+    """
+    print("\n" + "=" * 70)
+    print("COMPARACION DE USO DE CODONES")
+    print("=" * 70)
+
+    def contar_codones(registro, genes):
+        """Cuenta codones en todas las CDS del genoma."""
+        conteo = Counter()
+        secuencia = registro.seq
+        for gen in genes:
+            try:
+                seq_gen = str(secuencia[gen["inicio"]:gen["fin"]])
+                for i in range(0, len(seq_gen) - 2, 3):
+                    codon = seq_gen[i:i+3].upper()
+                    if len(codon) == 3 and all(c in "ATGC" for c in codon):
+                        conteo[codon] += 1
+            except Exception:
+                continue
+        return conteo
+
+    codones_1 = contar_codones(registro_1, genes_1)
+    codones_2 = contar_codones(registro_2, genes_2)
+
+    total_1 = sum(codones_1.values())
+    total_2 = sum(codones_2.values())
+
+    # Top 10 mas usados en cada genoma
+    top10_1 = codones_1.most_common(10)
+    top10_2 = codones_2.most_common(10)
+
+    # Frecuencias relativas
+    freq_1 = {c: round(n / total_1 * 100, 3) if total_1 > 0 else 0 for c, n in codones_1.items()}
+    freq_2 = {c: round(n / total_2 * 100, 3) if total_2 > 0 else 0 for c, n in codones_2.items()}
+
+    # Codones con mayor diferencia
+    todos_codones = set(list(freq_1.keys()) + list(freq_2.keys()))
+    diferencias = []
+    for codon in todos_codones:
+        f1 = freq_1.get(codon, 0)
+        f2 = freq_2.get(codon, 0)
+        diferencias.append({
+            "codon": codon,
+            "frecuencia_1": f1,
+            "frecuencia_2": f2,
+            "diferencia_abs": round(abs(f2 - f1), 3)
+        })
+    diferencias.sort(key=lambda x: x["diferencia_abs"], reverse=True)
+
+    print(f"\n  Top 10 codones mas usados:")
+    print(f"  {'Codon':<10} {nombre_1[:15]:>15} {nombre_2[:15]:>15}")
+    all_codons = set([c for c, _ in top10_1] + [c for c, _ in top10_2])
+    for codon in list(all_codons)[:10]:
+        f1 = freq_1.get(codon, 0)
+        f2 = freq_2.get(codon, 0)
+        print(f"  {codon:<10} {f1:>14.3f}% {f2:>14.3f}%")
+
+    return {
+        "ecoli": {
+            "total_codones": total_1,
+            "top_10": [{"codon": c, "conteo": n, "frecuencia": freq_1.get(c, 0)} for c, n in top10_1]
+        },
+        "salmonella": {
+            "total_codones": total_2,
+            "top_10": [{"codon": c, "conteo": n, "frecuencia": freq_2.get(c, 0)} for c, n in top10_2]
+        },
+        "mayores_diferencias": diferencias[:15]
+    }
+
+
+def comparar_distribucion_tamanos(genes_1, genes_2, nombre_1, nombre_2):
+    """
+    Compara la distribucion de tamanos de genes entre genomas.
+
+    Returns:
+        dict: Estadisticas de tamanos de genes
+    """
+    print("\n" + "=" * 70)
+    print("COMPARACION DE DISTRIBUCION DE TAMANOS DE GENES")
+    print("=" * 70)
+
+    def calc_stats(genes):
+        tamanos = [g["longitud_pb"] for g in genes]
+        if not tamanos:
+            return {}
+        return {
+            "promedio": round(statistics.mean(tamanos), 1),
+            "mediana": round(statistics.median(tamanos), 1),
+            "minimo": min(tamanos),
+            "maximo": max(tamanos),
+            "desviacion_std": round(statistics.stdev(tamanos), 1) if len(tamanos) > 1 else 0,
+            "q25": round(sorted(tamanos)[len(tamanos) // 4], 1),
+            "q75": round(sorted(tamanos)[3 * len(tamanos) // 4], 1),
+        }
+
+    def calc_rangos(genes):
+        rangos = {"<300": 0, "300-600": 0, "600-900": 0, "900-1200": 0, "1200-1500": 0, ">1500": 0}
+        for g in genes:
+            t = g["longitud_pb"]
+            if t < 300: rangos["<300"] += 1
+            elif t < 600: rangos["300-600"] += 1
+            elif t < 900: rangos["600-900"] += 1
+            elif t < 1200: rangos["900-1200"] += 1
+            elif t < 1500: rangos["1200-1500"] += 1
+            else: rangos[">1500"] += 1
+        return rangos
+
+    stats_1 = calc_stats(genes_1)
+    stats_2 = calc_stats(genes_2)
+    rangos_1 = calc_rangos(genes_1)
+    rangos_2 = calc_rangos(genes_2)
+
+    print(f"\n  {'Estadistica':<25} {nombre_1[:15]:>15} {nombre_2[:15]:>15}")
+    print("  " + "-" * 55)
+    for key in ["promedio", "mediana", "minimo", "maximo"]:
+        print(f"  {key.title():<25} {stats_1.get(key, 0):>15} {stats_2.get(key, 0):>15}")
+
+    return {
+        "ecoli": {"estadisticas": stats_1, "rangos": rangos_1},
+        "salmonella": {"estadisticas": stats_2, "rangos": rangos_2}
+    }
+
+
+def comparar_distribucion_gc(genes_1, genes_2, nombre_1, nombre_2):
+    """
+    Compara la distribucion de contenido GC por gen.
+
+    Returns:
+        dict: Distribucion de GC por gen
+    """
+    print("\n" + "=" * 70)
+    print("COMPARACION DE DISTRIBUCION GC POR GEN")
+    print("=" * 70)
+
+    def calc_gc_stats(genes):
+        gcs = [g["contenido_gc"] for g in genes if g.get("contenido_gc")]
+        if not gcs:
+            return {}
+        return {
+            "promedio": round(statistics.mean(gcs), 2),
+            "mediana": round(statistics.median(gcs), 2),
+            "minimo": round(min(gcs), 2),
+            "maximo": round(max(gcs), 2),
+            "desviacion_std": round(statistics.stdev(gcs), 2) if len(gcs) > 1 else 0,
+        }
+
+    def calc_rangos_gc(genes):
+        rangos = {"<40%": 0, "40-45%": 0, "45-50%": 0, "50-55%": 0, "55-60%": 0, ">60%": 0}
+        for g in genes:
+            gc = g.get("contenido_gc", 0)
+            if gc < 40: rangos["<40%"] += 1
+            elif gc < 45: rangos["40-45%"] += 1
+            elif gc < 50: rangos["45-50%"] += 1
+            elif gc < 55: rangos["50-55%"] += 1
+            elif gc < 60: rangos["55-60%"] += 1
+            else: rangos[">60%"] += 1
+        return rangos
+
+    stats_1 = calc_gc_stats(genes_1)
+    stats_2 = calc_gc_stats(genes_2)
+    rangos_1 = calc_rangos_gc(genes_1)
+    rangos_2 = calc_rangos_gc(genes_2)
+
+    print(f"\n  {'Estadistica':<25} {nombre_1[:15]:>15} {nombre_2[:15]:>15}")
+    print("  " + "-" * 55)
+    for key in ["promedio", "mediana", "minimo", "maximo"]:
+        print(f"  {key.title():<25} {stats_1.get(key, 0):>14.2f}% {stats_2.get(key, 0):>14.2f}%")
+
+    return {
+        "ecoli": {"estadisticas": stats_1, "rangos": rangos_1},
+        "salmonella": {"estadisticas": stats_2, "rangos": rangos_2}
+    }
+
+
+def obtener_interpretacion_ia(resultados_completos, nombre_1, nombre_2):
+    """
+    Obtiene una interpretacion biologica de los resultados via Gemini.
+
+    Returns:
+        str: Interpretacion en texto o None
+    """
+    print("\n[INFO] Consultando IA para interpretacion biologica...")
+    try:
+        sys.path.insert(0, DIRECTORIO_PROYECTO)
+        from backend.gemini_client import consultar_gemini
+
+        # Preparar resumen para la IA
+        metricas = resultados_completos.get("metricas_generales", {})
+        ec = metricas.get("ecoli", {})
+        sal = metricas.get("salmonella", {})
+        vir = resultados_completos.get("genes_virulencia", {})
+
+        resumen = f"""Comparacion genomica entre {nombre_1} y {nombre_2}:
+- {nombre_1}: {ec.get('longitud_genoma_pb', 0):,} pb, {ec.get('total_genes_cds', 0)} CDS, GC {ec.get('contenido_gc_porcentaje', 0)}%, densidad {ec.get('densidad_genica_porcentaje', 0)}%
+- {nombre_2}: {sal.get('longitud_genoma_pb', 0):,} pb, {sal.get('total_genes_cds', 0)} CDS, GC {sal.get('contenido_gc_porcentaje', 0)}%, densidad {sal.get('densidad_genica_porcentaje', 0)}%
+- Genes virulencia: {nombre_1}={vir.get('ecoli', {}).get('total', 0)}, {nombre_2}={vir.get('salmonella', {}).get('total', 0)}"""
+
+        prompt = f"""Eres un experto en genomica comparativa. Analiza esta comparacion y da una interpretacion biologica concisa en espanol (3-5 parrafos).
+
+{resumen}
+
+Incluye:
+1. Interpretacion de las diferencias en tamano y contenido genomico
+2. Significado evolutivo de las diferencias en GC%
+3. Implicaciones de los genes de virulencia
+4. Conclusiones biologicas principales
+
+Responde de forma directa sin introducciones."""
+
+        respuesta, error = consultar_gemini(prompt)
+        if respuesta:
+            print("[INFO] Interpretacion IA obtenida exitosamente")
+            return respuesta
+        else:
+            print(f"[INFO] No se pudo obtener interpretacion IA: {error}")
+            return None
+    except Exception as e:
+        print(f"[INFO] Error al consultar IA: {e}")
+        return None
+
+
 def generar_resumen_comparativo(metricas, virulencia, distancias, nombre_1, nombre_2):
     """
     Genera un resumen narrativo de la comparacion.
@@ -580,6 +806,11 @@ def main():
 
     distancias = comparar_distancias_intergenicas(genes_1, genes_2, nombre_1, nombre_2)
 
+    # Nuevas comparaciones
+    uso_codones = comparar_uso_codones(registro_1, registro_2, genes_1, genes_2, nombre_1, nombre_2)
+    dist_tamanos = comparar_distribucion_tamanos(genes_1, genes_2, nombre_1, nombre_2)
+    dist_gc = comparar_distribucion_gc(genes_1, genes_2, nombre_1, nombre_2)
+
     resumen = generar_resumen_comparativo(metricas, virulencia, distancias, nombre_1, nombre_2)
 
     # Compilar resultados
@@ -592,8 +823,16 @@ def main():
         "metricas_generales": metricas,
         "genes_virulencia": virulencia,
         "distancias_intergenicas": distancias,
+        "uso_codones": uso_codones,
+        "distribucion_tamanos": dist_tamanos,
+        "distribucion_gc": dist_gc,
         "resumen_interpretativo": resumen
     }
+
+    # Obtener interpretacion IA
+    interpretacion = obtener_interpretacion_ia(resultados_completos, nombre_1, nombre_2)
+    if interpretacion:
+        resultados_completos["interpretacion_ia"] = interpretacion
 
     # Nombre del archivo de salida
     nombre_comparacion = f"comparacion_{BASENAME_1}_vs_{BASENAME_2}"

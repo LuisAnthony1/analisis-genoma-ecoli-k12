@@ -279,6 +279,7 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "analisis_distancias_intergenicas": {"file": "analisis_distancias_intergenicas.py", "timeout": 60},
         "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 120},
         "visualizaciones": {"file": "visualizaciones.py", "timeout": 180},
+        "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
     }
 
     if script_name not in scripts_permitidos:
@@ -543,6 +544,38 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
             genome = data.get("genome", "")
             resultado = eliminar_todos_resultados_genoma(genome)
             self._json_response(resultado)
+            return
+
+        if path == "/api/chat":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                self._json_response({"success": False, "error": "JSON invalido"}, 400)
+                return
+
+            message = data.get("message", "")
+            context = data.get("context", "")
+            system_prompt = data.get("system", "")
+
+            if not message:
+                self._json_response({"success": False, "error": "Falta el mensaje"}, 400)
+                return
+
+            prompt_completo = message
+            if system_prompt:
+                prompt_completo = f"{system_prompt}\n\n{prompt_completo}"
+
+            try:
+                from backend.gemini_client import consultar_gemini
+                respuesta, error = consultar_gemini(prompt_completo, context)
+                if respuesta:
+                    self._json_response({"success": True, "response": respuesta})
+                else:
+                    self._json_response({"success": False, "error": error or "Sin respuesta"})
+            except Exception as e:
+                self._json_response({"success": False, "error": str(e)})
             return
 
         self._json_response({"error": "Endpoint no encontrado"}, 404)

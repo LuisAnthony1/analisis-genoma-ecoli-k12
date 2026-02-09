@@ -226,11 +226,20 @@ async function loadDashboard(analysisType) {
     `;
 
     if (analysisType === 'archivos') {
-        // Vista de archivos (lista simple)
+        // Vista de archivos - cargar tablas y figuras en paralelo
         try {
-            const resp = await fetch(`/api/results?type=tablas&genome=${genome}`);
-            const data = await resp.json();
-            DashboardRenderer.renderArchivosView(data.results || [], genome, container);
+            const [respTablas, respFiguras] = await Promise.all([
+                fetch(`/api/results?type=tablas&genome=${genome}`),
+                fetch(`/api/results?type=figuras&genome=${genome}`)
+            ]);
+            const dataTablas = await respTablas.json();
+            const dataFiguras = await respFiguras.json();
+            DashboardRenderer.renderArchivosView(
+                dataTablas.results || [],
+                dataFiguras.results || [],
+                genome,
+                container
+            );
         } catch {
             container.innerHTML = '<p class="text-red-500 text-center py-8">Error al cargar archivos</p>';
         }

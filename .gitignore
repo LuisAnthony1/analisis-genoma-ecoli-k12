@@ -24,5 +24,7 @@ datos/crudo/*.fasta
 .DS_Store
 Thumbs.db
 
+# API Keys
+
 # Jupyter
 .ipynb_checkpoints/

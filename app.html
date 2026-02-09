@@ -281,6 +281,11 @@
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_distancias_intergenicas" checked>
                                     <span class="text-sm text-primary">Distancias Intergénicas</span>
                                 </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="visualizaciones" checked>
+                                    <span class="text-sm text-primary">Generar Graficos</span>
+                                    <span class="text-xs text-secondary">(matplotlib)</span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -404,6 +409,9 @@
                         <button id="tab-archivos" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="archivos">
                             Archivos
                         </button>
+                        <button id="btn-chat-ia" class="ml-auto px-5 py-2.5 rounded-lg font-medium text-sm bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 transition shadow-lg" onclick="ChatIA.open(currentDashboardTab, currentResultsGenome)">
+                            ✨ Chat IA
+                        </button>
                     </div>
 
                     <!-- Contenedor del dashboard (se renderiza dinámicamente) -->
@@ -436,6 +444,7 @@
     <script src="frontend/js/genome-manager.js"></script>
     <script src="frontend/js/dashboard-renderer.js"></script>
     <script src="frontend/js/analysis-runner.js"></script>
+    <script src="frontend/js/chat-ia.js"></script>
 
 </body>
 </html>

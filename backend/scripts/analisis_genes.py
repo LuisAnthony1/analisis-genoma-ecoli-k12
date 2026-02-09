@@ -142,6 +142,68 @@ def configurar_organismo(seleccion):
         ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{basename}.gb")
         VALORES_LITERATURA = {}
         REFERENCIAS = {"fuente": "Archivo GenBank local"}
+
+        # Intentar cargar literatura desde IA si existe
+        archivo_lit = os.path.join(RUTA_RESULTADOS, f"literatura_{basename}.json")
+        if os.path.exists(archivo_lit):
+            try:
+                with open(archivo_lit, "r", encoding="utf-8") as f:
+                    lit_ia = json.load(f)
+                VALORES_LITERATURA = {
+                    "longitud_genoma": lit_ia.get("tamano_genoma_pb", 0),
+                    "genes_codificantes": lit_ia.get("genes_codificantes", 0),
+                    "contenido_gc_genoma": lit_ia.get("gc_porcentaje", 0),
+                    "densidad_genica": lit_ia.get("densidad_genica_porcentaje", 0),
+                    "tamano_promedio_gen": lit_ia.get("tamano_promedio_gen_pb", 0),
+                }
+                REFERENCIAS = {
+                    "fuente": "Valores obtenidos via IA (Gemini)",
+                    "referencias_ia": lit_ia.get("referencias", [])
+                }
+                print(f"     [LITERATURA] Datos de IA cargados desde {archivo_lit}")
+            except Exception as e:
+                print(f"     [LITERATURA] Error leyendo literatura IA: {e}")
+        else:
+            # Intentar obtener literatura via IA
+            try:
+                # Leer organismo del GenBank si existe
+                nombre_org = basename.replace("_", " ").title()
+                if os.path.exists(ARCHIVO_GENBANK):
+                    try:
+                        registro_tmp = SeqIO.read(ARCHIVO_GENBANK, "genbank")
+                        nombre_org = registro_tmp.annotations.get("organism", nombre_org)
+                    except Exception:
+                        pass
+
+                print(f"     [LITERATURA] Consultando IA para: {nombre_org}...")
+                import subprocess
+                script_lit = os.path.join(DIRECTORIO_BASE, "scripts", "consultar_literatura_ia.py")
+                if os.path.exists(script_lit):
+                    result = subprocess.run(
+                        [sys.executable, script_lit, nombre_org, basename],
+                        capture_output=True, text=True, timeout=60,
+                        cwd=DIRECTORIO_PROYECTO
+                    )
+                    if result.returncode == 0 and os.path.exists(archivo_lit):
+                        with open(archivo_lit, "r", encoding="utf-8") as f:
+                            lit_ia = json.load(f)
+                        VALORES_LITERATURA = {
+                            "longitud_genoma": lit_ia.get("tamano_genoma_pb", 0),
+                            "genes_codificantes": lit_ia.get("genes_codificantes", 0),
+                            "contenido_gc_genoma": lit_ia.get("gc_porcentaje", 0),
+                            "densidad_genica": lit_ia.get("densidad_genica_porcentaje", 0),
+                            "tamano_promedio_gen": lit_ia.get("tamano_promedio_gen_pb", 0),
+                        }
+                        REFERENCIAS = {
+                            "fuente": "Valores obtenidos via IA (Gemini)",
+                            "referencias_ia": lit_ia.get("referencias", [])
+                        }
+                        print(f"     [LITERATURA] Datos de IA obtenidos exitosamente")
+                    else:
+                        print(f"     [LITERATURA] No se pudieron obtener datos de IA")
+            except Exception as e:
+                print(f"     [LITERATURA] Error consultando IA: {e}")
+
         ORGANISMO_ACTUAL = {
             "nombre": basename.replace("_", " ").title(),
             "nombre_corto": basename,

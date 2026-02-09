@@ -450,12 +450,21 @@ const DashboardRenderer = {
         const metricas = data.metricas_generales || {};
         const virulencia = data.genes_virulencia || {};
         const organismos = data.organismos_comparados || {};
+        const usoCodones = data.uso_codones || {};
+        const distTamanos = data.distribucion_tamanos || {};
+        const distGc = data.distribucion_gc || {};
+        const interpretacionIA = data.interpretacion_ia || '';
 
         const ecoli = metricas.ecoli || {};
         const salmonella = metricas.salmonella || {};
 
         const nombre1 = ecoli.nombre || organismos.organismo_1?.nombre || 'Genoma 1';
         const nombre2 = salmonella.nombre || organismos.organismo_2?.nombre || 'Genoma 2';
+
+        const tamStats1 = distTamanos.ecoli?.estadisticas || {};
+        const tamStats2 = distTamanos.salmonella?.estadisticas || {};
+        const gcStats1 = distGc.ecoli?.estadisticas || {};
+        const gcStats2 = distGc.salmonella?.estadisticas || {};
 
         container.innerHTML = `
             <!-- Stats lado a lado -->
@@ -467,6 +476,7 @@ const DashboardRenderer = {
                         <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(ecoli.total_genes_cds)}</span></p>
                         <p><span class="text-secondary">GC:</span> <span class="font-bold text-primary">${ecoli.contenido_gc_porcentaje}%</span></p>
                         <p><span class="text-secondary">Densidad:</span> <span class="font-bold text-primary">${ecoli.densidad_genica_porcentaje}%</span></p>
+                        <p><span class="text-secondary">Tam. promedio gen:</span> <span class="font-bold text-primary">${this.fmt(tamStats1.promedio || ecoli.tamano_promedio_gen_pb || 0)} pb</span></p>
                     </div>
                 </div>
                 <div class="bg-card rounded-xl p-5 border border-cyan-500/30">
@@ -476,14 +486,15 @@ const DashboardRenderer = {
                         <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(salmonella.total_genes_cds)}</span></p>
                         <p><span class="text-secondary">GC:</span> <span class="font-bold text-primary">${salmonella.contenido_gc_porcentaje}%</span></p>
                         <p><span class="text-secondary">Densidad:</span> <span class="font-bold text-primary">${salmonella.densidad_genica_porcentaje}%</span></p>
+                        <p><span class="text-secondary">Tam. promedio gen:</span> <span class="font-bold text-primary">${this.fmt(tamStats2.promedio || salmonella.tamano_promedio_gen_pb || 0)} pb</span></p>
                     </div>
                 </div>
             </div>
 
-            <!-- Gráficos comparativos -->
+            <!-- Graficos comparativos - fila 1 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Comparación de Métricas</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-4">Comparacion de Metricas Generales</h3>
                     <canvas id="chart-compare-metrics" height="250"></canvas>
                 </div>
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
@@ -491,10 +502,53 @@ const DashboardRenderer = {
                     <canvas id="chart-compare-virulence" height="250"></canvas>
                 </div>
             </div>
+
+            <!-- Graficos comparativos - fila 2 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de Tamanos de Genes</h3>
+                    <canvas id="chart-compare-sizes" height="250"></canvas>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de GC por Gen</h3>
+                    <canvas id="chart-compare-gc" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- Uso de codones -->
+            ${usoCodones.ecoli ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">Comparacion de Uso de Codones (Top 10)</h3>
+                <canvas id="chart-compare-codons" height="300"></canvas>
+            </div>` : ''}
+
+            <!-- Categorias de virulencia -->
+            ${virulencia.ecoli && virulencia.salmonella ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">Desglose de Genes de Virulencia por Categoria</h3>
+                <canvas id="chart-compare-vir-cats" height="250"></canvas>
+            </div>` : ''}
+
+            <!-- Interpretacion IA -->
+            ${interpretacionIA ? `
+            <div class="bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 rounded-xl p-6 border border-violet-500/20 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xl shadow-lg">✨</div>
+                    <div>
+                        <h3 class="font-bold text-primary">Interpretacion IA</h3>
+                        <p class="text-xs text-secondary">Analisis biologico generado por Gemini AI</p>
+                    </div>
+                </div>
+                <div class="text-sm text-primary leading-relaxed space-y-3">
+                    ${interpretacionIA.split('\n').filter(p => p.trim()).map(p =>
+                        `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</p>`
+                    ).join('')}
+                </div>
+            </div>` : ''}
         `;
 
         setTimeout(() => {
-            // Métricas comparativas
+            // Metricas comparativas
             this.createChart('chart-compare-metrics', {
                 type: 'bar',
                 data: {
@@ -527,7 +581,7 @@ const DashboardRenderer = {
                 options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
             });
 
-            // Virulencia
+            // Virulencia total
             if (virulencia.ecoli && virulencia.salmonella) {
                 this.createChart('chart-compare-virulence', {
                     type: 'bar',
@@ -543,6 +597,95 @@ const DashboardRenderer = {
                     options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                 });
             }
+
+            // Distribucion de tamanos
+            const rangos1 = distTamanos.ecoli?.rangos || {};
+            const rangos2 = distTamanos.salmonella?.rangos || {};
+            if (Object.keys(rangos1).length > 0) {
+                const labels = Object.keys(rangos1);
+                this.createChart('chart-compare-sizes', {
+                    type: 'bar',
+                    data: {
+                        labels: labels.map(l => l + ' pb'),
+                        datasets: [
+                            { label: nombre1, data: labels.map(l => rangos1[l] || 0), backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: nombre2, data: labels.map(l => rangos2[l] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // Distribucion GC
+            const gcRangos1 = distGc.ecoli?.rangos || {};
+            const gcRangos2 = distGc.salmonella?.rangos || {};
+            if (Object.keys(gcRangos1).length > 0) {
+                const labels = Object.keys(gcRangos1);
+                this.createChart('chart-compare-gc', {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: nombre1, data: labels.map(l => gcRangos1[l] || 0), backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: nombre2, data: labels.map(l => gcRangos2[l] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // Uso de codones (top 10)
+            if (usoCodones.ecoli && usoCodones.salmonella) {
+                const top1 = usoCodones.ecoli.top_10 || [];
+                const top2 = usoCodones.salmonella.top_10 || [];
+                const allCodons = [...new Set([...top1.map(c => c.codon), ...top2.map(c => c.codon)])].slice(0, 12);
+                const freq1Map = {};
+                const freq2Map = {};
+                top1.forEach(c => freq1Map[c.codon] = c.frecuencia);
+                top2.forEach(c => freq2Map[c.codon] = c.frecuencia);
+
+                this.createChart('chart-compare-codons', {
+                    type: 'bar',
+                    data: {
+                        labels: allCodons,
+                        datasets: [
+                            { label: nombre1, data: allCodons.map(c => freq1Map[c] || 0), backgroundColor: '#10b981', borderRadius: 3 },
+                            { label: nombre2, data: allCodons.map(c => freq2Map[c] || 0), backgroundColor: '#06b6d4', borderRadius: 3 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { ticks: { font: { family: 'monospace', weight: 'bold' } } },
+                            y: { beginAtZero: true, title: { display: true, text: 'Frecuencia %' } }
+                        }
+                    }
+                });
+            }
+
+            // Categorias de virulencia
+            if (virulencia.ecoli?.categorias && virulencia.salmonella?.categorias) {
+                const cats1 = virulencia.ecoli.categorias || {};
+                const cats2 = virulencia.salmonella.categorias || {};
+                const allCats = [...new Set([...Object.keys(cats1), ...Object.keys(cats2)])];
+                this.createChart('chart-compare-vir-cats', {
+                    type: 'bar',
+                    data: {
+                        labels: allCats,
+                        datasets: [
+                            { label: nombre1, data: allCats.map(c => cats1[c] || 0), backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: nombre2, data: allCats.map(c => cats2[c] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            }
         }, 100);
     },
 
@@ -550,8 +693,10 @@ const DashboardRenderer = {
     // VISTA DE ARCHIVOS (lista simple con descargar/eliminar)
     // =========================================================================
 
-    renderArchivosView(results, genome, container) {
-        if (!results || results.length === 0) {
+    renderArchivosView(tablas, figuras, genome, container) {
+        const allFiles = [...(tablas || []), ...(figuras || [])];
+
+        if (allFiles.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-12 text-secondary">
                     <div class="text-6xl mb-3">📄</div>
@@ -561,29 +706,148 @@ const DashboardRenderer = {
             return;
         }
 
+        const tipoArchivo = (file) => {
+            if (file.extension === 'json') return { icon: '📋', label: 'JSON', color: 'emerald' };
+            if (file.extension === 'csv') return { icon: '📊', label: 'CSV', color: 'cyan' };
+            if (file.extension === 'png') return { icon: '🖼️', label: 'Imagen', color: 'violet' };
+            return { icon: '📄', label: 'Archivo', color: 'slate' };
+        };
+
         container.innerHTML = `
-            <div class="space-y-2">
-                ${results.map(file => `
-                    <div class="flex items-center justify-between bg-card rounded-lg px-5 py-3 border border-slate-200 hover:border-emerald-500/30 transition">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <span class="text-xl">${file.extension === 'json' ? '📋' : file.extension === 'png' ? '📊' : '📄'}</span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-primary truncate">${file.filename}</p>
-                                <p class="text-xs text-secondary">${file.size_kb} KB</p>
+            <!-- Resumen -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                ${this.statsCard('Tablas', (tablas || []).length + ' archivos', 'JSON y CSV', 'emerald')}
+                ${this.statsCard('Graficos', (figuras || []).length + ' imagenes', 'PNG generados', 'violet')}
+                ${this.statsCard('Total', allFiles.length + ' archivos', this._calcTotalSize(allFiles), 'cyan')}
+            </div>
+
+            <!-- Grid de archivos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${(tablas || []).map(file => {
+                    const tipo = tipoArchivo(file);
+                    return `
+                    <div class="bg-card rounded-xl border border-slate-200 hover:border-${tipo.color}-500/30 transition overflow-hidden" id="file-card-${file.filename.replace(/\./g, '-')}">
+                        <div class="px-5 py-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="text-2xl">${tipo.icon}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-primary truncate">${file.filename}</p>
+                                        <p class="text-xs text-secondary">${file.size_kb} KB · ${tipo.label}</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-0.5 bg-${tipo.color}-500/10 text-${tipo.color}-500 text-xs font-medium rounded-full">${tipo.label}</span>
+                            </div>
+
+                            <!-- Preview area -->
+                            <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mb-3 max-h-48 overflow-y-auto">
+                                <div id="preview-${file.filename.replace(/\./g, '-')}" class="text-xs font-mono text-secondary">
+                                    <p class="text-center text-slate-400">Cargando preview...</p>
+                                </div>
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="flex gap-2">
+                                <a href="${file.path}" download class="flex-1 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition text-center">
+                                    Descargar
+                                </a>
+                                <button onclick="deleteResult('${file.filename}', 'tablas')" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium rounded-lg transition">
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 ml-4">
-                            <a href="${file.path}" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
-                                Descargar
-                            </a>
-                            <button onclick="deleteResult('${file.filename}', 'tablas')" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs rounded-lg transition">
-                                Eliminar
-                            </button>
+                    </div>`;
+                }).join('')}
+
+                ${(figuras || []).map(file => {
+                    const tipo = tipoArchivo(file);
+                    return `
+                    <div class="bg-card rounded-xl border border-slate-200 hover:border-violet-500/30 transition overflow-hidden">
+                        <div class="px-5 py-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="text-2xl">${tipo.icon}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-primary truncate">${file.filename}</p>
+                                        <p class="text-xs text-secondary">${file.size_kb} KB · ${tipo.label}</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-0.5 bg-violet-500/10 text-violet-500 text-xs font-medium rounded-full">Imagen</span>
+                            </div>
+
+                            <!-- Preview imagen -->
+                            <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 mb-3">
+                                <img src="${file.path}" alt="${file.filename}" class="w-full rounded-lg" loading="lazy" onerror="this.parentElement.innerHTML='<p class=\\'text-xs text-center text-slate-400 py-4\\'>No se pudo cargar la imagen</p>'">
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="flex gap-2">
+                                <a href="${file.path}" download class="flex-1 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition text-center">
+                                    Descargar
+                                </a>
+                                <button onclick="deleteResult('${file.filename}', 'figuras')" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium rounded-lg transition">
+                                    Eliminar
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
+                    </div>`;
+                }).join('')}
             </div>
         `;
+
+        // Cargar previews de JSON
+        setTimeout(() => {
+            (tablas || []).forEach(file => {
+                if (file.extension === 'json') {
+                    this._cargarPreviewJSON(file, genome);
+                }
+            });
+        }, 100);
+    },
+
+    _calcTotalSize(files) {
+        const total = files.reduce((acc, f) => acc + (f.size_kb || 0), 0);
+        return total > 1024 ? (total / 1024).toFixed(1) + ' MB' : total.toFixed(0) + ' KB';
+    },
+
+    async _cargarPreviewJSON(file, genome) {
+        const previewId = `preview-${file.filename.replace(/\./g, '-')}`;
+        const el = document.getElementById(previewId);
+        if (!el) return;
+
+        try {
+            const data = await this.fetchResultData(genome, file.filename);
+            if (!data) {
+                el.innerHTML = '<p class="text-slate-400">Sin preview</p>';
+                return;
+            }
+
+            // Mostrar primeros 10 campos clave
+            const campos = Object.keys(data).slice(0, 10);
+            let html = '<div class="space-y-1">';
+            for (const campo of campos) {
+                const valor = data[campo];
+                let valorStr = '';
+                if (typeof valor === 'object' && valor !== null) {
+                    const subKeys = Object.keys(valor).length;
+                    valorStr = `<span class="text-cyan-500">{${subKeys} campos}</span>`;
+                } else if (typeof valor === 'number') {
+                    valorStr = `<span class="text-emerald-500">${this.fmt(valor)}</span>`;
+                } else if (typeof valor === 'string') {
+                    valorStr = `<span class="text-amber-500">"${valor.substring(0, 40)}${valor.length > 40 ? '...' : ''}"</span>`;
+                } else {
+                    valorStr = String(valor);
+                }
+                html += `<p><span class="text-violet-400">${campo}:</span> ${valorStr}</p>`;
+            }
+            if (Object.keys(data).length > 10) {
+                html += `<p class="text-slate-400 mt-1">... y ${Object.keys(data).length - 10} campos mas</p>`;
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        } catch {
+            el.innerHTML = '<p class="text-slate-400">Error al cargar preview</p>';
+        }
     },
 
     // =========================================================================
