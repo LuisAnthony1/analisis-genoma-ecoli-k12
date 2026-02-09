@@ -11,28 +11,50 @@ Analiza la composicion del genoma:
 import os
 import sys
 import json
+import gc
 from datetime import datetime
 from collections import Counter
 
-from Bio import SeqIO
-from Bio.SeqUtils import gc_fraction
-
-# =============================================================================
-# CONFIGURACION
-# =============================================================================
-
-DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
-DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
-RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
-RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
-
-if len(sys.argv) < 2:
-    print("[ERROR] Uso: python analisis_estructura_gen.py <genome_basename>")
+try:
+    from Bio import SeqIO
+    from Bio.SeqUtils import gc_fraction
+except ImportError as e:
+    print(f"[ERROR] BioPython no instalado: {e}")
     sys.exit(1)
 
-GENOME_BASENAME = sys.argv[1]
-ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{GENOME_BASENAME}.gb")
-os.makedirs(RUTA_RESULTADOS, exist_ok=True)
+# =============================================================================
+# CONFIGURACION - CON VALIDACION
+# =============================================================================
+
+try:
+    DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
+    DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
+    RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
+    RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
+
+    # Validar argumentos
+    if len(sys.argv) < 2:
+        print("[ERROR] Uso: python analisis_estructura_gen.py <genome_basename>")
+        sys.exit(1)
+
+    GENOME_BASENAME = sys.argv[1]
+    ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{GENOME_BASENAME}.gb")
+    
+    # Crear directorio de resultados
+    os.makedirs(RUTA_RESULTADOS, exist_ok=True)
+    
+    # Validar archivo antes de continuar
+    if not os.path.exists(ARCHIVO_GENBANK):
+        print(f"[ERROR] Archivo no encontrado: {ARCHIVO_GENBANK}")
+        if os.path.exists(RUTA_DATOS_CRUDO):
+            print(f"[INFO] Archivos disponibles: {os.listdir(RUTA_DATOS_CRUDO)}")
+        sys.exit(1)
+
+except Exception as e:
+    print(f"[ERROR] Fallo durante inicializacion: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 
 
 # =============================================================================
@@ -133,6 +155,7 @@ def contar_features(registro):
         if tipo != "source":
             print(f"    {tipo:<25} {n:>6}")
 
+    gc.collect()  # Liberar memoria
     return dict(conteo)
 
 
@@ -186,7 +209,7 @@ def identificar_operones(registro):
     if len(operon_actual) >= 2:
         operones.append(operon_actual)
 
-    # Formatear resultados
+    # Formatear resultados - solo guardar lo esencial para ahorrar memoria
     operones_resultado = []
     for i, operon in enumerate(operones):
         nombres_genes = [g["gene"] or g["locus_tag"] for g in operon]
@@ -197,9 +220,11 @@ def identificar_operones(registro):
             "hebra": operon[0]["strand"],
             "inicio": operon[0]["start"],
             "fin": operon[-1]["end"],
-            "longitud_total": operon[-1]["end"] - operon[0]["start"],
-            "productos": [g["product"] for g in operon]
+            "longitud_total": operon[-1]["end"] - operon[0]["start"]
         })
+        
+        if (i + 1) % 100 == 0:
+            gc.collect()
 
     # Estadisticas
     total_operones = len(operones_resultado)
@@ -222,13 +247,14 @@ def identificar_operones(registro):
             nombres += f" (+{len(op['genes']) - 5})"
         print(f"  {op['numero']:<4} {op['num_genes']:>6} {op['hebra']:>6} {op['inicio']:>12,} {op['fin']:>12,} {nombres}")
 
+    gc.collect()  # Liberar memoria después de procesar operones
     return {
         "total": total_operones,
         "genes_en_operones": genes_en_operones,
         "porcentaje_genes_en_operones": round(genes_en_operones / len(genes_cds) * 100, 1) if genes_cds else 0,
         "operon_mas_grande": max_genes,
         "umbral_distancia_pb": UMBRAL_DISTANCIA,
-        "operones": operones_resultado[:50],  # Limitar a top 50 para no hacer el JSON gigante
+        "operones": operones_resultado[:30],  # Limitar a 30 para ahorrar memoria
         "total_cds_analizados": len(genes_cds)
     }
 
@@ -399,6 +425,7 @@ def main():
         print("\n[PASO 3/4] Analizando composicion genomica...")
         try:
             composicion = analizar_composicion_genomica(registro)
+            gc.collect()  # Liberar memoria
         except Exception as e:
             print(f"[ERROR] Fallo en analisis de composicion: {e}")
             raise
@@ -406,6 +433,7 @@ def main():
         # GC por region
         try:
             gc_regiones = analizar_gc_por_region(registro, composicion)
+            gc.collect()  # Liberar memoria
         except Exception as e:
             print(f"[ERROR] Fallo en analisis de GC: {e}")
             raise
@@ -416,13 +444,49 @@ def main():
         print(f"    No codificante: {gc_regiones['gc_no_codificante']:.2f}%")
         print(f"    Diferencia:     {gc_regiones['diferencia_gc']:.2f}%")
 
-        # Identificar operones
+        # Identificar operones (OPCIONAL - continua si falla)
         print("\n[PASO 4/4] Identificando operones putativos...")
+        operones = None
         try:
+            print("  [INICIO] Comenzando identificacion de operones...")
             operones = identificar_operones(registro)
+            print("  [EXITO] Identificacion de operones completada")
+            gc.collect()  # Liberar memoria
+        except MemoryError as e:
+            print(f"[WARN] Error de memoria en operones (continuando sin operones): {type(e).__name__}")
+            # Crear estructura minima de operones si falla
+            operones = {
+                "total": 0,
+                "genes_en_operones": 0,
+                "porcentaje_genes_en_operones": 0,
+                "operon_mas_grande": 0,
+                "umbral_distancia_pb": 50,
+                "operones": [],
+                "total_cds_analizados": features_conteo.get("CDS", 0),
+                "omitido_por_error": True,
+                "error_tipo": "MemoryError"
+            }
+            gc.collect()  # Asegurar liberacion de memoria despues del error
         except Exception as e:
-            print(f"[ERROR] Fallo en identificacion de operones: {e}")
-            raise
+            print(f"[WARN] Fallo en identificacion de operones (continuando sin operones): {type(e).__name__}: {str(e)[:100]}")
+            # Crear estructura minima de operones si falla
+            operones = {
+                "total": 0,
+                "genes_en_operones": 0,
+                "porcentaje_genes_en_operones": 0,
+                "operon_mas_grande": 0,
+                "umbral_distancia_pb": 50,
+                "operones": [],
+                "total_cds_analizados": features_conteo.get("CDS", 0),
+                "omitido_por_error": True,
+                "error_tipo": type(e).__name__
+            }
+            gc.collect()  # Asegurar liberacion de memoria despues del error
+        
+        # *** Liberar memoria del genoma entero despues de procesar ***
+        print("\n[MEMORIA] Limpiando registro GenBank de memoria...")
+        del registro
+        gc.collect()
 
         # Datos educativos
         try:

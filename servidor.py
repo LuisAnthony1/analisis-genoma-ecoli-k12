@@ -280,7 +280,7 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 120},
         "visualizaciones": {"file": "visualizaciones.py", "timeout": 180},
         "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
-        "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 120},
+        "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 180},
         "generar_informe": {"file": "generar_informe.py", "timeout": 300},
     }
 

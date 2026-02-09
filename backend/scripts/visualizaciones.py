@@ -159,12 +159,14 @@ def graficar_codones_parada(datos_codones):
 
     proporciones = datos_codones['codones_parada']['proporciones_porcentaje']
     conteos = datos_codones['codones_parada']['conteos']
-    literatura = datos_codones['codones_parada']['proporciones_literatura']
+    
+    # Usar valores de literatura si están disponibles, sino usar valores observados
+    literatura = datos_codones['codones_parada'].get('proporciones_literatura', proporciones)
 
     codones = list(proporciones.keys())
     valores_obs = [proporciones[c] for c in codones]
-    valores_lit = [literatura[c] for c in codones]
-    valores_conteo = [conteos[c] for c in codones]
+    valores_lit = [literatura.get(c, proporciones[c]) for c in codones]
+    valores_conteo = [conteos.get(c, 0) for c in codones]
 
     # Crear figura con dos subgraficos
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
@@ -297,25 +299,44 @@ def graficar_contenido_gc(datos_codones):
                startangle=90, explode=(0.02, 0.02, 0.02, 0.02))
     axes[0].set_title('Composicion de Nucleotidos', fontsize=12, fontweight='bold')
 
-    # Grafico 2: GC vs AT con comparacion literatura
+    # Grafico 2: GC vs AT con comparacion literatura (si está disponible)
     categorias = ['Contenido GC', 'Contenido AT']
     observado = [gc_datos['contenido_gc_porcentaje'], gc_datos['contenido_at_porcentaje']]
-    literatura = [gc_datos['gc_literatura'], 100 - gc_datos['gc_literatura']]
+    
+    # Usar valores de literatura si están disponibles, sino solo mostrar observado
+    gc_literatura = gc_datos.get('gc_literatura', None)
+    
+    if gc_literatura is not None:
+        literatura = [gc_literatura, 100 - gc_literatura]
+        x = range(len(categorias))
+        ancho = 0.35
 
-    x = range(len(categorias))
-    ancho = 0.35
+        barras_obs = axes[1].bar([i - ancho/2 for i in x], observado, ancho,
+                                 label='Observado', color=COLORES['primario'])
+        barras_lit = axes[1].bar([i + ancho/2 for i in x], literatura, ancho,
+                                 label='Literatura', color=COLORES['terciario'])
 
-    barras_obs = axes[1].bar([i - ancho/2 for i in x], observado, ancho,
-                             label='Observado', color=COLORES['primario'])
-    barras_lit = axes[1].bar([i + ancho/2 for i in x], literatura, ancho,
-                             label='Literatura', color=COLORES['terciario'])
-
-    axes[1].set_ylabel('Porcentaje (%)', fontsize=11)
-    axes[1].set_title('Contenido GC vs AT', fontsize=12, fontweight='bold')
-    axes[1].set_xticks(x)
-    axes[1].set_xticklabels(categorias)
-    axes[1].legend()
-    axes[1].set_ylim(0, 60)
+        axes[1].set_ylabel('Porcentaje (%)', fontsize=11)
+        axes[1].set_title('Contenido GC vs AT', fontsize=12, fontweight='bold')
+        axes[1].set_xticks(x)
+        axes[1].set_xticklabels(categorias)
+        axes[1].legend()
+        axes[1].set_ylim(0, 60)
+    else:
+        # Si no hay datos de literatura, solo mostrar observado
+        x = [0, 1]
+        barras_obs = axes[1].bar(x, observado, width=0.6, color=COLORES['primario'])
+        axes[1].set_ylabel('Porcentaje (%)', fontsize=11)
+        axes[1].set_title('Contenido GC vs AT', fontsize=12, fontweight='bold')
+        axes[1].set_xticks(x)
+        axes[1].set_xticklabels(categorias)
+        axes[1].set_ylim(0, 60)
+        
+        # Agregar valores en barras
+        for barra in barras_obs:
+            altura = barra.get_height()
+            axes[1].text(barra.get_x() + barra.get_width()/2., altura,
+                        f'{altura:.1f}%', ha='center', va='bottom', fontsize=10)
 
     # Valores sobre barras
     for barra in barras_obs + barras_lit:
@@ -456,27 +477,51 @@ def graficar_comparacion_literatura(datos_genes):
     """
     print("[INFO] Generando grafico de comparacion con literatura...")
 
-    comparacion = datos_genes['comparacion_literatura']
-    literatura = datos_genes['valores_literatura']
+    comparacion = datos_genes.get('comparacion_literatura', {})
+    if not comparacion:
+        print("[WARN] No hay datos de comparacion con literatura disponibles")
+        return None
+
+    literatura = datos_genes.get('valores_literatura', {})
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    metricas = ['Total\nCDS', 'Densidad\ngenica (%)', 'GC en\nCDS (%)', 'Tamano\npromedio (pb)']
+    metricas = []
+    observados = []
+    literatura_vals = []
 
-    # Usar las nuevas claves (Total CDS en lugar de Total genes)
-    observados = [
-        comparacion.get('Total CDS', comparacion.get('Total genes', {}))['observado'],
-        comparacion['Densidad genica']['observado'],
-        comparacion['GC en CDS']['observado'],
-        comparacion['Tamano promedio']['observado']
-    ]
+    # Total CDS
+    if 'Total CDS' in comparacion or 'Total genes' in comparacion:
+        metricas.append('Total\nCDS')
+        total_data = comparacion.get('Total CDS', comparacion.get('Total genes', {}))
+        observados.append(total_data.get('observado', 0))
+        literatura_vals.append(total_data.get('literatura', 0))
 
-    literatura_vals = [
-        comparacion.get('Total CDS', comparacion.get('Total genes', {}))['literatura'],
-        comparacion['Densidad genica']['literatura'],
-        comparacion['GC en CDS']['literatura'],
-        comparacion['Tamano promedio']['literatura']
-    ]
+    # Densidad genica
+    if 'Densidad genica' in comparacion:
+        metricas.append('Densidad\ngenica (%)')
+        den_data = comparacion['Densidad genica']
+        observados.append(den_data.get('observado', 0))
+        literatura_vals.append(den_data.get('literatura', 0))
+
+    # GC en CDS
+    if 'GC en CDS' in comparacion:
+        metricas.append('GC en\nCDS (%)')
+        gc_data = comparacion['GC en CDS']
+        observados.append(gc_data.get('observado', 0))
+        literatura_vals.append(gc_data.get('literatura', 0))
+
+    # Tamano promedio
+    if 'Tamano promedio' in comparacion:
+        metricas.append('Tamano\npromedio (pb)')
+        tam_data = comparacion['Tamano promedio']
+        observados.append(tam_data.get('observado', 0))
+        literatura_vals.append(tam_data.get('literatura', 0))
+
+    if not metricas:
+        print("[WARN] No hay metricas disponibles para graficar")
+        plt.close(fig)
+        return None
 
     # Normalizar para visualizacion (porcentaje del valor de literatura)
     porcentajes_obs = [(o/l)*100 if l != 0 else 100 for o, l in zip(observados, literatura_vals)]
@@ -485,7 +530,7 @@ def graficar_comparacion_literatura(datos_genes):
     ancho = 0.35
 
     # Barras de literatura (100%)
-    barras_lit = ax.bar([i - ancho/2 for i in x], [100]*4, ancho,
+    barras_lit = ax.bar([i - ancho/2 for i in x], [100]*len(metricas), ancho,
                         label='Literatura (referencia)', color=COLORES['gris'], alpha=0.5)
 
     # Barras observadas
@@ -493,7 +538,7 @@ def graficar_comparacion_literatura(datos_genes):
                         label='Observado', color=COLORES['primario'])
 
     ax.set_ylabel('Porcentaje respecto a literatura (%)', fontsize=11)
-    ax.set_title('Comparacion de Resultados con Literatura Cientifica\nE. coli K-12 MG1655',
+    ax.set_title('Comparacion de Resultados con Literatura Cientifica',
                 fontsize=14, fontweight='bold')
     ax.set_xticks(x)
     ax.set_xticklabels(metricas)
