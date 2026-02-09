@@ -271,6 +271,9 @@ async function loadDashboard(analysisType) {
                 <div class="text-6xl mb-3">📭</div>
                 <p>No hay datos de ${analysisType} para este genoma</p>
                 <p class="text-sm mt-2">Ejecuta el análisis correspondiente primero</p>
+                <button onclick="explicarErrorAnalisis('${analysisType}', '${genome}')" class="mt-4 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">
+                    Explicar con IA
+                </button>
             </div>
         `;
         return;
@@ -562,6 +565,88 @@ async function generarInforme() {
         btn.disabled = false;
         btn.textContent = 'Generar Informe PDF (IEEE)';
         btn.classList.remove('opacity-70', 'cursor-wait');
+    }
+}
+
+
+// =============================================================================
+// EXPLICADOR DE ERRORES CON IA
+// =============================================================================
+
+async function explicarErrorAnalisis(analysisType, genome) {
+    const container = document.getElementById('dashboard-results');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center py-12">
+            <p class="text-secondary mb-4">Consultando con IA por qué no hay datos de ${analysisType}...</p>
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        </div>
+    `;
+
+    try {
+        const prompt = `El usuario está intentando ver el análisis de ${analysisType} del genoma "${genome}" en GenomeHub (una aplicación de análisis genómico). 
+
+El análisis no generó datos. Explica de manera clara y educativa:
+1. Por qué podría no haber datos para este análisis en este genoma
+2. Posibles razones técnicas (errores durante el análisis, formatos de archivo, etc)
+3. Qué hacer para resolver el problema
+4. Si es normal o esperado en algunos casos
+
+Sé conciso pero informativo. Usa ejemplos relevantes a bioinformática.`;
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: prompt, context: 'error_explanation' })
+        });
+
+        if (!response.ok) throw new Error('Error en la API');
+
+        const data = await response.json();
+        const explanation = data.response || 'No se pudo obtener una explicación en este momento';
+
+        container.innerHTML = `
+            <div class="bg-card rounded-xl p-6 border border-amber-200 dark:border-amber-800">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="text-3xl">🤖</div>
+                    <div>
+                        <h3 class="text-lg font-bold text-primary">Explicación de IA</h3>
+                        <p class="text-xs text-secondary">Análisis: ${analysisType} | Genoma: ${genome}</p>
+                    </div>
+                </div>
+                <div class="prose prose-sm dark:prose-invert max-w-none text-secondary leading-relaxed">
+                    ${explanation.split('\n').map(line => {
+                        if (line.trim()) {
+                            if (line.match(/^#+\s/)) {
+                                // Headers
+                                return `<h4 class="font-semibold text-primary mt-3 mb-2">${line.replace(/^#+\s/, '')}</h4>`;
+                            } else if (line.match(/^[-•*]/)) {
+                                // Bullet points
+                                return `<li class="ml-4">${line.replace(/^[-•*]\s/, '')}</li>`;
+                            } else {
+                                // Paragraphs
+                                return `<p class="mb-2">${line}</p>`;
+                            }
+                        }
+                        return '';
+                    }).join('')}
+                </div>
+                <button onclick="loadDashboard('${analysisType}')" class="mt-4 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">
+                    Reintentar análisis
+                </button>
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = `
+            <div class="text-center py-12 text-red-500">
+                <p class="mb-2">❌ Error al obtener explicación</p>
+                <p class="text-sm text-secondary">${error.message}</p>
+                <button onclick="loadDashboard('${analysisType}')" class="mt-4 px-4 py-2 bg-slate-500 text-white text-sm rounded-lg">
+                    Volver
+                </button>
+            </div>
+        `;
     }
 }
 

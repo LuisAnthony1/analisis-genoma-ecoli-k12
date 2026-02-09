@@ -355,81 +355,133 @@ def analizar_gc_por_region(registro, composicion):
 # FUNCION PRINCIPAL
 # =============================================================================
 
+# =============================================================================
+# FUNCION PRINCIPAL
+# =============================================================================
+
 def main():
     """Ejecuta el analisis de estructura genomica."""
-    print("\n" + "=" * 70)
-    print(f"ANALISIS DE ESTRUCTURA GENOMICA")
-    print(f"Genoma: {GENOME_BASENAME}")
-    print("=" * 70)
-    print(f"\n  Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Archivo: {ARCHIVO_GENBANK}")
+    try:
+        print("\n" + "=" * 70)
+        print(f"ANALISIS DE ESTRUCTURA GENOMICA")
+        print(f"Genoma: {GENOME_BASENAME}")
+        print("=" * 70)
+        print(f"\n  Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"  Archivo: {ARCHIVO_GENBANK}")
 
-    if not os.path.exists(ARCHIVO_GENBANK):
-        print(f"\n[ERROR] No se encuentra el archivo: {ARCHIVO_GENBANK}")
-        sys.exit(1)
+        if not os.path.exists(ARCHIVO_GENBANK):
+            print(f"\n[ERROR] No se encuentra el archivo: {ARCHIVO_GENBANK}")
+            print(f"[INFO] Directorio de datos: {RUTA_DATOS_CRUDO}")
+            print(f"[INFO] Archivos disponibles en directorio: {os.listdir(RUTA_DATOS_CRUDO) if os.path.exists(RUTA_DATOS_CRUDO) else 'Directorio no existe'}")
+            sys.exit(1)
 
-    # Leer GenBank
-    print("\n[PASO 1/4] Leyendo archivo GenBank...")
-    registro = SeqIO.read(ARCHIVO_GENBANK, "genbank")
-    organismo = registro.annotations.get("organism", GENOME_BASENAME.replace("_", " ").title())
-    print(f"  Organismo: {organismo}")
-    print(f"  Longitud: {len(registro.seq):,} pb")
+        # Leer GenBank
+        print("\n[PASO 1/4] Leyendo archivo GenBank...")
+        try:
+            registro = SeqIO.read(ARCHIVO_GENBANK, "genbank")
+        except Exception as e:
+            print(f"[ERROR] Fallo al leer GenBank: {e}")
+            raise
+        
+        organismo = registro.annotations.get("organism", GENOME_BASENAME.replace("_", " ").title())
+        print(f"  Organismo: {organismo}")
+        print(f"  Longitud: {len(registro.seq):,} pb")
 
-    # Contar features
-    print("\n[PASO 2/4] Contando features anotados...")
-    features_conteo = contar_features(registro)
+        # Contar features
+        print("\n[PASO 2/4] Contando features anotados...")
+        try:
+            features_conteo = contar_features(registro)
+        except Exception as e:
+            print(f"[ERROR] Fallo al contar features: {e}")
+            raise
 
-    # Analizar composicion
-    print("\n[PASO 3/4] Analizando composicion genomica...")
-    composicion = analizar_composicion_genomica(registro)
+        # Analizar composicion
+        print("\n[PASO 3/4] Analizando composicion genomica...")
+        try:
+            composicion = analizar_composicion_genomica(registro)
+        except Exception as e:
+            print(f"[ERROR] Fallo en analisis de composicion: {e}")
+            raise
 
-    # GC por region
-    gc_regiones = analizar_gc_por_region(registro, composicion)
-    print(f"\n  Contenido GC por region:")
-    print(f"    Total:          {gc_regiones['gc_total']:.2f}%")
-    print(f"    Codificante:    {gc_regiones['gc_codificante']:.2f}%")
-    print(f"    No codificante: {gc_regiones['gc_no_codificante']:.2f}%")
-    print(f"    Diferencia:     {gc_regiones['diferencia_gc']:.2f}%")
+        # GC por region
+        try:
+            gc_regiones = analizar_gc_por_region(registro, composicion)
+        except Exception as e:
+            print(f"[ERROR] Fallo en analisis de GC: {e}")
+            raise
+            
+        print(f"\n  Contenido GC por region:")
+        print(f"    Total:          {gc_regiones['gc_total']:.2f}%")
+        print(f"    Codificante:    {gc_regiones['gc_codificante']:.2f}%")
+        print(f"    No codificante: {gc_regiones['gc_no_codificante']:.2f}%")
+        print(f"    Diferencia:     {gc_regiones['diferencia_gc']:.2f}%")
 
-    # Identificar operones
-    print("\n[PASO 4/4] Identificando operones putativos...")
-    operones = identificar_operones(registro)
+        # Identificar operones
+        print("\n[PASO 4/4] Identificando operones putativos...")
+        try:
+            operones = identificar_operones(registro)
+        except Exception as e:
+            print(f"[ERROR] Fallo en identificacion de operones: {e}")
+            raise
 
-    # Datos educativos
-    educativo = generar_datos_educativos()
+        # Datos educativos
+        try:
+            educativo = generar_datos_educativos()
+        except Exception as e:
+            print(f"[ERROR] Fallo al generar datos educativos: {e}")
+            raise
 
-    # Compilar resultados
-    resultados = {
-        "fecha_analisis": datetime.now().isoformat(),
-        "organismo": organismo,
-        "genoma_basename": GENOME_BASENAME,
-        "longitud_genoma": len(registro.seq),
-        "composicion_genomica": composicion,
-        "features_anotados": features_conteo,
-        "gc_por_region": gc_regiones,
-        "operones_putativos": operones,
-        "educativo": educativo,
-        "estadisticas": {
-            "total_cds": features_conteo.get("CDS", 0),
-            "total_trna": features_conteo.get("tRNA", 0),
-            "total_rrna": features_conteo.get("rRNA", 0),
-            "total_repeat_region": features_conteo.get("repeat_region", 0),
-            "total_ncrna": features_conteo.get("ncRNA", 0) + features_conteo.get("misc_RNA", 0),
-            "densidad_codificante": composicion["codificante_cds"]["porcentaje"],
-            "total_operones": operones["total"],
-            "genes_en_operones": operones["genes_en_operones"]
+        # Compilar resultados
+        resultados = {
+            "fecha_analisis": datetime.now().isoformat(),
+            "organismo": organismo,
+            "genoma_basename": GENOME_BASENAME,
+            "longitud_genoma": len(registro.seq),
+            "composicion_genomica": composicion,
+            "features_anotados": features_conteo,
+            "gc_por_region": gc_regiones,
+            "operones_putativos": operones,
+            "educativo": educativo,
+            "estadisticas": {
+                "total_cds": features_conteo.get("CDS", 0),
+                "total_trna": features_conteo.get("tRNA", 0),
+                "total_rrna": features_conteo.get("rRNA", 0),
+                "total_repeat_region": features_conteo.get("repeat_region", 0),
+                "total_ncrna": features_conteo.get("ncRNA", 0) + features_conteo.get("misc_RNA", 0),
+                "densidad_codificante": composicion["codificante_cds"]["porcentaje"],
+                "total_operones": operones["total"],
+                "genes_en_operones": operones["genes_en_operones"]
+            }
         }
-    }
 
-    # Exportar
-    archivo_salida = os.path.join(RUTA_RESULTADOS, f"analisis_estructura_{GENOME_BASENAME}.json")
-    with open(archivo_salida, "w", encoding="utf-8") as f:
-        json.dump(resultados, f, indent=2, ensure_ascii=False)
+        # Exportar con error handling
+        print(f"\n[PASO 5/5] Exportando resultados a JSON...")
+        try:
+            os.makedirs(RUTA_RESULTADOS, exist_ok=True)
+            archivo_salida = os.path.join(RUTA_RESULTADOS, f"analisis_estructura_{GENOME_BASENAME}.json")
+            
+            with open(archivo_salida, "w", encoding="utf-8") as f:
+                json.dump(resultados, f, indent=2, ensure_ascii=False)
+            
+            print(f"  [OK] Archivo JSON creado: {archivo_salida}")
+            file_size = os.path.getsize(archivo_salida)
+            print(f"  [OK] Tamano del archivo: {file_size / 1024:.1f} KB")
+        except Exception as e:
+            print(f"[ERROR] Fallo al guardar JSON: {e}")
+            raise
 
-    print(f"\n" + "=" * 70)
-    print(f"[OK] Analisis de estructura completado")
-    print(f"     Archivo: analisis_estructura_{GENOME_BASENAME}.json")
-    print("=" * 70 + "\n")
+        print(f"\n" + "=" * 70)
+        print(f"[OK] Analisis de estructura completado")
+        print(f"     Archivo: analisis_estructura_{GENOME_BASENAME}.json")
+        print("=" * 70 + "\n")
+        
+    except Exception as e:
+        print(f"\n[ERROR] Excepcion durante analisis de estructura:")
+        print(f"  {type(e).__name__}: {str(e)}")
+        import traceback
+        print("\n[TRACEBACK]")
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
