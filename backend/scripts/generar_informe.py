@@ -99,10 +99,30 @@ def generar_interpretaciones_ia(datos, genome):
             break
 
     secciones = {
-        "abstract": f"Genera un abstract academico (150-200 palabras) en espanol para un informe de analisis genomico de {nombre_org}. Incluye objetivo, metodos (analisis bioinformatico con BioPython), principales hallazgos y conclusiones. Formato IEEE.",
-        "introduccion": f"Escribe una introduccion academica (400-500 palabras) en espanol sobre {nombre_org}. Incluye: importancia del organismo, contexto biologico, objetivo del estudio (analisis bioinformatico completo del genoma), y estructura del informe. Con referencias a literatura cientifica.",
-        "discusion": f"Escribe una discusion academica (400-500 palabras) en espanol sobre los resultados del analisis genomico de {nombre_org}. Discute: significado de las metricas encontradas, comparacion con literatura, implicaciones biologicas, limitaciones del analisis, y perspectivas futuras.",
-        "conclusiones": f"Escribe 5-7 conclusiones concisas en espanol para el informe de analisis genomico de {nombre_org}. Cada conclusion en un punto, basada en los datos tipicos de este organismo."
+        "abstract": (
+            f"Escribe, únicamente, el abstract en español (150-200 palabras) para un informe científico en formato IEEE sobre {nombre_org}. "
+            "Escribe como un investigador en genómica/biólogo molecular: tono técnico y profesional, sin frases introductorias ni comentarios meta (no incluyas 'Claro, aquí tienes' ni 'A continuación'). "
+            "Incluye objetivo, método breve (mencionar análisis bioinformático con BioPython), resultados cuantitativos clave (usar los valores proporcionados en el contexto de datos cuando existan) y una oración de conclusión. "
+            "Entrega el texto como un único párrafo listo para pegar en el PDF."
+        ),
+
+        "introduccion": (
+            f"Redacta una introducción académica en español (400-500 palabras) sobre {nombre_org} escrita desde la voz de un biólogo molecular / ingeniero en genómica. "
+            "No incluyas avisos ni explicaciones meta; presenta solo el texto final. Describe la importancia biológica del organismo, el contexto científico, el objetivo del estudio, y una visión general del enfoque metodológico (mencionar BioPython y análisis bioinformático). "
+            "Evita frases informales; mantén un registro académico apropiado para un informe técnico."
+        ),
+
+        "discusion": (
+            f"Escribe una discusión técnica en español (400-500 palabras) sobre los resultados del análisis genómico de {nombre_org}. "
+            "Actúa como un experto en genómica: interpreta los valores numéricos proporcionados, compara con literatura cuando sea relevante, discute implicaciones biológicas y limitaciones metodológicas, y propone líneas de trabajo futuras. "
+            "No abras con prefacios ni justificaciones; entrega solamente el texto de la discusión con tono académico y citas entre corchetes si lo consideras necesario."
+        ),
+
+        "conclusiones": (
+            f"Genera 5 a 7 conclusiones concisas en español sobre {nombre_org}, cada una en una línea separada. "
+            "Escribe desde la perspectiva de un investigador (biólogo/ingeniero), basadas en los datos suministrados; evita frases generales o prefacios. "
+            "Cada conclusión debe ser una oración clara que pueda incluir valores numéricos concretos si están disponibles."
+        )
     }
 
     # Agregar contexto de datos reales si hay
@@ -130,6 +150,41 @@ def generar_interpretaciones_ia(datos, genome):
             interpretaciones[seccion] = f"[Seccion {seccion} - contenido no disponible]"
 
     return interpretaciones
+
+
+def generar_preguntas_ia(datos, genome):
+    """Genera preguntas y respuestas detalladas por cada archivo JSON usando Gemini.
+    Devuelve un diccionario {clave_json: texto_qa}.
+    """
+    qas = {}
+    try:
+        sys.path.insert(0, DIRECTORIO_PROYECTO)
+        from backend.gemini_client import consultar_gemini
+    except Exception as e:
+        print(f"  [WARN] No se pudo cargar gemini_client para QA: {e}")
+        return qas
+
+    nombre_genoma = genome.replace('_', ' ')
+
+    for key, data in datos.items():
+        prompt = (
+            f"Eres un investigador experto en genómica. Lee el siguiente resumen de datos llamado '{key}' "
+            f"correspondiente al genoma {nombre_genoma}. Genera una sección de preguntas y respuestas técnicas (al menos 8 preguntas) "
+            "que un revisor o colega podría hacer sobre estos resultados. Para cada pregunta, proporciona una respuesta concisa, precisa y basada en los datos. "
+            "Usa un tono de investigador (biólogo/ingeniero), sin prefacios ni explicaciones meta. Incluye referencias a métricas concretas cuando aplique.\n\n" 
+            f"Datos (JSON resumido):\n{json.dumps(data, indent=2)[:8000]}"
+        )
+
+        print(f"  [IA-QA] Generando QA para {key}...")
+        respuesta, error = consultar_gemini(prompt)
+        if respuesta:
+            qas[key] = respuesta
+            print(f"  [OK] QA generado para {key} ({len(respuesta)} chars)")
+        else:
+            print(f"  [WARN] No se pudo generar QA para {key}: {error}")
+            qas[key] = "[QA no disponible]"
+
+    return qas
 
 
 # =============================================================================
@@ -379,10 +434,19 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
     elements.append(HRFlowable(width="50%", color=HexColor('#1a1a2e'), thickness=2))
     elements.append(Spacer(1, 0.3 * inch))
     elements.append(Paragraph("Informe de Analisis Bioinformatico", styles['IEEEAuthor']))
-    elements.append(Paragraph(f"Generado por GenomeHub - {datetime.now().strftime('%d de %B de %Y')}", styles['IEEEAuthor']))
+    # Solo la fecha (sin prefacio 'Generado por...')
+    elements.append(Paragraph(f"{datetime.now().strftime('%d de %B de %Y')}", styles['IEEEAuthor']))
     elements.append(Spacer(1, 0.3 * inch))
     elements.append(Paragraph("Herramientas: BioPython, NCBI GenBank, Gemini AI", styles['IEEEAuthor']))
     elements.append(Paragraph("Formato: IEEE", styles['IEEEAuthor']))
+    elements.append(Spacer(1, 0.2 * inch))
+    # Bloque institucional requerido por el usuario
+    elements.append(Paragraph('"curso": "Bioinformática",  "universidad": "UNSAAC"', styles['IEEEBody']))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph('📁 carrera/  Ing. Informática y de Sistemas', styles['IEEEBody']))
+    elements.append(Paragraph('📁 ubicacion/  UNSAAC  —  Cusco, Perú', styles['IEEEBody']))
+    elements.append(Paragraph('📂 facultad/  Facultad de Ingeniería Eléctrica, Electrónica, Informática y Mecánica', styles['IEEEBody']))
+    elements.append(Paragraph('UNSAAC - Universidad Nacional San Antonio Abad del Cusco', styles['IEEEBody']))
     elements.append(PageBreak())
 
     # =========================================================================
@@ -614,6 +678,25 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
             except Exception as e:
                 print(f"  [WARN] Error al agregar figura {fig_path}: {e}")
                 elements.append(Paragraph(f"[Error al procesar figura: {str(e)}]", styles['IEEEBody']))
+
+    # =========================================================================
+    # PREGUNTAS Y RESPUESTAS (IA) POR CADA JSON
+    # =========================================================================
+    try:
+        qas = generar_preguntas_ia(datos, genome)
+        if qas:
+            elements.append(PageBreak())
+            add_heading1("PREGUNTAS Y RESPUESTAS (IA) POR RESULTADO", "III.A")
+            for key, texto in qas.items():
+                add_heading2(key.replace('_', ' ').upper(), "")
+                qa_text = limpiar_texto_ia(texto)
+                # separar por lineas y agregar como parrafos
+                for par in qa_text.split('\n\n'):
+                    if par.strip():
+                        elements.append(Paragraph(par.strip(), styles['IEEEBody']))
+                        elements.append(Spacer(1, 6))
+    except Exception as e:
+        print(f"  [WARN] Fallo al generar QA por JSON: {e}")
 
     # =========================================================================
     # V. DISCUSION
