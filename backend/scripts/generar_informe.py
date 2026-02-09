@@ -249,6 +249,21 @@ def crear_estilos():
     return styles
 
 
+def fmt_num(valor, decimales=0):
+    """Formatea un valor numérico de forma segura con separador de miles.
+    Si el valor es 'N/A' o no es un número, retorna 'N/A'."""
+    if valor == 'N/A' or valor is None:
+        return 'N/A'
+    try:
+        num_val = float(valor) if isinstance(valor, str) else valor
+        if decimales > 0:
+            return f"{num_val:,.{decimales}f}"
+        else:
+            return f"{int(num_val):,}"
+    except (ValueError, TypeError):
+        return str(valor)
+
+
 def limpiar_texto_ia(texto):
     """Limpia texto de IA para uso en ReportLab (quita markdown)."""
     if not texto:
@@ -433,7 +448,7 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         stats = genes_data.get("estadisticas_generales", {})
 
         add_heading2("Analisis de Genes Codificantes (CDS)", "A.")
-        add_body(f"Se identificaron un total de {stats.get('total_genes', 'N/A'):,} secuencias codificantes (CDS) en el genoma de {nombre_org}.")
+        add_body(f"Se identificaron un total de {fmt_num(stats.get('total_genes', 'N/A'))} secuencias codificantes (CDS) en el genoma de {nombre_org}.")
 
         if stats:
             gc_cds = stats.get("contenido_gc_cds", {})
@@ -442,13 +457,13 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
             add_data_table(
                 ["Metrica", "Valor", "Unidad"],
                 [
-                    ["Total CDS", f"{stats.get('total_genes', 'N/A'):,}", "genes"],
+                    ["Total CDS", f"{fmt_num(stats.get('total_genes', 'N/A'))}", "genes"],
                     ["Densidad genica", f"{stats.get('densidad_genica_porcentaje', 'N/A')}", "%"],
                     ["GC promedio en CDS", f"{gc_cds.get('promedio', 'N/A')}", "%"],
-                    ["Tamano promedio gen", f"{tamano.get('promedio_pb', 'N/A'):,.0f}", "pb"],
-                    ["Tamano mediana gen", f"{tamano.get('mediana_pb', 'N/A'):,.0f}", "pb"],
-                    ["Gen mas grande", f"{tamano.get('maximo_pb', 'N/A'):,}", "pb"],
-                    ["Gen mas pequeno", f"{tamano.get('minimo_pb', 'N/A'):,}", "pb"],
+                    ["Tamano promedio gen", f"{fmt_num(tamano.get('promedio_pb', 'N/A'), 0)}", "pb"],
+                    ["Tamano mediana gen", f"{fmt_num(tamano.get('mediana_pb', 'N/A'), 0)}", "pb"],
+                    ["Gen mas grande", f"{fmt_num(tamano.get('maximo_pb', 'N/A'))}", "pb"],
+                    ["Gen mas pequeno", f"{fmt_num(tamano.get('minimo_pb', 'N/A'))}", "pb"],
                 ],
                 "Estadisticas generales de genes codificantes."
             )
@@ -458,7 +473,7 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         if extremos:
             mayor = extremos.get("gen_mas_largo", {})
             menor = extremos.get("gen_mas_corto", {})
-            add_body(f"El gen mas largo identificado fue {mayor.get('nombre_gen', 'N/A')} ({mayor.get('producto', 'N/A')}) con {mayor.get('longitud_pb', 0):,} pb, mientras que el mas corto fue {menor.get('nombre_gen', 'N/A')} ({menor.get('producto', 'N/A')}) con {menor.get('longitud_pb', 0):,} pb.")
+            add_body(f"El gen mas largo identificado fue {mayor.get('nombre_gen', 'N/A')} ({mayor.get('producto', 'N/A')}) con {fmt_num(mayor.get('longitud_pb', 0))} pb, mientras que el mas corto fue {menor.get('nombre_gen', 'N/A')} ({menor.get('producto', 'N/A')}) con {fmt_num(menor.get('longitud_pb', 0))} pb.")
 
         # Comparacion con literatura
         lit = genes_data.get("comparacion_literatura", {})
@@ -493,7 +508,7 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         inicio = codones_data.get("codones_inicio", {})
         parada = codones_data.get("codones_parada", {})
         if inicio:
-            add_body(f"El codon de inicio ATG se utiliza en el {inicio.get('ATG', {}).get('proporcion_porcentaje', 100)}% de los genes ({inicio.get('ATG', {}).get('conteo', 'N/A'):,} ocurrencias).")
+            add_body(f"El codon de inicio ATG se utiliza en el {inicio.get('ATG', {}).get('proporcion_porcentaje', 100)}% de los genes ({fmt_num(inicio.get('ATG', {}).get('conteo', 'N/A'))} ocurrencias).")
         if parada:
             codones_stop = []
             for codon in ["TAA", "TAG", "TGA"]:
@@ -510,8 +525,8 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
 
         stats_dist = dist_data.get("estadisticas_generales", {})
         if stats_dist:
-            add_body(f"Se analizaron {stats_dist.get('total_pares_adyacentes', 'N/A'):,} pares de genes adyacentes. La distancia intergenica promedio fue de {stats_dist.get('distancia_promedio_pb', 0):,.1f} pb con una mediana de {stats_dist.get('distancia_mediana_pb', 0):,.1f} pb.")
-            add_body(f"Se identificaron {stats_dist.get('genes_solapados', 0):,} pares de genes solapados ({stats_dist.get('porcentaje_solapados', 0):.1f}% del total) y {stats_dist.get('regiones_grandes_5kb', 0)} regiones intergenicas mayores a 5 kb, que podrian representar islas genomicas o regiones regulatorias.")
+            add_body(f"Se analizaron {fmt_num(stats_dist.get('total_pares_adyacentes', 'N/A'))} pares de genes adyacentes. La distancia intergenica promedio fue de {fmt_num(stats_dist.get('distancia_promedio_pb', 0), 1)} pb con una mediana de {fmt_num(stats_dist.get('distancia_mediana_pb', 0), 1)} pb.")
+            add_body(f"Se identificaron {fmt_num(stats_dist.get('genes_solapados', 0))} pares de genes solapados ({stats_dist.get('porcentaje_solapados', 0):.1f}% del total) y {stats_dist.get('regiones_grandes_5kb', 0)} regiones intergenicas mayores a 5 kb, que podrian representar islas genomicas o regiones regulatorias.")
 
     # --- 3D. Estructura Genomica ---
     est_key = f"analisis_estructura_{genome}"
@@ -552,8 +567,8 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
                     add_data_table(
                         ["Metrica", org1[:30], org2[:30]],
                         [
-                            ["Longitud (pb)", f"{ec.get('longitud_genoma_pb', 0):,}", f"{sal.get('longitud_genoma_pb', 0):,}"],
-                            ["Total CDS", f"{ec.get('total_genes_cds', 0):,}", f"{sal.get('total_genes_cds', 0):,}"],
+                            ["Longitud (pb)", f"{fmt_num(ec.get('longitud_genoma_pb', 0))}", f"{fmt_num(sal.get('longitud_genoma_pb', 0))}"],
+                            ["Total CDS", f"{fmt_num(ec.get('total_genes_cds', 0))}", f"{fmt_num(sal.get('total_genes_cds', 0))}"],
                             ["GC (%)", f"{ec.get('contenido_gc_porcentaje', 0)}", f"{sal.get('contenido_gc_porcentaje', 0)}"],
                             ["Densidad genica (%)", f"{ec.get('densidad_genica_porcentaje', 0)}", f"{sal.get('densidad_genica_porcentaje', 0)}"],
                         ],

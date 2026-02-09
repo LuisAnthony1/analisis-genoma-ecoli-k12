@@ -12,6 +12,7 @@ __pycache__/
 # Datos descargados (muy pesados, se regeneran con el script)
 datos/crudo/*.gb
 datos/crudo/*.fasta
+backend/resultados
 
 # IDE
 .vscode/
