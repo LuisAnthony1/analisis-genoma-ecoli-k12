@@ -738,19 +738,25 @@ async function loadEvolucionGenomeSelector() {
         const resp = await fetch('/api/genomes');
         const data = await resp.json();
         if (data.success && data.genomes && data.genomes.length > 0) {
-            container.innerHTML = data.genomes.map(g => `
-                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition text-xs">
-                    <input type="checkbox" class="evo-genome-check w-3.5 h-3.5 text-emerald-500 rounded" value="${g.basename}">
-                    <span class="text-primary truncate" title="${g.organism || g.basename}">${(g.organism || g.basename).substring(0, 35)}</span>
-                </label>
-            `).join('');
+            container.innerHTML = data.genomes.map(g => {
+                const sizeMb = g.length_mb || g.size_mb || 0;
+                const acc = g.accession_id && g.accession_id !== 'N/A' ? g.accession_id : '';
+                const desc = g.description || g.organism || g.basename.replace(/_/g, ' ');
+                return `
+                <label class="flex items-start gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition text-xs group">
+                    <input type="checkbox" class="evo-genome-check w-3.5 h-3.5 text-emerald-500 rounded mt-0.5 shrink-0" value="${g.basename}">
+                    <div class="min-w-0">
+                        <p class="text-primary font-medium text-xs leading-tight group-hover:text-emerald-500 transition">${desc.substring(0, 60)}</p>
+                        <p class="text-[10px] text-secondary mt-0.5">${acc ? acc + ' | ' : ''}${sizeMb ? sizeMb + ' Mb | ' : ''}${g.basename.substring(0, 35)}</p>
+                    </div>
+                </label>`;
+            }).join('');
 
-            // Update counter on change
             container.querySelectorAll('.evo-genome-check').forEach(cb => {
                 cb.addEventListener('change', updateEvoCount);
             });
         } else {
-            container.innerHTML = '<p class="text-sm text-secondary col-span-full text-center py-4">No hay genomas descargados</p>';
+            container.innerHTML = '<p class="text-sm text-secondary col-span-full text-center py-4">No hay genomas descargados. Ve a "Buscar Genomas" para descargar.</p>';
         }
     } catch {
         container.innerHTML = '<p class="text-sm text-red-500 col-span-full text-center py-4">Error al cargar genomas</p>';
@@ -776,7 +782,7 @@ function evoSelectNone() {
 async function runEvolucion() {
     const checked = document.querySelectorAll('.evo-genome-check:checked');
     if (checked.length < 2) {
-        showNotification('Selecciona al menos 2 genomas para el analisis de evolucion', 'warning');
+        showNotification('Selecciona al menos 2 bacterias para comparar', 'warning');
         return;
     }
 
@@ -784,10 +790,12 @@ async function runEvolucion() {
     const btn = document.getElementById('run-evolucion-btn');
     const progress = document.getElementById('evo-progress');
     const dashboard = document.getElementById('evo-dashboard');
+    const tabs = document.getElementById('evo-tabs');
 
     btn.disabled = true;
     btn.textContent = 'Analizando...';
     progress.classList.remove('hidden');
+    if (tabs) tabs.classList.add('hidden');
     dashboard.innerHTML = '';
 
     try {
@@ -803,14 +811,13 @@ async function runEvolucion() {
         const result = await resp.json();
         progress.classList.add('hidden');
         btn.disabled = false;
-        btn.textContent = 'Analizar Evolucion';
+        btn.textContent = 'Comparar Bacterias';
 
         if (result.success && result.return_code === 0) {
-            showNotification('Analisis de evolucion completado', 'success');
-            // Load and display results
-            loadEvolucionResults();
+            showNotification('Analisis completado', 'success');
+            loadEvolucionResults('evo-pangenoma');
         } else {
-            showNotification('Error en analisis de evolucion', 'error');
+            showNotification('Error en el analisis', 'error');
             dashboard.innerHTML = `
                 <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-xl p-6">
                     <h3 class="text-red-600 font-semibold mb-2">Error en el analisis</h3>
@@ -821,19 +828,20 @@ async function runEvolucion() {
     } catch (error) {
         progress.classList.add('hidden');
         btn.disabled = false;
-        btn.textContent = 'Analizar Evolucion';
+        btn.textContent = 'Comparar Bacterias';
         showNotification('Error de conexion: ' + error.message, 'error');
     }
 }
 
 async function loadEvolucionResults(tab) {
     const dashboard = document.getElementById('evo-dashboard');
+    const tabs = document.getElementById('evo-tabs');
     if (!dashboard) return;
 
     dashboard.innerHTML = `
         <div class="flex items-center justify-center py-12">
             <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mr-4"></div>
-            <span class="text-secondary">Cargando resultados de evolucion...</span>
+            <span class="text-secondary">Cargando resultados...</span>
         </div>
     `;
 
@@ -842,19 +850,23 @@ async function loadEvolucionResults(tab) {
         const result = await resp.json();
 
         if (!result.success || !result.data) {
+            if (tabs) tabs.classList.add('hidden');
             dashboard.innerHTML = `
                 <div class="text-center py-12 text-secondary">
                     <div class="text-6xl mb-3">🧬</div>
-                    <p>No hay resultados de evolucion disponibles</p>
-                    <p class="text-sm mt-2">Selecciona genomas y ejecuta el analisis</p>
+                    <p>No hay resultados todavia</p>
+                    <p class="text-sm mt-2">Selecciona tus bacterias arriba y presiona "Comparar Bacterias"</p>
                 </div>
             `;
             return;
         }
 
-        const data = result.data;
+        // Show tabs
+        if (tabs) tabs.classList.remove('hidden');
         const activeTab = tab || AppState.currentTab || 'evo-pangenoma';
+        switchEvoTabUI(activeTab);
 
+        const data = result.data;
         DashboardRenderer.destroyCharts();
 
         if (activeTab === 'evo-pangenoma') {
@@ -875,9 +887,20 @@ async function loadEvolucionResults(tab) {
     }
 }
 
-function loadEvolucionTab(tab) {
+function switchEvoTab(tab) {
     AppState.currentTab = tab;
+    switchEvoTabUI(tab);
     loadEvolucionResults(tab);
+}
+
+function switchEvoTabUI(tab) {
+    document.querySelectorAll('.evo-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-evotab') === tab);
+    });
+}
+
+function loadEvolucionTab(tab) {
+    switchEvoTab(tab);
 }
 
 // =============================================================================

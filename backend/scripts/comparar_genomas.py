@@ -205,7 +205,7 @@ def calcular_distancias_intergenicas(genes):
         "mediana_pb": round(statistics.median(distancias), 2),
         "minima_pb": min(distancias),
         "maxima_pb": max(distancias),
-        "desviacion_std": round(statistics.stdev(distancias), 2),
+        "desviacion_std": round(statistics.stdev(distancias), 2) if len(distancias) > 1 else 0,
         "total_regiones_intergenicas": len(distancias),
         "regiones_grandes_5kb": len(regiones_grandes),
         "detalle_regiones_grandes": regiones_grandes[:10]  # Top 10

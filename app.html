@@ -133,6 +133,25 @@
         body.dark .hover\:bg-slate-50:hover { background-color: #262626 !important; }
         body.dark .hover\:bg-slate-100:hover { background-color: #333333 !important; }
 
+        /* Evo tabs */
+        .evo-tab-btn { background: rgba(100,116,139,0.1); color: #94a3b8; }
+        .evo-tab-btn:hover { background: rgba(16,185,129,0.1); color: #10b981; }
+        .evo-tab-btn.active { background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+
+        /* Interactive tooltip */
+        .evo-tooltip {
+            position: absolute; z-index: 100; padding: 8px 12px;
+            border-radius: 8px; font-size: 12px; pointer-events: none;
+            max-width: 320px; white-space: normal; line-height: 1.4;
+            transition: opacity 0.15s;
+        }
+        body.dark .evo-tooltip { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        body.light .evo-tooltip { background: #ffffff; color: #1e293b; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        /* Hoverable cards */
+        .evo-hover-card { transition: transform 0.2s, box-shadow 0.2s; cursor: default; }
+        .evo-hover-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.15); }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         body.light ::-webkit-scrollbar-track { background: #e2e8f0; }
@@ -779,29 +798,29 @@
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">Evolucion Genomica / Pangenoma</h2>
-                        <p class="text-secondary">Compara multiples genomas: genes compartidos, unicos, arbol filogenetico y distancias</p>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Analisis de Comunidad Bacteriana</h2>
+                        <p class="text-secondary">Compara tus bacterias descargadas: descubre que genes comparten, cuales son unicos, y como se relacionan entre si (como un arbol familiar)</p>
                     </div>
 
                     <!-- Selector de genomas -->
-                    <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
+                    <div id="evo-selector-panel" class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-sm font-semibold text-primary">Seleccionar Genomas</h3>
-                                <p class="text-xs text-secondary mt-1">Marca al menos 2 genomas para comparar. Se necesitan 3+ para resultados significativos.</p>
+                                <h3 class="text-sm font-semibold text-primary">Selecciona las bacterias a comparar</h3>
+                                <p class="text-xs text-secondary mt-1">Marca al menos 2. Mientras mas selecciones, mas completo sera el analisis. Puedes mezclar especies diferentes para ver que tan distintas son.</p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="evoSelectAll()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 transition">Todos</button>
                                 <button onclick="evoSelectNone()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-500 transition">Ninguno</button>
                             </div>
                         </div>
-                        <div id="evo-genome-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4 max-h-[300px] overflow-y-auto">
+                        <div id="evo-genome-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4 max-h-[350px] overflow-y-auto">
                             <p class="text-sm text-secondary col-span-full text-center py-4">Cargando genomas...</p>
                         </div>
                         <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <p class="text-sm text-secondary"><span id="evo-selected-count" class="font-bold text-emerald-500">0</span> genomas seleccionados</p>
+                            <p class="text-sm text-secondary"><span id="evo-selected-count" class="font-bold text-emerald-500">0</span> bacterias seleccionadas</p>
                             <button id="run-evolucion-btn" onclick="runEvolucion()" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                Analizar Evolucion
+                                Comparar Bacterias
                             </button>
                         </div>
                     </div>
@@ -812,10 +831,25 @@
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                                 <div>
-                                    <p class="text-primary font-medium">Analizando evolucion genomica...</p>
-                                    <p class="text-sm text-secondary">Comparando genomas, construyendo pangenoma y arbol UPGMA. Esto puede tardar varios minutos.</p>
+                                    <p class="text-primary font-medium">Analizando comunidad bacteriana...</p>
+                                    <p class="text-sm text-secondary">Comparando genes de todas las bacterias seleccionadas. Esto puede tardar varios minutos segun la cantidad.</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab switcher (aparece despues de analizar) -->
+                    <div id="evo-tabs" class="hidden mb-6">
+                        <div class="flex gap-2 flex-wrap">
+                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-pangenoma" onclick="switchEvoTab('evo-pangenoma')">
+                                Genes Compartidos
+                            </button>
+                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-arbol" onclick="switchEvoTab('evo-arbol')">
+                                Arbol Familiar
+                            </button>
+                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-matriz" onclick="switchEvoTab('evo-matriz')">
+                                Mapa de Parentesco
+                            </button>
                         </div>
                     </div>
 

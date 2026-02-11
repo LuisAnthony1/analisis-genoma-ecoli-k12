@@ -263,8 +263,46 @@ def listar_genomas():
                 info["organism"] = basename.replace("_", " ").title()
                 info["accession_id"] = "N/A"
         else:
+            # Sin metadata: leer la primera linea DEFINITION del GenBank
             info["organism"] = basename.replace("_", " ").title()
             info["accession_id"] = "N/A"
+            info["description"] = ""
+            try:
+                with open(ruta_gb, "r", encoding="utf-8", errors="ignore") as gbf:
+                    for linea in gbf:
+                        if linea.startswith("DEFINITION"):
+                            info["description"] = linea[12:].strip().rstrip(".")
+                        elif linea.startswith("ACCESSION"):
+                            acc_val = linea[12:].strip().split()[0]
+                            if acc_val:
+                                info["accession_id"] = acc_val
+                        elif linea.startswith("  ORGANISM"):
+                            info["organism"] = linea[12:].strip()
+                        elif linea.startswith("FEATURES"):
+                            break  # Ya pasamos el header
+            except Exception:
+                pass
+
+        # Construir etiqueta descriptiva para distinguir cepas
+        desc = info.get("description", "")
+        acc = info.get("accession_id", "N/A")
+        length = info.get("length", 0) or info.get("size_mb", 0) * 1e6
+        # Usar descripcion completa como label principal
+        if desc:
+            label = desc[:70]
+        else:
+            label = basename.replace("_", " ").title()[:70]
+        # Agregar accession y tamano para mas contexto
+        extras = []
+        if acc and acc != "N/A":
+            extras.append(acc)
+        if length:
+            mb = length / 1e6
+            if mb >= 0.01:
+                extras.append(f"{mb:.2f} Mb")
+        if extras:
+            label = f"{label} [{', '.join(extras)}]"
+        info["display_label"] = label
 
         genomas.append(info)
 
@@ -831,9 +869,24 @@ def listar_genomas_con_resultados():
                 num_figuras = len([f for f in os.listdir(ruta_f) if os.path.isfile(os.path.join(ruta_f, f))])
 
             if num_tablas > 0 or num_figuras > 0:
+                # Intentar obtener mejor label desde metadata
+                display = nombre.replace("_", " ").title()
+                meta_path = os.path.join(RUTA_DATOS_CRUDO, f"metadata_{nombre}.json")
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, "r", encoding="utf-8") as fm:
+                            m = json.load(fm)
+                        desc = m.get("genoma", {}).get("descripcion", "")
+                        acc = m.get("id_acceso", "")
+                        if desc:
+                            display = desc[:55]
+                        if acc:
+                            display = f"{display} ({acc})"
+                    except Exception:
+                        pass
                 genomas.append({
                     "basename": nombre,
-                    "label": nombre.replace("_", " ").title(),
+                    "label": display,
                     "tablas": num_tablas,
                     "figuras": num_figuras
                 })

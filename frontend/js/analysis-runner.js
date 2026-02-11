@@ -28,7 +28,7 @@ const AnalysisRunner = {
             if (data.success && data.genomes && data.genomes.length > 0) {
                 select.innerHTML = '<option value="">-- Seleccionar genoma --</option>' +
                     data.genomes.map(g =>
-                        `<option value="${g.basename}">${g.organism || g.basename} (${g.accession_id || 'N/A'})</option>`
+                        `<option value="${g.basename}">${g.display_label || g.organism || g.basename}</option>`
                     ).join('');
 
                 if (AppState.analysisGenome) {
@@ -382,7 +382,7 @@ async function loadCompareSelectors() {
 
         if (data.success && data.genomes && data.genomes.length >= 2) {
             const options = data.genomes.map(g =>
-                `<option value="${g.basename}">${g.organism || g.basename}</option>`
+                `<option value="${g.basename}">${g.display_label || g.organism || g.basename}</option>`
             ).join('');
 
             select1.innerHTML = '<option value="">-- Seleccionar --</option>' + options;

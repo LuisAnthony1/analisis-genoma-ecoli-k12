@@ -2593,7 +2593,7 @@ const DashboardRenderer = {
     },
 
     // =========================================================================
-    // DASHBOARD DE EVOLUCION - PANGENOMA
+    // DASHBOARD DE EVOLUCION - GENES COMPARTIDOS (PANGENOMA)
     // =========================================================================
 
     renderEvolucionPangenoma(data, container) {
@@ -2602,59 +2602,90 @@ const DashboardRenderer = {
         const genomas = data.genomas_analizados || [];
         const genesDetalle = pan.genes_unicos_detalle || {};
         const genesPorGenoma = pan.genes_por_genoma || {};
+        const totalConocidos = pan.total_productos_conocidos || pan.total_genes_unicos || 0;
+        const corePct = totalConocidos > 0 ? ((pan.core_genome || 0) / totalConocidos * 100).toFixed(1) : '0';
+        const accPct = totalConocidos > 0 ? ((pan.accessory_genome || 0) / totalConocidos * 100).toFixed(1) : '0';
+        const uniqPct = totalConocidos > 0 ? ((pan.genes_unicos_total || 0) / totalConocidos * 100).toFixed(1) : '0';
 
         container.innerHTML = `
-            <h3 class="text-xl font-bold text-primary mb-4">Pangenoma - ${data.total_genomas || 0} Genomas Analizados</h3>
+            <!-- Explicacion general -->
+            <div class="bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-emerald-700 mb-2">Genes Compartidos entre tus ${data.total_genomas || 0} Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Analizamos <strong>todos los genes</strong> de cada bacteria y los comparamos. Encontramos <strong>${this.fmt(totalConocidos)} tipos de genes diferentes</strong> en total.
+                    De esos, <strong class="text-cyan-600">${this.fmt(pan.core_genome || 0)} genes (${corePct}%) son compartidos por TODAS</strong> las bacterias (son esenciales para vivir),
+                    <strong class="text-amber-600">${this.fmt(pan.accessory_genome || 0)} (${accPct}%) los tienen algunas pero no todas</strong> (dan ventajas especiales),
+                    y <strong class="text-red-600">${this.fmt(pan.genes_unicos_total || 0)} (${uniqPct}%) son unicos</strong> de una sola bacteria (la hacen diferente al resto).
+                </p>
+            </div>
 
-            <!-- Stat cards principales -->
+            <!-- Stat cards interactivos -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                ${this.statsCard('Pan-genoma', this.fmt(pan.total_genes_unicos || 0), 'genes unicos totales', 'emerald')}
-                ${this.statsCard('Core Genome', this.fmt(pan.core_genome || 0), 'presentes en TODOS', 'cyan')}
-                ${this.statsCard('Accessory', this.fmt(pan.accessory_genome || 0), 'en algunos genomas', 'amber')}
-                ${this.statsCard('Unicos', this.fmt(pan.genes_unicos_total || 0), 'en solo 1 genoma', 'red')}
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Todos los tipos de genes diferentes encontrados entre todas tus bacterias">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Total de Genes</p>
+                    <p class="text-2xl font-bold text-emerald-500 mt-1">${this.fmt(totalConocidos)}</p>
+                    <p class="text-xs text-secondary mt-1">tipos distintos encontrados</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que TODAS las bacterias comparten. Son esenciales para la vida bacteriana">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes en Comun</p>
+                    <p class="text-2xl font-bold text-cyan-500 mt-1">${this.fmt(pan.core_genome || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">compartidos por TODAS (${corePct}%)</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que tienen ALGUNAS bacterias pero no todas. Dan habilidades especiales como resistencia">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes Parciales</p>
+                    <p class="text-2xl font-bold text-amber-500 mt-1">${this.fmt(pan.accessory_genome || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">en algunas, no en todas (${accPct}%)</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que SOLO tiene una bacteria. La hacen unica respecto a las demas">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes Exclusivos</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">${this.fmt(pan.genes_unicos_total || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">unicos de 1 sola bacteria (${uniqPct}%)</p>
+                </div>
             </div>
 
             <!-- Charts row -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Donut distribucion -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h4 class="text-sm font-semibold text-primary mb-3">Distribucion del Pangenoma</h4>
-                    <canvas id="chart-evo-donut" height="260"></canvas>
+                    <h4 class="text-sm font-semibold text-primary mb-1">Como se reparten los genes</h4>
+                    <p class="text-xs text-secondary mb-3">La "torta" muestra cuantos genes comparten todas, algunas o solo una bacteria</p>
+                    <canvas id="chart-evo-donut" height="280"></canvas>
                 </div>
-
-                <!-- Curva pangenoma -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h4 class="text-sm font-semibold text-primary mb-3">Curva del Pangenoma</h4>
-                    <canvas id="chart-evo-curva" height="260"></canvas>
+                    <h4 class="text-sm font-semibold text-primary mb-1">Que pasa al agregar mas bacterias?</h4>
+                    <p class="text-xs text-secondary mb-3">Al agregar mas bacterias se descubren mas genes (verde sube), pero los compartidos por TODAS bajan (azul baja)</p>
+                    <canvas id="chart-evo-curva" height="280"></canvas>
                 </div>
             </div>
 
-            <!-- Tabla por genoma -->
+            <!-- Tabla detalle por bacteria -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-3">Detalle por Genoma</h4>
+                <h4 class="text-sm font-semibold text-primary mb-1">Detalle por Bacteria</h4>
+                <p class="text-xs text-secondary mb-3">Pasa el mouse sobre cada fila para ver mas informacion</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs">
                         <thead class="bg-slate-50 dark:bg-slate-800">
                             <tr>
-                                <th class="px-3 py-2 text-left text-secondary">Genoma</th>
+                                <th class="px-3 py-2 text-left text-secondary">Bacteria</th>
                                 <th class="px-3 py-2 text-right text-secondary">Total Genes</th>
-                                <th class="px-3 py-2 text-right text-secondary">Core</th>
-                                <th class="px-3 py-2 text-right text-secondary">Unicos</th>
-                                <th class="px-3 py-2 text-right text-secondary">GC%</th>
-                                <th class="px-3 py-2 text-right text-secondary">Longitud (Mb)</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Genes que comparte con TODAS las demas">En Comun</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Genes que solo tiene esta bacteria">Exclusivos</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Porcentaje de guanina-citosina en el ADN">GC%</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Tamano del genoma en millones de pares de bases">Tamano</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${genomas.map(g => {
                                 const gpg = genesPorGenoma[g.basename] || {};
+                                const pctCore = g.total_genes > 0 ? ((gpg.core || 0) / g.total_genes * 100).toFixed(0) : 0;
                                 return `
-                                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/10">
-                                        <td class="px-3 py-2 font-medium text-primary">${(g.nombre || g.basename).substring(0, 45)}</td>
-                                        <td class="px-3 py-2 text-right text-primary">${this.fmt(g.total_genes)}</td>
-                                        <td class="px-3 py-2 text-right text-cyan-500 font-medium">${this.fmt(gpg.core || 0)}</td>
-                                        <td class="px-3 py-2 text-right text-red-500 font-medium">${this.fmt(gpg.unicos || 0)}</td>
-                                        <td class="px-3 py-2 text-right text-primary">${(g.gc_porcentaje || 0).toFixed(1)}%</td>
-                                        <td class="px-3 py-2 text-right text-primary">${((g.longitud_pb || 0) / 1e6).toFixed(2)}</td>
+                                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-default"
+                                        title="Bacteria: ${(g.nombre || g.basename).substring(0, 80)} | ${gpg.core || 0} genes en comun (${pctCore}% de sus genes) | ${gpg.unicos || 0} exclusivos | ${gpg.hypothetical || 0} sin identificar">
+                                        <td class="px-3 py-2.5 font-medium text-primary">${(g.nombre || g.basename).replace(/_/g, ' ').substring(0, 50)}</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${this.fmt(g.total_genes)}</td>
+                                        <td class="px-3 py-2.5 text-right"><span class="text-cyan-500 font-bold">${this.fmt(gpg.core || 0)}</span> <span class="text-secondary">(${pctCore}%)</span></td>
+                                        <td class="px-3 py-2.5 text-right text-red-500 font-medium">${this.fmt(gpg.unicos || 0)}</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${(g.gc_porcentaje || 0).toFixed(1)}%</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${((g.longitud_pb || 0) / 1e6).toFixed(2)} Mb</td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -2663,28 +2694,30 @@ const DashboardRenderer = {
                 </div>
             </div>
 
-            <!-- Genes unicos por genoma (expandibles) -->
+            <!-- Genes exclusivos expandibles -->
             ${Object.keys(genesDetalle).length > 0 ? `
             <div class="bg-card rounded-xl p-5 border border-slate-200">
-                <h4 class="text-sm font-semibold text-primary mb-3">Genes Unicos por Genoma</h4>
+                <h4 class="text-sm font-semibold text-primary mb-1">Genes Exclusivos de cada Bacteria</h4>
+                <p class="text-xs text-secondary mb-3">Haz click en cada bacteria para ver que genes tiene que las demas NO tienen. Estos genes pueden darle habilidades especiales (resistencia a antibioticos, produccion de toxinas, etc.)</p>
                 <div class="space-y-2 max-h-[400px] overflow-y-auto">
                     ${Object.entries(genesDetalle).map(([basename, genes]) => `
                         <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                              onclick="this.nextElementSibling.classList.toggle('hidden')">
                             <div class="flex items-center justify-between">
-                                <span class="font-medium text-sm text-primary">${basename}</span>
-                                <span class="text-xs px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full">${genes.length} genes unicos</span>
+                                <span class="font-medium text-sm text-primary">${basename.replace(/_/g, ' ').substring(0, 50)}</span>
+                                <span class="text-xs px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full">${genes.length} genes exclusivos - click para ver</span>
                             </div>
                         </div>
                         <div class="hidden px-3 pb-2">
                             <div class="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 text-xs max-h-[200px] overflow-y-auto">
                                 ${genes.slice(0, 50).map(g => `
-                                    <div class="py-1 border-b border-slate-50 dark:border-slate-800 flex justify-between">
-                                        <span class="text-secondary">${g.producto || 'hypothetical'}</span>
-                                        <span class="text-primary font-mono">${g.locus_tag || ''}</span>
+                                    <div class="py-1.5 border-b border-slate-50 dark:border-slate-800 flex justify-between gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 px-1 rounded"
+                                         title="Gen: ${g.nombre_gen || 'sin nombre'} | Codigo: ${g.locus_tag || ''} | Tamano: ${g.longitud_pb || 0} pares de bases | Funcion: ${g.producto || 'desconocida'}">
+                                        <span class="text-primary flex-1">${g.producto || 'Funcion desconocida'}</span>
+                                        <span class="text-secondary font-mono">${g.locus_tag || ''}</span>
                                     </div>
                                 `).join('')}
-                                ${genes.length > 50 ? `<p class="text-secondary mt-2">... y ${genes.length - 50} mas</p>` : ''}
+                                ${genes.length > 50 ? `<p class="text-secondary mt-2 text-center">... y ${genes.length - 50} genes exclusivos mas</p>` : ''}
                             </div>
                         </div>
                     `).join('')}
@@ -2692,13 +2725,11 @@ const DashboardRenderer = {
             </div>` : ''}
         `;
 
-        // Create charts
         setTimeout(() => {
-            // Donut
             this.createChart('chart-evo-donut', {
                 type: 'doughnut',
                 data: {
-                    labels: ['Core Genome', 'Accessory', 'Unicos'],
+                    labels: ['Compartidos por TODAS', 'En algunas (no todas)', 'Exclusivos de una sola'],
                     datasets: [{
                         data: [pan.core_genome || 0, pan.accessory_genome || 0, pan.genes_unicos_total || 0],
                         backgroundColor: ['#06b6d4', '#f59e0b', '#ef4444'],
@@ -2713,9 +2744,9 @@ const DashboardRenderer = {
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
-                                    const total = pan.total_genes_unicos || 1;
+                                    const total = totalConocidos || 1;
                                     const pct = ((ctx.raw / total) * 100).toFixed(1);
-                                    return `${ctx.label}: ${this.fmt(ctx.raw)} (${pct}%)`;
+                                    return `${ctx.label}: ${this.fmt(ctx.raw)} genes (${pct}%)`;
                                 }
                             }
                         }
@@ -2723,39 +2754,43 @@ const DashboardRenderer = {
                 }
             });
 
-            // Curva pangenoma
             if (curva.length > 0) {
                 this.createChart('chart-evo-curva', {
                     type: 'line',
                     data: {
-                        labels: curva.map(c => c.n_genomas),
+                        labels: curva.map(c => c.n_genomas + ' bacterias'),
                         datasets: [
                             {
-                                label: 'Pan-genoma',
+                                label: 'Total genes descubiertos',
                                 data: curva.map(c => c.pan),
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16,185,129,0.1)',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 4
+                                fill: true, tension: 0.3, pointRadius: 5,
+                                pointHoverRadius: 8
                             },
                             {
-                                label: 'Core Genome',
+                                label: 'Genes compartidos por TODAS',
                                 data: curva.map(c => c.core),
                                 borderColor: '#06b6d4',
                                 backgroundColor: 'rgba(6,182,212,0.1)',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 4
+                                fill: true, tension: 0.3, pointRadius: 5,
+                                pointHoverRadius: 8
                             }
                         ]
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { position: 'bottom' } },
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.dataset.label}: ${this.fmt(ctx.raw)} genes`
+                                }
+                            }
+                        },
                         scales: {
-                            x: { title: { display: true, text: 'Numero de genomas' } },
-                            y: { title: { display: true, text: 'Genes' }, beginAtZero: true }
+                            x: { title: { display: true, text: 'Cantidad de bacterias analizadas' } },
+                            y: { title: { display: true, text: 'Cantidad de genes' }, beginAtZero: true }
                         }
                     }
                 });
@@ -2764,190 +2799,328 @@ const DashboardRenderer = {
     },
 
     // =========================================================================
-    // DASHBOARD DE EVOLUCION - ARBOL UPGMA
+    // DASHBOARD DE EVOLUCION - ARBOL FAMILIAR
     // =========================================================================
 
     renderEvolucionArbol(data, container) {
         const arbol = data.arbol_upgma || {};
         const nodos = arbol.nodos || [];
         const genomas = data.genomas_analizados || [];
+        const dist = data.distancias_jaccard || {};
+        const matriz = dist.matriz || [];
         const raiz = arbol.raiz || 0;
 
+        // Calcular pares mas cercanos y lejanos
+        let parCercano = { i: '', j: '', d: 999 };
+        let parLejano = { i: '', j: '', d: 0 };
+        const dGenomas = dist.genomas || [];
+        for (let i = 0; i < dGenomas.length; i++) {
+            for (let j = i + 1; j < dGenomas.length; j++) {
+                const v = matriz[i]?.[j] || 0;
+                if (v < parCercano.d) parCercano = { i: dGenomas[i], j: dGenomas[j], d: v };
+                if (v > parLejano.d) parLejano = { i: dGenomas[i], j: dGenomas[j], d: v };
+            }
+        }
+        const cercSimil = ((1 - parCercano.d) * 100).toFixed(0);
+        const lejSimil = ((1 - parLejano.d) * 100).toFixed(0);
+
         container.innerHTML = `
-            <h3 class="text-xl font-bold text-primary mb-4">Arbol Filogenetico UPGMA</h3>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                ${this.statsCard('Genomas', genomas.length, 'hojas del arbol', 'emerald')}
-                ${this.statsCard('Metodo', 'UPGMA', 'distancia Jaccard', 'cyan')}
-                ${this.statsCard('Nodos Internos', nodos.filter(n => !n.hoja).length, 'puntos de divergencia', 'violet')}
-                ${this.statsCard('Newick', 'Disponible', arbol.newick ? arbol.newick.length + ' caracteres' : 'N/A', 'amber')}
+            <!-- Explicacion -->
+            <div class="bg-violet-50 dark:bg-violet-900/15 border border-violet-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-violet-700 mb-2">Arbol Familiar de tus Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Este arbol muestra <strong>que tan "parientes" son</strong> tus bacterias entre si, basandose en los genes que comparten.
+                    Las bacterias que comparten mas genes estan mas cerca en el arbol (como hermanos).
+                    Las que comparten menos genes estan mas lejos (como primos lejanos).
+                    <strong>No es un arbol de tiempo real</strong>, sino de similitud genetica: mientras mas parecidos son sus genes, mas "cercanas" estan.
+                </p>
             </div>
 
-            <!-- Canvas del dendrograma -->
-            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+            <!-- Stats con contexto -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Cantidad de bacterias representadas como hojas del arbol">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Bacterias en el Arbol</p>
+                    <p class="text-2xl font-bold text-emerald-500 mt-1">${genomas.length}</p>
+                    <p class="text-xs text-secondary mt-1">cada una es una "hoja" del arbol</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-emerald-200 evo-hover-card" title="${parCercano.i.replace(/_/g,' ')} y ${parCercano.j.replace(/_/g,' ')} comparten ${cercSimil}% de sus genes">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Par mas Parecido</p>
+                    <p class="text-2xl font-bold text-cyan-500 mt-1">${cercSimil}% similares</p>
+                    <p class="text-xs text-secondary mt-1 line-clamp-2">${parCercano.i.replace(/_/g,' ').substring(0,30)} y ${parCercano.j.replace(/_/g,' ').substring(0,30)}</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-red-200 evo-hover-card" title="${parLejano.i.replace(/_/g,' ')} y ${parLejano.j.replace(/_/g,' ')} solo comparten ${lejSimil}% de sus genes">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Par mas Diferente</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">${lejSimil}% similares</p>
+                    <p class="text-xs text-secondary mt-1 line-clamp-2">${parLejano.i.replace(/_/g,' ').substring(0,30)} y ${parLejano.j.replace(/_/g,' ').substring(0,30)}</p>
+                </div>
+            </div>
+
+            <!-- Estimacion temporal -->
+            <div class="bg-amber-50 dark:bg-amber-900/15 border border-amber-200 rounded-xl p-4 mb-6">
+                <h4 class="text-sm font-semibold text-amber-700 mb-1">Sobre el tiempo de evolucion</h4>
+                <p class="text-xs text-secondary leading-relaxed">
+                    Las bacterias evolucionan rapido: una E. coli se reproduce cada ~20 minutos, acumulando mutaciones. Dos cepas de E. coli con ~${cercSimil}% de genes compartidos
+                    pudieron divergir hace <strong>miles a decenas de miles de anos</strong>.
+                    Si comparas E. coli con otra especie (ej. Salmonella) con ~${lejSimil}% similitud, la divergencia pudo ocurrir hace <strong>cientos de millones de anos</strong>.
+                    Estas son estimaciones aproximadas - la velocidad real depende de la presion ambiental y la transferencia horizontal de genes.
+                </p>
+            </div>
+
+            <!-- Canvas del arbol -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6 relative">
                 <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-semibold text-primary">Dendrograma</h4>
-                    <p class="text-xs text-secondary">Distancia Jaccard (0=identicos, 1=sin genes compartidos)</p>
+                    <div>
+                        <h4 class="text-sm font-semibold text-primary">Arbol de Parentesco</h4>
+                        <p class="text-xs text-secondary">Pasa el mouse sobre cada bacteria para ver detalles. Las lineas cortas = muy parecidas, lineas largas = muy diferentes.</p>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <canvas id="canvas-evo-tree" width="900" height="${Math.max(400, genomas.length * 45 + 80)}"></canvas>
+                <div class="overflow-x-auto" style="position:relative;">
+                    <canvas id="canvas-evo-tree" width="950" height="${Math.max(450, genomas.length * 50 + 100)}"></canvas>
+                    <div id="evo-tree-tooltip" class="evo-tooltip hidden" style="position:absolute; top:0; left:0;"></div>
                 </div>
             </div>
 
-            <!-- Newick string -->
+            <!-- Newick -->
             ${arbol.newick ? `
             <div class="bg-card rounded-xl p-5 border border-slate-200">
-                <h4 class="text-sm font-semibold text-primary mb-2">Formato Newick</h4>
-                <p class="text-xs text-secondary mb-2">Puedes copiar este texto para usar en herramientas externas como iTOL, FigTree, etc.</p>
-                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 font-mono text-xs break-all max-h-[150px] overflow-y-auto select-all cursor-pointer" onclick="navigator.clipboard.writeText(this.textContent).then(()=>showNotification('Newick copiado','success'))">${arbol.newick}</div>
+                <h4 class="text-sm font-semibold text-primary mb-1">Formato Newick (para expertos)</h4>
+                <p class="text-xs text-secondary mb-2">Este texto codifica el arbol. Puedes copiarlo y pegarlo en herramientas como iTOL, FigTree o MEGA para verlo en 3D. Haz click para copiar.</p>
+                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 font-mono text-xs break-all max-h-[150px] overflow-y-auto select-all cursor-pointer hover:ring-2 hover:ring-emerald-500/30 transition"
+                     onclick="navigator.clipboard.writeText(this.textContent).then(()=>showNotification('Newick copiado al portapapeles','success'))">${arbol.newick}</div>
             </div>` : ''}
         `;
 
-        // Draw the tree on canvas
+        // Draw tree with hover interactivity
         setTimeout(() => {
-            this._drawDendrograma('canvas-evo-tree', nodos, raiz, genomas);
+            this._drawFamilyTree('canvas-evo-tree', nodos, raiz, genomas, data);
         }, 100);
     },
 
-    _drawDendrograma(canvasId, nodos, raizId, genomas) {
+    _drawFamilyTree(canvasId, nodos, raizId, genomas, data) {
         const canvas = document.getElementById(canvasId);
         if (!canvas || nodos.length === 0) return;
         const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+
+        // HiDPI support
+        const displayW = canvas.width;
+        const displayH = canvas.height;
+        canvas.width = displayW * dpr;
+        canvas.height = displayH * dpr;
+        canvas.style.width = displayW + 'px';
+        canvas.style.height = displayH + 'px';
+        ctx.scale(dpr, dpr);
 
         const isDark = document.body.classList.contains('dark');
         const textColor = isDark ? '#e2e8f0' : '#1e293b';
         const lineColor = isDark ? '#475569' : '#94a3b8';
         const accentColor = '#10b981';
+        const highlightColor = '#06b6d4';
 
         const hojas = nodos.filter(n => n.hoja);
         const numHojas = hojas.length;
-        const marginLeft = 60;
-        const marginRight = 220;
-        const marginTop = 40;
-        const marginBottom = 40;
-        const treeWidth = canvas.width - marginLeft - marginRight;
-        const treeHeight = canvas.height - marginTop - marginBottom;
+        const marginLeft = 70;
+        const marginRight = 280;
+        const marginTop = 50;
+        const marginBottom = 50;
+        const treeWidth = displayW - marginLeft - marginRight;
+        const treeHeight = displayH - marginTop - marginBottom;
         const leafSpacing = treeHeight / Math.max(numHojas - 1, 1);
 
-        // Find max distance for scaling
         let maxDist = 0;
         nodos.forEach(n => { if (n.distancia > maxDist) maxDist = n.distancia; });
         if (maxDist === 0) maxDist = 1;
 
-        // Assign y positions to leaves
         const yPos = {};
+        const xPos = {};
         let leafIdx = 0;
+
+        // Store positions for hover detection
+        const leafPositions = [];
 
         function assignPositions(nid) {
             const n = nodos[nid];
             if (!n) return 0;
             if (n.hoja) {
-                yPos[nid] = marginTop + leafIdx * leafSpacing;
+                const y = marginTop + leafIdx * leafSpacing;
+                yPos[nid] = y;
+                xPos[nid] = marginLeft + (n.distancia / maxDist) * treeWidth;
                 leafIdx++;
-                return yPos[nid];
+                return y;
             }
-            // Internal: average of children
             const childYs = (n.hijos || []).map(cid => assignPositions(cid));
             const avg = childYs.reduce((a, b) => a + b, 0) / childYs.length;
             yPos[nid] = avg;
+            xPos[nid] = marginLeft + (n.distancia / maxDist) * treeWidth;
             return avg;
         }
         assignPositions(raizId);
 
-        // Clear
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function drawTree(highlightId) {
+            ctx.clearRect(0, 0, displayW, displayH);
 
-        // Scale bar
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 1;
-        ctx.fillStyle = textColor;
-        ctx.font = '10px JetBrains Mono, monospace';
-        const scaleLen = treeWidth * 0.2;
-        const scaleVal = (maxDist * 0.2).toFixed(3);
-        ctx.beginPath();
-        ctx.moveTo(marginLeft, canvas.height - 15);
-        ctx.lineTo(marginLeft + scaleLen, canvas.height - 15);
-        ctx.stroke();
-        ctx.fillText(scaleVal, marginLeft + scaleLen / 2 - 15, canvas.height - 4);
+            // Title
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 13px Space Grotesk, sans-serif';
+            ctx.fillText('Raiz (ancestro comun)', marginLeft - 5, marginTop - 25);
 
-        // Draw tree
-        function xForDist(dist) {
-            return marginLeft + (dist / maxDist) * treeWidth;
-        }
-
-        function drawNode(nid) {
-            const n = nodos[nid];
-            if (!n) return;
-            const x = xForDist(n.distancia);
-            const y = yPos[nid];
-
-            if (n.hoja) {
-                // Leaf node - draw circle and label
-                ctx.fillStyle = accentColor;
+            // Dashed grid lines
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([3, 5]);
+            for (let i = 0; i <= 4; i++) {
+                const x = marginLeft + (treeWidth / 4) * i;
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = textColor;
-                ctx.font = '11px Space Grotesk, sans-serif';
-                const label = (n.nombre || '').substring(0, 30).replace(/_/g, ' ');
-                ctx.fillText(label, x + 10, y + 4);
-            } else {
-                // Internal node - draw branches to children
-                const hijos = n.hijos || [];
-                hijos.forEach(cid => {
-                    const child = nodos[cid];
-                    if (!child) return;
-                    const cx = xForDist(child.distancia);
-                    const cy = yPos[cid];
-
-                    // Horizontal line from child to parent's x
-                    ctx.strokeStyle = lineColor;
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.lineTo(x, cy);
-                    ctx.stroke();
-
-                    // Vertical line connecting children
-                    ctx.beginPath();
-                    ctx.moveTo(x, cy);
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-
-                    drawNode(cid);
-                });
-
-                // Small dot at internal node
-                ctx.fillStyle = lineColor;
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.moveTo(x, marginTop - 10);
+                ctx.lineTo(x, marginTop + treeHeight + 10);
+                ctx.stroke();
+                const d = (maxDist / 4) * i;
+                ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+                ctx.font = '9px JetBrains Mono, monospace';
+                const simPct = ((1 - d) * 100).toFixed(0);
+                ctx.fillText(`${simPct}%`, x - 10, marginTop - 12);
             }
-        }
+            ctx.setLineDash([]);
 
-        drawNode(raizId);
+            // Similarity label
+            ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+            ctx.font = '9px Space Grotesk, sans-serif';
+            ctx.fillText('Similitud genetica', marginLeft + treeWidth / 2 - 40, marginTop - 35);
 
-        // Distance axis
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 0.5;
-        ctx.setLineDash([3, 3]);
-        for (let i = 0; i <= 5; i++) {
-            const d = (maxDist / 5) * i;
-            const x = xForDist(d);
+            function xForDist(dist) {
+                return marginLeft + (dist / maxDist) * treeWidth;
+            }
+
+            function drawNode(nid) {
+                const n = nodos[nid];
+                if (!n) return;
+                const x = xForDist(n.distancia);
+                const y = yPos[nid];
+
+                if (n.hoja) {
+                    const isHighlight = nid === highlightId;
+                    const r = isHighlight ? 7 : 5;
+                    const color = isHighlight ? highlightColor : accentColor;
+
+                    // Glow effect on hover
+                    if (isHighlight) {
+                        ctx.shadowColor = highlightColor;
+                        ctx.shadowBlur = 12;
+                    }
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Label
+                    ctx.fillStyle = isHighlight ? highlightColor : textColor;
+                    ctx.font = isHighlight ? 'bold 12px Space Grotesk, sans-serif' : '11px Space Grotesk, sans-serif';
+                    const label = (n.nombre || '').replace(/_/g, ' ').substring(0, 35);
+                    ctx.fillText(label, x + 12, y + 4);
+
+                    leafPositions.push({ nid, x, y, r: 15, nombre: n.nombre });
+                } else {
+                    const hijos = n.hijos || [];
+                    const childYs = hijos.map(cid => yPos[cid]);
+                    const minY = Math.min(...childYs);
+                    const maxY = Math.max(...childYs);
+
+                    // Vertical connector
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, minY);
+                    ctx.lineTo(x, maxY);
+                    ctx.stroke();
+
+                    hijos.forEach(cid => {
+                        const child = nodos[cid];
+                        if (!child) return;
+                        const cx = xForDist(child.distancia);
+                        const cy = yPos[cid];
+
+                        // Horizontal branch
+                        ctx.strokeStyle = lineColor;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x, cy);
+                        ctx.lineTo(cx, cy);
+                        ctx.stroke();
+
+                        drawNode(cid);
+                    });
+                }
+            }
+
+            leafPositions.length = 0;
+            drawNode(raizId);
+
+            // Scale bar
+            ctx.strokeStyle = textColor;
+            ctx.lineWidth = 1.5;
+            const scaleLen = treeWidth * 0.2;
             ctx.beginPath();
-            ctx.moveTo(x, marginTop - 15);
-            ctx.lineTo(x, marginTop + treeHeight + 5);
+            ctx.moveTo(marginLeft, displayH - 20);
+            ctx.lineTo(marginLeft + scaleLen, displayH - 20);
             ctx.stroke();
             ctx.fillStyle = textColor;
-            ctx.font = '9px JetBrains Mono, monospace';
-            ctx.fillText(d.toFixed(3), x - 12, marginTop - 20);
+            ctx.font = '10px JetBrains Mono, monospace';
+            const scaleVal = (maxDist * 0.2 * 100).toFixed(0);
+            ctx.fillText(`${scaleVal}% diferencia genetica`, marginLeft, displayH - 6);
         }
-        ctx.setLineDash([]);
+
+        drawTree(null);
+
+        // Hover interactivity
+        const tooltip = document.getElementById('evo-tree-tooltip');
+        const genesPorGenoma = data.pangenoma?.genes_por_genoma || {};
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left);
+            const my = (e.clientY - rect.top);
+
+            let found = null;
+            for (const leaf of leafPositions) {
+                const dx = mx - leaf.x;
+                const dy = my - leaf.y;
+                if (dx * dx + dy * dy < leaf.r * leaf.r * 4) {
+                    found = leaf;
+                    break;
+                }
+            }
+
+            if (found) {
+                canvas.style.cursor = 'pointer';
+                const gInfo = genomas.find(g => g.basename === found.nombre) || {};
+                const gpg = genesPorGenoma[found.nombre] || {};
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = (found.x + 20) + 'px';
+                tooltip.style.top = (found.y - 30) + 'px';
+                tooltip.innerHTML = `
+                    <strong>${(found.nombre || '').replace(/_/g, ' ')}</strong><br>
+                    <span style="color:#06b6d4">Genes totales:</span> ${gInfo.total_genes || '?'}<br>
+                    <span style="color:#10b981">Genes en comun:</span> ${gpg.core || '?'}<br>
+                    <span style="color:#ef4444">Genes exclusivos:</span> ${gpg.unicos || '?'}<br>
+                    <span style="color:#94a3b8">GC:</span> ${gInfo.gc_porcentaje || '?'}% | <span style="color:#94a3b8">Tamano:</span> ${((gInfo.longitud_pb || 0) / 1e6).toFixed(2)} Mb
+                `;
+                drawTree(found.nid);
+            } else {
+                canvas.style.cursor = 'default';
+                tooltip.classList.add('hidden');
+                drawTree(null);
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.classList.add('hidden');
+            drawTree(null);
+        });
     },
 
     // =========================================================================
-    // DASHBOARD DE EVOLUCION - MATRIZ DE DISTANCIAS
+    // DASHBOARD DE EVOLUCION - MAPA DE PARENTESCO (MATRIZ)
     // =========================================================================
 
     renderEvolucionMatriz(data, container) {
@@ -2955,38 +3128,91 @@ const DashboardRenderer = {
         const matrizGenomas = dist.genomas || [];
         const matriz = dist.matriz || [];
         const presencia = data.matriz_presencia || {};
-        const pan = data.pangenoma || {};
+
+        // Build all pairs sorted
+        const pares = [];
+        for (let i = 0; i < matrizGenomas.length; i++) {
+            for (let j = i + 1; j < matrizGenomas.length; j++) {
+                pares.push({
+                    a: matrizGenomas[i],
+                    b: matrizGenomas[j],
+                    distancia: matriz[i]?.[j] || 0,
+                    similitud: ((1 - (matriz[i]?.[j] || 0)) * 100).toFixed(1)
+                });
+            }
+        }
+        pares.sort((a, b) => a.distancia - b.distancia);
 
         container.innerHTML = `
-            <h3 class="text-xl font-bold text-primary mb-4">Matriz de Distancias y Presencia/Ausencia</h3>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                ${this.statsCard('Genomas', matrizGenomas.length, 'en la matriz', 'emerald')}
-                ${this.statsCard('Comparaciones', matrizGenomas.length > 1 ? this.fmt(matrizGenomas.length * (matrizGenomas.length - 1) / 2) : '0', 'pares analizados', 'cyan')}
-                ${this.statsCard('Dist. Min', matriz.length > 1 ? this._matrizMinMax(matriz).min.toFixed(4) : 'N/A', 'par mas cercano', 'emerald')}
-                ${this.statsCard('Dist. Max', matriz.length > 1 ? this._matrizMinMax(matriz).max.toFixed(4) : 'N/A', 'par mas lejano', 'red')}
+            <!-- Explicacion -->
+            <div class="bg-cyan-50 dark:bg-cyan-900/15 border border-cyan-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-cyan-700 mb-2">Mapa de Parentesco entre Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Este mapa muestra <strong>que tan parecida es cada bacteria con cada otra</strong>, basandose en cuantos genes comparten.
+                    El color <strong class="text-emerald-600">verde</strong> significa "muy parecidas" (comparten muchos genes, como hermanos).
+                    El color <strong class="text-red-600">rojo</strong> significa "muy diferentes" (comparten pocos genes, como especies distintas).
+                    Pasa el mouse sobre cada celda para ver los detalles.
+                </p>
             </div>
 
-            <!-- Heatmap de distancias Jaccard -->
+            <!-- Ranking de pares -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-3">Heatmap de Distancias Jaccard</h4>
-                <p class="text-xs text-secondary mb-3">Verde = genomas cercanos (muchos genes compartidos), Rojo = genomas lejanos (pocos genes compartidos)</p>
+                <h4 class="text-sm font-semibold text-primary mb-1">Ranking de Similitud</h4>
+                <p class="text-xs text-secondary mb-3">Todas las comparaciones ordenadas de mas parecidas a mas diferentes. Pasa el mouse para ver detalles.</p>
+                <div class="space-y-1.5 max-h-[350px] overflow-y-auto">
+                    ${pares.map((p, idx) => {
+                        const simPct = parseFloat(p.similitud);
+                        const barColor = simPct > 80 ? '#10b981' : simPct > 50 ? '#f59e0b' : '#ef4444';
+                        const relacion = simPct > 90 ? 'Casi identicos' : simPct > 70 ? 'Muy parecidos' : simPct > 50 ? 'Moderadamente parecidos' : simPct > 30 ? 'Bastante diferentes' : 'Muy diferentes';
+                        return `
+                            <div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-default group"
+                                 title="${p.a.replace(/_/g,' ')} vs ${p.b.replace(/_/g,' ')}: comparten ${p.similitud}% de sus genes. ${relacion}.">
+                                <span class="text-xs font-mono text-secondary w-6 text-right">${idx + 1}.</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1 text-xs">
+                                        <span class="text-primary font-medium truncate">${p.a.replace(/_/g,' ').substring(0,25)}</span>
+                                        <span class="text-secondary">vs</span>
+                                        <span class="text-primary font-medium truncate">${p.b.replace(/_/g,' ').substring(0,25)}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mt-1.5">
+                                        <div class="h-2 rounded-full transition-all" style="width:${simPct}%; background:${barColor};"></div>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="text-sm font-bold" style="color:${barColor}">${p.similitud}%</span>
+                                    <p class="text-[10px] text-secondary hidden group-hover:block">${relacion}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- Heatmap -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-1">Mapa de Calor (Heatmap)</h4>
+                <p class="text-xs text-secondary mb-3">Cada celda muestra el % de genes que comparten dos bacterias. Verde = muchos genes en comun, Rojo = pocos. Pasa el mouse sobre cada celda.</p>
                 <div class="overflow-x-auto">
-                    <table class="text-xs border-collapse">
+                    <table class="text-xs border-collapse" id="evo-heatmap-table">
                         <thead>
                             <tr>
-                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-10"></th>
-                                ${matrizGenomas.map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:120px; font-size:10px;">${g.substring(0, 20)}</th>`).join('')}
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-10" style="min-width:30px;"></th>
+                                ${matrizGenomas.map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:130px; font-size:10px; cursor:default;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 22)}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
                             ${matrizGenomas.map((g, i) => `
                                 <tr>
-                                    <td class="px-2 py-1 text-secondary font-medium whitespace-nowrap sticky left-0 bg-card z-10" style="font-size:10px;">${g.substring(0, 25)}</td>
-                                    ${matrizGenomas.map((_, j) => {
+                                    <td class="px-2 py-1.5 text-secondary font-medium whitespace-nowrap sticky left-0 bg-card z-10 cursor-default" style="font-size:10px;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 25)}</td>
+                                    ${matrizGenomas.map((g2, j) => {
+                                        if (i === j) return `<td class="px-1 py-1.5 text-center" style="background:rgba(16,185,129,0.15); min-width:42px; font-size:9px;">100%</td>`;
                                         const val = (matriz[i] && matriz[i][j] !== undefined) ? matriz[i][j] : 0;
-                                        const color = i === j ? 'rgba(16,185,129,0.3)' : this._distToColor(val);
-                                        return `<td class="px-1 py-1 text-center font-mono" style="background:${color}; min-width:40px; font-size:9px;" title="${g} vs ${matrizGenomas[j]}: ${val.toFixed(4)}">${i === j ? '-' : val.toFixed(2)}</td>`;
+                                        const sim = ((1 - val) * 100).toFixed(0);
+                                        const color = this._distToColor(val);
+                                        const relacion = sim > 90 ? 'Casi identicos' : sim > 70 ? 'Muy parecidos' : sim > 50 ? 'Moderadamente parecidos' : sim > 30 ? 'Bastante diferentes' : 'Muy diferentes';
+                                        return `<td class="px-1 py-1.5 text-center font-mono cursor-default hover:ring-2 hover:ring-emerald-500 hover:z-10 relative transition"
+                                                    style="background:${color}; min-width:42px; font-size:9px;"
+                                                    title="${g.replace(/_/g,' ')} vs ${g2.replace(/_/g,' ')}: ${sim}% similares. ${relacion}.">${sim}%</td>`;
                                     }).join('')}
                                 </tr>
                             `).join('')}
@@ -2995,33 +3221,36 @@ const DashboardRenderer = {
                 </div>
             </div>
 
-            <!-- Resumen de presencia/ausencia -->
+            <!-- Presencia/ausencia -->
             ${presencia.genes && presencia.genes.length > 0 ? `
             <div class="bg-card rounded-xl p-5 border border-slate-200">
-                <h4 class="text-sm font-semibold text-primary mb-2">Matriz de Presencia/Ausencia</h4>
-                <p class="text-xs text-secondary mb-3">Mostrando los primeros 100 genes del pangenoma. Verde = presente, Gris = ausente.</p>
-                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <h4 class="text-sm font-semibold text-primary mb-1">Que genes tiene cada bacteria?</h4>
+                <p class="text-xs text-secondary mb-3">Cada fila es un gen y cada columna una bacteria. <span class="inline-block w-3 h-3 rounded" style="background:rgba(16,185,129,0.3)"></span> = lo tiene, vacio = no lo tiene. Mostrando los ${Math.min(100, presencia.genes.length)} genes mas frecuentes.</p>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <table class="text-[9px] border-collapse">
                         <thead class="sticky top-0 z-10">
                             <tr class="bg-card">
-                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-20">Gen</th>
-                                ${(presencia.genomas || []).map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:100px;">${g.substring(0, 15)}</th>`).join('')}
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-20">Gen (funcion)</th>
+                                ${(presencia.genomas || []).map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:90px;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 15)}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
-                            ${(presencia.genes || []).slice(0, 100).map((gen, gi) => `
-                                <tr class="border-t border-slate-50 dark:border-slate-900">
+                            ${(presencia.genes || []).slice(0, 100).map((gen, gi) => {
+                                const count = (presencia.genomas || []).reduce((acc, _, gj) => acc + ((presencia.matriz?.[gi]?.[gj]) || 0), 0);
+                                const total = (presencia.genomas || []).length;
+                                return `
+                                <tr class="border-t border-slate-50 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800" title="Gen: ${gen} | Presente en ${count} de ${total} bacterias">
                                     <td class="px-1 py-0.5 text-secondary whitespace-nowrap sticky left-0 bg-card z-10" style="max-width:180px; overflow:hidden; text-overflow:ellipsis;">${gen.substring(0, 30)}</td>
                                     ${(presencia.genomas || []).map((_, gj) => {
-                                        const val = presencia.matriz && presencia.matriz[gi] ? presencia.matriz[gi][gj] : 0;
-                                        return `<td class="px-1 py-0.5 text-center" style="background:${val ? 'rgba(16,185,129,0.25)' : 'rgba(100,116,139,0.1)'}; min-width:20px;">${val ? '1' : ''}</td>`;
+                                        const val = presencia.matriz?.[gi]?.[gj] || 0;
+                                        return `<td class="px-1 py-0.5 text-center" style="background:${val ? 'rgba(16,185,129,0.25)' : 'transparent'}; min-width:20px;">${val ? '<span style="color:#10b981">&#9679;</span>' : ''}</td>`;
                                     }).join('')}
-                                </tr>
-                            `).join('')}
+                                </tr>`;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
-                ${(presencia.genes || []).length > 100 ? `<p class="text-xs text-secondary mt-2">Mostrando 100 de ${this.fmt(presencia.genes.length)} genes totales</p>` : ''}
+                ${(presencia.genes || []).length > 100 ? `<p class="text-xs text-secondary mt-2">Mostrando 100 de ${this.fmt(presencia.genes.length)} genes</p>` : ''}
             </div>` : ''}
         `;
     },
@@ -3039,7 +3268,6 @@ const DashboardRenderer = {
     },
 
     _distToColor(val) {
-        // 0 = green (close), 1 = red (far)
         const clamped = Math.max(0, Math.min(1, val));
         const r = Math.round(239 * clamped + 16 * (1 - clamped));
         const g = Math.round(68 * clamped + 185 * (1 - clamped));
