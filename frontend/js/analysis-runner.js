@@ -132,9 +132,22 @@ const AnalysisRunner = {
             showNotification(`${errors} análisis con errores`, 'error');
         }
 
-        // Ir a resultados si al menos un analisis fue exitoso
+        // Ir a resultados: activar submenu de analisis y mostrar dashboard de genes
         if (errors < scripts.length) {
-            setTimeout(() => showSection('results'), 2000);
+            setTimeout(() => {
+                // Abrir submenu de analisis y navegar a Genes
+                const analysisItem = document.querySelector('.nav-item[data-section="analysis"]');
+                if (analysisItem) {
+                    analysisItem.classList.add('submenu-open');
+                }
+                const genesSubItem = document.querySelector('.submenu-item[data-tab="genes"]');
+                if (genesSubItem) {
+                    navigateToSubItem(genesSubItem);
+                } else {
+                    showSection('results');
+                    loadResultsGenomeSelector('genes');
+                }
+            }, 2000);
         }
     }
 };
@@ -147,7 +160,7 @@ const AnalysisRunner = {
 let currentResultsGenome = '';
 let currentDashboardTab = 'genes';
 
-async function loadResultsGenomeSelector() {
+async function loadResultsGenomeSelector(initialTab) {
     const select = document.getElementById('results-genome');
     if (!select) return;
 
@@ -163,7 +176,7 @@ async function loadResultsGenomeSelector() {
 
         if (data.success && data.genomes && data.genomes.length > 0) {
             select.innerHTML = data.genomes.map(g =>
-                `<option value="${g.basename}">${g.label} (${g.tablas} tablas, ${g.figuras} gráficos)</option>`
+                `<option value="${g.basename}">${g.label} (${g.tablas} tablas, ${g.figuras} graficos)</option>`
             ).join('');
 
             if (AppState.resultsGenome) {
@@ -172,14 +185,14 @@ async function loadResultsGenomeSelector() {
             }
 
             currentResultsGenome = select.value;
-            loadDashboard('genes');
+            loadDashboard(initialTab || 'genes');
         } else {
             select.innerHTML = '<option value="">No hay resultados</option>';
             document.getElementById('dashboard-container').innerHTML = `
                 <div class="text-center py-12 text-secondary">
                     <div class="text-6xl mb-3">📊</div>
-                    <p>No hay resultados aún</p>
-                    <p class="text-sm mt-2">Ejecuta un análisis primero</p>
+                    <p>No hay resultados aun</p>
+                    <p class="text-sm mt-2">Ejecuta un analisis primero</p>
                 </div>
             `;
         }
@@ -204,16 +217,10 @@ async function loadDashboard(analysisType) {
         return;
     }
 
-    // Actualizar tabs activas
-    document.querySelectorAll('.dashboard-tab').forEach(t => {
-        t.classList.remove('active', 'bg-emerald-500', 'text-white');
-        t.classList.add('text-secondary');
-    });
-    const activeTab = document.querySelector(`.dashboard-tab[data-analysis="${analysisType}"]`);
-    if (activeTab) {
-        activeTab.classList.add('active', 'bg-emerald-500', 'text-white');
-        activeTab.classList.remove('text-secondary');
-    }
+    // Actualizar submenu-items activos en el sidebar
+    document.querySelectorAll('.submenu-item').forEach(si => si.classList.remove('active'));
+    const activeSub = document.querySelector(`.submenu-item[data-tab="${analysisType}"]`);
+    if (activeSub) activeSub.classList.add('active');
 
     DashboardRenderer.destroyCharts();
 
@@ -252,12 +259,19 @@ async function loadDashboard(analysisType) {
         return;
     }
 
+    // Tab especial: extractor de secuencias
+    if (analysisType === 'extractor') {
+        DashboardRenderer.renderExtractorSecuencia(genome, container);
+        return;
+    }
+
     // Mapear tab a archivo JSON
     const fileMap = {
         genes: `analisis_genes_${genome}.json`,
         codones: `analisis_codones_${genome}.json`,
         distancias: `analisis_distancias_${genome}.json`,
-        estructura: `analisis_estructura_${genome}.json`
+        estructura: `analisis_estructura_${genome}.json`,
+        proteinas: `analisis_proteinas_${genome}.json`
     };
 
     const filename = fileMap[analysisType];
@@ -288,6 +302,8 @@ async function loadDashboard(analysisType) {
         DashboardRenderer.renderDistanciasDashboard(data, container);
     } else if (analysisType === 'estructura') {
         DashboardRenderer.renderEstructuraDashboard(data, genome, container);
+    } else if (analysisType === 'proteinas') {
+        DashboardRenderer.renderProteinasDashboard(data, container);
     }
 }
 
@@ -467,9 +483,11 @@ async function runComparison() {
 // =============================================================================
 
 async function generarInforme() {
-    const genome = currentResultsGenome;
+    // Usar el selector de la seccion informe, o el de resultados como fallback
+    const informeSelect = document.getElementById('informe-genome');
+    const genome = informeSelect?.value || currentResultsGenome;
     if (!genome) {
-        showNotification('Selecciona un genoma primero en la seccion Resultados', 'warning');
+        showNotification('Selecciona un genoma primero', 'warning');
         return;
     }
 
@@ -677,27 +695,11 @@ document.addEventListener('DOMContentLoaded', () => {
             currentResultsGenome = resultsGenome.value;
             DashboardRenderer.clearCache();
             if (typeof ChatIA !== 'undefined') ChatIA.destroy();
-            loadDashboard('genes');
-            // Reset tabs
-            document.querySelectorAll('.dashboard-tab').forEach(t => {
-                t.classList.remove('active', 'bg-emerald-500', 'text-white');
-                t.classList.add('text-secondary');
-            });
-            const tabGenes = document.getElementById('tab-genes');
-            if (tabGenes) {
-                tabGenes.classList.add('active', 'bg-emerald-500', 'text-white');
-                tabGenes.classList.remove('text-secondary');
-            }
+            // Cargar el tab activo actual o genes por defecto
+            const currentTab = AppState.currentTab || 'genes';
+            loadDashboard(currentTab);
         });
     }
-
-    // Dashboard tabs
-    document.querySelectorAll('.dashboard-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const analysis = tab.getAttribute('data-analysis');
-            loadDashboard(analysis);
-        });
-    });
 
     // Eliminar todos los resultados
     const deleteAllBtn = document.getElementById('delete-all-results-btn');

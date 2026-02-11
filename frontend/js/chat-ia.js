@@ -120,7 +120,7 @@ const ChatIA = {
                             Enviar
                         </button>
                     </div>
-                    <p class="text-xs text-secondary mt-2 text-center">Powered by Gemini AI</p>
+                    <p class="text-xs text-secondary mt-2 text-center">Potenciado por Gemini IA</p>
                 </div>
             </div>
         `;

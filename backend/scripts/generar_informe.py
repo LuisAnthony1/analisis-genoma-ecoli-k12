@@ -134,6 +134,19 @@ def generar_interpretaciones_ia(datos, genome):
                 contexto_datos += f"\nDatos reales: {stats.get('total_genes', 'N/A')} genes CDS, "
                 contexto_datos += f"GC {stats.get('contenido_gc_cds', {}).get('promedio', 'N/A')}%, "
                 contexto_datos += f"densidad genica {stats.get('densidad_genica_porcentaje', 'N/A')}%"
+            gc_pos = data.get("gc_por_posicion_codon", {})
+            if gc_pos:
+                contexto_datos += f"\nGC por posicion codon: GC1={gc_pos.get('gc1_porcentaje', 'N/A')}%, GC2={gc_pos.get('gc2_porcentaje', 'N/A')}%, GC3={gc_pos.get('gc3_porcentaje', 'N/A')}%"
+            esenciales = data.get("genes_esenciales", {})
+            if esenciales:
+                contexto_datos += f"\nGenes esenciales: {esenciales.get('total_encontrados', 0)}/{esenciales.get('total_referencia', 0)} ({esenciales.get('porcentaje_encontrados', 0)}% cobertura Keio)"
+        if "analisis_codones" in key and isinstance(data, dict):
+            rscu = data.get("rscu", {})
+            if rscu:
+                contexto_datos += f"\nRSCU: {rscu.get('total_preferidos', 0)} codones preferidos, {rscu.get('total_evitados', 0)} evitados, {rscu.get('total_raros', 0)} raros"
+            nc = data.get("numero_efectivo_codones", {})
+            if nc:
+                contexto_datos += f"\nNc (numero efectivo de codones): {nc.get('nc', nc.get('valor', 'N/A'))}"
 
     for seccion, prompt in secciones.items():
         print(f"  [IA] Generando {seccion}...")
@@ -609,6 +622,45 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
                     "Comparacion de metricas observadas con valores de literatura."
                 )
 
+        # GC por Posicion de Codon
+        gc_pos = genes_data.get("gc_por_posicion_codon", {})
+        if gc_pos:
+            add_heading2("GC por Posicion de Codon", "")
+            add_body(f"El analisis de contenido GC por posicion del codon mostro: GC1 (1ra posicion) = {gc_pos.get('gc1_porcentaje', 'N/A')}%, GC2 (2da posicion) = {gc_pos.get('gc2_porcentaje', 'N/A')}%, GC3 (3ra posicion) = {gc_pos.get('gc3_porcentaje', 'N/A')}%.")
+            if gc_pos.get("interpretacion"):
+                add_body(gc_pos["interpretacion"])
+            add_data_table(
+                ["Posicion", "GC (%)", "Significado"],
+                [
+                    ["GC1 (1ra posicion)", str(gc_pos.get("gc1_porcentaje", "N/A")) + "%", "Mas conservada, limita aminoacidos"],
+                    ["GC2 (2da posicion)", str(gc_pos.get("gc2_porcentaje", "N/A")) + "%", "Afecta directamente al aminoacido"],
+                    ["GC3 (3ra posicion)", str(gc_pos.get("gc3_porcentaje", "N/A")) + "%", "Refleja sesgo codonico y presion mutacional"],
+                ],
+                "Contenido GC por posicion del codon."
+            )
+
+        # Genes Esenciales
+        esenciales = genes_data.get("genes_esenciales", {})
+        if esenciales:
+            add_heading2("Genes Esenciales (Keio Collection)", "")
+            add_body(f"Se identificaron {esenciales.get('total_encontrados', 0)} de {esenciales.get('total_referencia', 0)} genes esenciales de la coleccion Keio ({esenciales.get('porcentaje_encontrados', 0)}% de cobertura). Fuente: {esenciales.get('fuente', 'Baba et al., 2006')}.")
+            cats_esc = esenciales.get("categorias_esenciales", {})
+            if cats_esc:
+                rows_esc = []
+                for cat, count in sorted(cats_esc.items(), key=lambda x: x[1], reverse=True):
+                    rows_esc.append([cat, str(count)])
+                add_data_table(
+                    ["Categoria Funcional", "Genes"],
+                    rows_esc[:10],
+                    "Categorias funcionales de genes esenciales encontrados."
+                )
+
+        # Densidad por Ventana
+        densidad = genes_data.get("densidad_por_ventana", {})
+        if densidad:
+            add_heading2("Densidad Genica por Region", "")
+            add_body(f"El analisis de densidad genica por ventana de {fmt_num(densidad.get('ventana_pb', 50000))} pb mostro una densidad promedio de {densidad.get('promedio_densidad', 'N/A')}%, con un maximo de {densidad.get('max_densidad', 'N/A')}% y un minimo de {densidad.get('min_densidad', 'N/A')}%. Se analizaron {densidad.get('total_ventanas', 0)} ventanas a lo largo del genoma.")
+
     # --- 3B. Analisis de Codones ---
     codones_key = f"analisis_codones_{genome}"
     if codones_key in datos:
@@ -630,6 +682,62 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
                     codones_stop.append(f"{codon}: {parada[codon].get('proporcion_porcentaje', 0)}%")
             if codones_stop:
                 add_body(f"Distribucion de codones de parada: {', '.join(codones_stop)}.")
+
+        # RSCU
+        rscu = codones_data.get("rscu", {})
+        if rscu:
+            add_heading2("RSCU - Uso Relativo de Codones Sinonimos", "")
+            total_pref = rscu.get("total_preferidos", len(rscu.get("codones_preferidos", {})))
+            total_evit = rscu.get("total_evitados", len(rscu.get("codones_evitados", {})))
+            total_raros = rscu.get("total_raros", len(rscu.get("codones_raros", {})))
+            add_body(f"El analisis RSCU (Relative Synonymous Codon Usage) identifico {total_pref} codones preferidos (RSCU > 1.3), {total_evit} codones evitados (RSCU < 0.7) y {total_raros} codones raros (RSCU < 0.5). Un RSCU = 1.0 indica uso sin sesgo entre codones sinonimos.")
+
+            # Tabla de codones preferidos
+            preferidos = rscu.get("codones_preferidos", {})
+            if preferidos:
+                rows_pref = []
+                for codon, val in sorted(preferidos.items(), key=lambda x: x[1] if isinstance(x[1], (int, float)) else 0, reverse=True)[:15]:
+                    rows_pref.append([codon, str(round(val, 2)) if isinstance(val, (int, float)) else str(val)])
+                add_data_table(
+                    ["Codon", "RSCU"],
+                    rows_pref,
+                    "Codones preferidos (RSCU > 1.3) - uso selectivo por eficiencia traduccional."
+                )
+
+            # Codones raros
+            raros = rscu.get("codones_raros", {})
+            if raros:
+                raros_list = ", ".join([f"{c}({round(v, 2) if isinstance(v, (int, float)) else v})" for c, v in raros.items()])
+                add_body(f"Codones raros (RSCU < 0.5): {raros_list}.")
+
+        # Numero Efectivo de Codones (Nc)
+        nc_data = codones_data.get("numero_efectivo_codones", {})
+        if nc_data:
+            add_heading2("Numero Efectivo de Codones (Nc)", "")
+            nc_val = nc_data.get("nc", nc_data.get("valor", 0))
+            add_body(f"El Numero Efectivo de Codones (Nc) calculado fue {nc_val} (rango teorico: 20 = sesgo maximo, 61 = sin sesgo). {nc_data.get('interpretacion', '')}. Referencia: {nc_data.get('referencia', 'Wright F. (1990) Gene 87:23-29')}.")
+
+        # Sesgo Codonico por Aminoacido
+        sesgo = codones_data.get("sesgo_por_aminoacido", {})
+        if sesgo:
+            add_heading2("Sesgo Codonico por Aminoacido", "")
+            add_body("Para cada aminoacido con codones sinonimos se identifico el codon preferido y el evitado:")
+            rows_sesgo = []
+            for aa, info in sorted(sesgo.items()):
+                if isinstance(info, dict) and info.get("codones") and len(info.get("codones", [])) > 1:
+                    rows_sesgo.append([
+                        aa,
+                        info.get("preferido", "-"),
+                        str(info.get("preferido_porcentaje", "-")) + "%",
+                        info.get("evitado", "-"),
+                        str(info.get("evitado_porcentaje", "-")) + "%"
+                    ])
+            if rows_sesgo:
+                add_data_table(
+                    ["Aminoacido", "Preferido", "% Uso", "Evitado", "% Uso"],
+                    rows_sesgo,
+                    "Sesgo codonico: codon preferido vs evitado por aminoacido."
+                )
 
     # --- 3C. Distancias Intergenicas ---
     dist_key = f"analisis_distancias_{genome}"
@@ -683,10 +791,89 @@ def construir_pdf(datos, interpretaciones, figuras, genome):
         if gc_reg:
             add_body(f"El contenido GC difiere entre regiones codificantes ({gc_reg.get('gc_codificante', 0)}%) y no codificantes ({gc_reg.get('gc_no_codificante', 0)}%), con una diferencia de {gc_reg.get('diferencia_gc', 0)} puntos porcentuales.")
 
-    # --- 3E. Comparacion de Genomas ---
+    # --- 3E. Analisis de Proteinas ---
+    prot_key = f"analisis_proteinas_{genome}"
+    if prot_key in datos:
+        prot_data = datos[prot_key]
+        add_heading2("Analisis de Proteinas", "E.")
+
+        # Estructura Primaria
+        primaria = prot_data.get("estructura_primaria", {})
+        stats_prot = primaria.get("estadisticas_generales", {})
+        if stats_prot:
+            add_body(f"Se analizaron {fmt_num(stats_prot.get('total_analizadas', 0))} proteinas del proteoma. La longitud promedio fue de {fmt_num(stats_prot.get('longitud_promedio_aa', 0), 1)} aminoacidos con un peso molecular promedio de {fmt_num(stats_prot.get('peso_molecular_promedio_da', 0), 0)} Da. El punto isoelectrico promedio fue {stats_prot.get('pi_promedio', 0)} y el indice GRAVY promedio fue {stats_prot.get('gravy_promedio', 0)}.")
+            add_body(f"Se identificaron {stats_prot.get('proteinas_acidas', 0)} proteinas acidas (pI < 7) y {stats_prot.get('proteinas_basicas', 0)} basicas (pI > 7). {stats_prot.get('proteinas_estables', 0)} proteinas se clasificaron como estables (indice inestabilidad < 40) y {stats_prot.get('proteinas_inestables', 0)} como inestables.")
+
+            add_data_table(
+                ["Propiedad", "Valor"],
+                [
+                    ["Total proteinas", str(stats_prot.get("total_analizadas", 0))],
+                    ["Longitud promedio", f"{stats_prot.get('longitud_promedio_aa', 0)} aa"],
+                    ["Peso molecular promedio", f"{fmt_num(stats_prot.get('peso_molecular_promedio_da', 0), 0)} Da"],
+                    ["pI promedio", str(stats_prot.get("pi_promedio", 0))],
+                    ["GRAVY promedio", str(stats_prot.get("gravy_promedio", 0))],
+                    ["Proteinas acidas / basicas", f"{stats_prot.get('proteinas_acidas', 0)} / {stats_prot.get('proteinas_basicas', 0)}"],
+                    ["Estables / inestables", f"{stats_prot.get('proteinas_estables', 0)} / {stats_prot.get('proteinas_inestables', 0)}"],
+                    ["Peptidos senal detectados", str(primaria.get("peptidos_senal", {}).get("total_detectados", 0))],
+                ],
+                "Estadisticas generales del proteoma."
+            )
+
+        # Categorias funcionales
+        cats = primaria.get("categorias_funcionales", {})
+        if cats:
+            rows_cats = []
+            for cat_nombre, cat_data in sorted(cats.items(), key=lambda x: x[1].get("total", 0), reverse=True):
+                if cat_data.get("total", 0) > 0:
+                    rows_cats.append([cat_nombre, str(cat_data["total"]), f"{cat_data.get('porcentaje', 0)}%"])
+            if rows_cats:
+                add_data_table(
+                    ["Categoria", "Total", "Porcentaje"],
+                    rows_cats[:10],
+                    "Clasificacion funcional de las proteinas del proteoma."
+                )
+
+        # Estructura Secundaria
+        sec = prot_data.get("estructura_secundaria", {})
+        prom_sec = sec.get("promedio_proteoma", {})
+        if prom_sec:
+            add_body(f"La prediccion de estructura secundaria (metodo Chou-Fasman) mostro que en promedio el proteoma contiene {prom_sec.get('helix', 0)}% helice alfa, {prom_sec.get('sheet', 0)}% lamina beta y {prom_sec.get('turn', 0)}% giros y regiones desordenadas.")
+
+        # Estructura Cuaternaria
+        cuat = prot_data.get("estructura_cuaternaria", {})
+        if cuat.get("total_complejos", 0) > 0:
+            add_body(f"Se detectaron {cuat['total_complejos']} complejos proteicos multi-subunidad con un total de {cuat.get('total_subunidades', 0)} subunidades identificadas por anotacion.")
+
+            top_complejos = cuat.get("complejos_detectados", [])[:10]
+            if top_complejos:
+                rows_comp = []
+                for c in top_complejos:
+                    genes = ", ".join([s.get("nombre_gen", "") or s.get("locus_tag", "") for s in c.get("subunidades", [])])
+                    rows_comp.append([c.get("nombre_complejo", "")[:45], str(c.get("num_subunidades", 0)), genes[:50]])
+                add_data_table(
+                    ["Complejo", "Subunidades", "Genes"],
+                    rows_comp,
+                    "Principales complejos proteicos detectados."
+                )
+
+        # Mutaciones patogenicas
+        muts = primaria.get("mutaciones_patogenicas", [])
+        if muts:
+            rows_mut = []
+            for m in muts:
+                estado = "Presente" if m.get("encontrado") else "No encontrado"
+                long_obs = str(m.get("longitud_observada_aa", "-"))
+                rows_mut.append([m.get("gen", ""), estado, long_obs, m.get("descripcion", "")[:50]])
+            add_data_table(
+                ["Gen", "Estado", "Longitud (aa)", "Funcion"],
+                rows_mut,
+                "Genes criticos para resistencia a antibioticos."
+            )
+
+    # --- 3F. Comparacion de Genomas ---
     for key, data in datos.items():
         if "comparacion_" in key and isinstance(data, dict) and data.get("organismos_comparados"):
-            add_heading2("Comparacion de Genomas", "E.")
+            add_heading2("Comparacion de Genomas", "F.")
 
             orgs = data.get("organismos_comparados", {})
             org1 = orgs.get("organismo_1", {}).get("nombre", "Organismo 1")

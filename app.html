@@ -7,6 +7,8 @@
     <meta name="description" content="Aplicación web interactiva para búsqueda, descarga y análisis de genomas bacterianos desde NCBI">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,19 +19,33 @@
         .font-space { font-family: 'Space Grotesk', sans-serif; }
         body { font-family: 'Space Grotesk', sans-serif; transition: background-color 0.3s, color 0.3s; }
 
-        /* TEMA CLARO */
+        /* ================================================================
+           TEMA CLARO
+           ================================================================ */
         body.light { background-color: #e2e8f0; color: #0f172a; }
         body.light .bg-page { background-color: #e2e8f0; }
         body.light .bg-card { background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-        body.light .bg-nav { background-color: rgba(255,255,255,0.95); }
         body.light .text-primary { color: #0f172a; }
         body.light .text-secondary { color: #334155; }
+        body.light .sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; }
+        body.light .sidebar .indicator { background: #e2e8f0; }
+        body.light .sidebar .indicator::before { box-shadow: 25px 25px 0 10px #e2e8f0; }
+        body.light .sidebar .indicator::after { box-shadow: 25px -25px 0 10px #e2e8f0; }
+        body.light .sidebar .nav-link { color: #64748b; }
+        body.light .sidebar .nav-item.active .nav-link { color: #0f172a; }
+        body.light .sidebar .category-label { color: #94a3b8; }
+        body.light .sidebar .submenu { background: #f1f5f9; }
+        body.light .sidebar .submenu-item { color: #64748b; }
+        body.light .sidebar .submenu-item:hover,
+        body.light .sidebar .submenu-item.active { color: #0f172a; background: #e2e8f0; }
+        body.light .sidebar-footer { border-top-color: #e2e8f0; }
 
-        /* TEMA OSCURO */
+        /* ================================================================
+           TEMA OSCURO
+           ================================================================ */
         body.dark { background-color: #000000; color: #f1f5f9; }
         body.dark .bg-page { background-color: #000000; }
         body.dark .bg-card { background-color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-        body.dark .bg-nav { background-color: rgba(10,10,10,0.95); }
         body.dark .text-primary { color: #f8fafc; }
         body.dark .text-secondary { color: #cbd5e1; }
         body.dark .bg-slate-100, body.dark .bg-slate-50 { background-color: #262626 !important; }
@@ -37,22 +53,6 @@
         body.dark .text-slate-900, body.dark .text-slate-800, body.dark .text-slate-700 { color: #e2e8f0 !important; }
         body.dark .text-slate-600, body.dark .text-slate-500 { color: #94a3b8 !important; }
         body.dark .border-slate-200, body.dark .border-slate-300 { border-color: rgba(255,255,255,0.1) !important; }
-
-        /* Switch de tema */
-        .theme-switch {
-            position: relative; width: 60px; height: 30px;
-            background: linear-gradient(135deg, #374151, #1f2937);
-            border-radius: 15px; cursor: pointer; transition: all 0.3s;
-            border: 2px solid rgba(16, 185, 129, 0.3);
-        }
-        .theme-switch.light { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
-        .theme-switch .slider {
-            position: absolute; top: 2px; left: 2px; width: 22px; height: 22px;
-            background: white; border-radius: 50%; transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .theme-switch.light .slider { left: calc(100% - 26px); }
-        .theme-switch .icon { font-size: 12px; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -64,16 +64,263 @@
         .section-panel { display: none; }
         .section-panel.active { display: block; }
 
-        /* Smooth scroll */
         html { scroll-behavior: smooth; }
-
-        /* Line clamp */
         .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
         .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+        /* ================================================================
+           SIDEBAR - Magic Curve
+           ================================================================ */
+        :root {
+            --sidebar-bg: #0f172a;
+            --sidebar-bg-light: #ffffff;
+            --sidebar-width-closed: 72px;
+            --sidebar-width-open: 260px;
+            --curve-size: 40px;
+            --sidebar-transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --accent: #10b981;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width-closed);
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            transition: width var(--sidebar-transition);
+            z-index: 1000;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .sidebar.open { width: var(--sidebar-width-open); }
+
+        /* Toggle button */
+        .sidebar-toggle {
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            color: white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            z-index: 1001;
+            transition: var(--sidebar-transition);
+        }
+        .sidebar-toggle i,
+        .sidebar-toggle svg { width: 16px; height: 16px; transition: transform var(--sidebar-transition); }
+        .sidebar.open .sidebar-toggle i,
+        .sidebar.open .sidebar-toggle svg { transform: rotate(180deg); }
+
+        /* Logo */
+        .logo-section {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            margin-bottom: 8px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .logo-icon {
+            min-width: 36px; height: 36px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: white;
+        }
+        .logo-text {
+            font-size: 1.15rem; font-weight: 800;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            opacity: 0; transition: opacity var(--sidebar-transition);
+        }
+        .sidebar.open .logo-text { opacity: 1; }
+
+        /* Category labels */
+        .category-label {
+            padding: 16px 20px 6px;
+            font-size: 0.65rem; font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            opacity: 0; transition: opacity var(--sidebar-transition);
+        }
+        .sidebar.open .category-label { opacity: 0.7; }
+
+        /* Nav list */
+        .nav-list {
+            list-style: none;
+            position: relative;
+            flex: 1;
+            padding: 0; margin: 0;
+        }
+
+        /* Nav items */
+        .nav-item { position: relative; width: 100%; }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            text-decoration: none;
+            color: #94a3b8;
+            padding: 0 22px;
+            transition: color var(--sidebar-transition);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            gap: 14px;
+        }
+        .nav-link:hover { color: #e2e8f0; }
+        .nav-link i, .nav-link svg { min-width: 22px; width: 22px; height: 22px; }
+
+        .link-text {
+            font-size: 0.85rem; font-weight: 500;
+            white-space: nowrap;
+            opacity: 0; transform: translateX(-8px);
+            transition: opacity var(--sidebar-transition), transform var(--sidebar-transition);
+            flex: 1;
+        }
+        .sidebar.open .link-text { opacity: 1; transform: translateX(0); }
+
+        /* Submenu arrow */
+        .submenu-arrow {
+            min-width: 16px !important; width: 16px !important; height: 16px !important;
+            opacity: 0;
+            transition: opacity var(--sidebar-transition), transform 0.3s;
+        }
+        .sidebar.open .submenu-arrow { opacity: 0.6; }
+        .nav-item.submenu-open .submenu-arrow { transform: rotate(180deg); }
+
+        /* Magic Curve Indicator */
+        .indicator {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 48px;
+            background: #000000;
+            transition: top var(--sidebar-transition);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            top: 0;
+        }
+        .indicator::before,
+        .indicator::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            width: var(--curve-size);
+            height: var(--curve-size);
+            background: transparent;
+            border-radius: 50%;
+        }
+        .indicator::before {
+            top: calc(var(--curve-size) * -1);
+            box-shadow: 25px 25px 0 10px #000000;
+        }
+        .indicator::after {
+            bottom: calc(var(--curve-size) * -1);
+            box-shadow: 25px -25px 0 10px #000000;
+        }
+        .indicator-inner {
+            position: absolute;
+            left: 8px; right: 8px;
+            height: 80%;
+            background: var(--accent);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        }
+
+        .nav-item.active .nav-link { color: #ffffff; }
+
+        /* Submenu */
+        .submenu {
+            list-style: none;
+            padding: 0; margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+            background: rgba(255,255,255,0.03);
+        }
+        .nav-item.submenu-open .submenu { max-height: 400px; }
+
+        .submenu-item {
+            display: flex;
+            align-items: center;
+            height: 38px;
+            padding: 0 22px 0 56px;
+            color: #64748b;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 10px;
+            white-space: nowrap;
+        }
+        .submenu-item:hover { color: #e2e8f0; background: rgba(16,185,129,0.08); }
+        .submenu-item.active { color: #10b981; background: rgba(16,185,129,0.12); font-weight: 600; }
+        .submenu-item i, .submenu-item svg { min-width: 16px; width: 16px; height: 16px; }
+        .submenu-item span {
+            opacity: 0; transition: opacity var(--sidebar-transition);
+        }
+        .sidebar.open .submenu-item span { opacity: 1; }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            padding: 12px 14px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .theme-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 8px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .theme-toggle-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+        .theme-toggle-btn i, .theme-toggle-btn svg { min-width: 22px; width: 22px; height: 22px; }
+
+        /* Main content */
+        .main-content {
+            margin-left: var(--sidebar-width-closed);
+            min-height: 100vh;
+            transition: margin-left var(--sidebar-transition);
+            position: relative;
+        }
+        .sidebar.open ~ .main-content { margin-left: var(--sidebar-width-open); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar.open { width: 60px; }
+            .sidebar-toggle, .link-text, .category-label { display: none; }
+            .submenu-item span { display: none; }
+            .submenu-item { padding-left: 18px; }
+            .main-content { margin-left: 60px; }
+            .sidebar.open ~ .main-content { margin-left: 60px; }
+        }
     </style>
 
     <script>
-        // Cargar tema desde localStorage
         (function() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.className = savedTheme;
@@ -87,169 +334,190 @@
     <!-- Background Grid -->
     <div class="fixed inset-0 pointer-events-none opacity-10" style="background-image: linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px); background-size: 40px 40px;"></div>
 
-    <!-- Header Fijo -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-xl border-b border-emerald-500/30">
-        <div class="px-6 py-4">
-            <div class="flex items-center justify-between">
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg">
-                        <span class="text-white font-bold text-xl">🧬</span>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-primary">GenomeHub</h1>
-                        <p class="text-xs text-secondary">Análisis Genómico Interactivo</p>
-                    </div>
-                </div>
-
-                <!-- Navegación -->
-                <nav class="hidden md:flex space-x-1">
-                    <button data-section="search" class="nav-btn active px-4 py-2 rounded-lg font-medium text-sm bg-emerald-500 text-white transition">
-                        🔍 Buscar Genomas
-                    </button>
-                    <button data-section="library" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        📚 Mi Biblioteca
-                    </button>
-                    <button data-section="analysis" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        📊 Análisis
-                    </button>
-                    <button data-section="compare" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        🔬 Comparar
-                    </button>
-                    <button data-section="results" class="nav-btn px-4 py-2 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        📈 Resultados
-                    </button>
-                </nav>
-
-                <!-- Controles -->
-                <div class="flex items-center space-x-3">
-                    <div id="themeSwitch" class="theme-switch dark" onclick="toggleTheme()">
-                        <div class="slider"><span class="icon">🌙</span></div>
-                    </div>
-                    <a href="index.html" class="text-sm text-secondary hover:text-emerald-500 transition">
-                        Ver Informe →
-                    </a>
-                </div>
-            </div>
+    <!-- ================================================================
+         SIDEBAR
+         ================================================================ -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-toggle" onclick="toggleSidebar()">
+            <i data-lucide="chevron-right"></i>
         </div>
-    </header>
 
-    <!-- Main Content - Pantalla Completa -->
-    <main class="pt-20 min-h-screen" style="width: 100vw; max-width: none;">
+        <!-- Logo -->
+        <div class="logo-section">
+            <div class="logo-icon">🧬</div>
+            <span class="logo-text">GenomeHub</span>
+        </div>
 
-        <!-- SECCIÓN 1: BÚSQUEDA DE GENOMAS NCBI -->
+        <ul class="nav-list" id="nav-list">
+            <!-- Indicator -->
+            <div class="indicator" id="nav-indicator">
+                <div class="indicator-inner"></div>
+            </div>
+
+            <!-- EXPLORAR -->
+            <div class="category-label">Explorar</div>
+            <li class="nav-item active" data-section="search">
+                <a class="nav-link">
+                    <i data-lucide="search"></i>
+                    <span class="link-text">Buscar Genomas</span>
+                </a>
+            </li>
+            <li class="nav-item" data-section="library">
+                <a class="nav-link">
+                    <i data-lucide="book-open"></i>
+                    <span class="link-text">Mi Biblioteca</span>
+                </a>
+            </li>
+
+            <!-- ANALISIS -->
+            <div class="category-label">Analisis</div>
+            <li class="nav-item has-submenu" data-section="analysis">
+                <a class="nav-link">
+                    <i data-lucide="flask-conical"></i>
+                    <span class="link-text">Analizar Genoma</span>
+                    <i data-lucide="chevron-down" class="submenu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" data-tab="genes"><i data-lucide="dna"></i><span>Genes</span></li>
+                    <li class="submenu-item" data-tab="codones"><i data-lucide="binary"></i><span>Codones</span></li>
+                    <li class="submenu-item" data-tab="distancias"><i data-lucide="move-horizontal"></i><span>Distancias</span></li>
+                    <li class="submenu-item" data-tab="estructura"><i data-lucide="layers"></i><span>Estructura</span></li>
+                    <li class="submenu-item" data-tab="proteinas"><i data-lucide="atom"></i><span>Proteinas</span></li>
+                    <li class="submenu-item" data-tab="buscar"><i data-lucide="crosshair"></i><span>Localizar</span></li>
+                    <li class="submenu-item" data-tab="extractor"><i data-lucide="scissors"></i><span>Extractor</span></li>
+                    <li class="submenu-item" data-tab="archivos"><i data-lucide="folder-open"></i><span>Archivos</span></li>
+                </ul>
+            </li>
+            <li class="nav-item has-submenu" data-section="compare">
+                <a class="nav-link">
+                    <i data-lucide="git-compare"></i>
+                    <span class="link-text">Comparar</span>
+                    <i data-lucide="chevron-down" class="submenu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" data-tab="comp-config"><i data-lucide="settings-2"></i><span>Configurar</span></li>
+                    <li class="submenu-item" data-tab="comp-resultados"><i data-lucide="bar-chart-3"></i><span>Resultados</span></li>
+                </ul>
+            </li>
+
+            <!-- VISUALIZACION 3D -->
+            <div class="category-label">Visualizacion 3D</div>
+            <li class="nav-item has-submenu" data-section="visor3d">
+                <a class="nav-link">
+                    <i data-lucide="rotate-3d"></i>
+                    <span class="link-text">Visor Molecular</span>
+                    <i data-lucide="chevron-down" class="submenu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" data-tab="3d-primaria"><i data-lucide="list-ordered"></i><span>Primaria</span></li>
+                    <li class="submenu-item" data-tab="3d-secundaria"><i data-lucide="waves"></i><span>Secundaria</span></li>
+                    <li class="submenu-item" data-tab="3d-terciaria"><i data-lucide="box"></i><span>Terciaria</span></li>
+                    <li class="submenu-item" data-tab="3d-cuaternaria"><i data-lucide="boxes"></i><span>Cuaternaria</span></li>
+                </ul>
+            </li>
+
+            <!-- HERRAMIENTAS -->
+            <div class="category-label">Herramientas</div>
+            <li class="nav-item" data-section="informe">
+                <a class="nav-link">
+                    <i data-lucide="file-text"></i>
+                    <span class="link-text">Informe PDF</span>
+                </a>
+            </li>
+            <li class="nav-item" data-section="chat">
+                <a class="nav-link">
+                    <i data-lucide="message-circle"></i>
+                    <span class="link-text">Chat IA</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Footer: theme toggle -->
+        <div class="sidebar-footer">
+            <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-toggle-btn">
+                <i data-lucide="moon" id="theme-icon"></i>
+                <span class="link-text">Tema Oscuro</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================================================================
+         MAIN CONTENT
+         ================================================================ -->
+    <main class="main-content">
+
+        <!-- SECCION: BUSQUEDA NCBI -->
         <section id="section-search" class="section-panel active">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-
-                    <!-- Header -->
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">🔍 Buscar Genomas en NCBI</h2>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Buscar Genomas en NCBI</h2>
                         <p class="text-secondary">Busca y descarga genomas completos de bacterias desde la base de datos NCBI Nucleotide</p>
                     </div>
-
-                    <!-- Barra de búsqueda -->
                     <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
                         <div class="flex gap-3">
-                            <input
-                                type="text"
-                                id="search-input"
+                            <input type="text" id="search-input"
                                 placeholder="Buscar por organismo, accession ID... (ej: Escherichia coli, Salmonella, NC_000913)"
-                                class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-primary"
-                            >
-                            <button
-                                id="search-btn"
-                                class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition"
-                            >
-                                Buscar
-                            </button>
+                                class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-primary">
+                            <button id="search-btn" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition">Buscar</button>
                         </div>
-
-                        <!-- Búsquedas rápidas -->
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <span class="text-sm text-secondary">Búsquedas populares:</span>
+                            <span class="text-sm text-secondary">Populares:</span>
                             <button class="quick-search px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm hover:bg-emerald-500/10 hover:text-emerald-500 transition" data-query="Escherichia coli">E. coli</button>
                             <button class="quick-search px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm hover:bg-emerald-500/10 hover:text-emerald-500 transition" data-query="Salmonella enterica">Salmonella</button>
                             <button class="quick-search px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm hover:bg-emerald-500/10 hover:text-emerald-500 transition" data-query="Mycobacterium tuberculosis">M. tuberculosis</button>
                             <button class="quick-search px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm hover:bg-emerald-500/10 hover:text-emerald-500 transition" data-query="Vibrio cholerae">V. cholerae</button>
                         </div>
                     </div>
-
-                    <!-- Loading -->
                     <div id="search-loading" class="hidden text-center py-12">
                         <div class="inline-block w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                         <p class="mt-4 text-secondary">Buscando en NCBI...</p>
                     </div>
-
-                    <!-- Resultados -->
                     <div id="search-results" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
-
-                    <!-- Genomas seleccionados -->
                     <div id="selected-genomes" class="hidden">
                         <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold text-primary">
-                                    <span id="selected-count">0</span> genomas seleccionados
-                                </h3>
-                                <button
-                                    id="download-selected-btn"
-                                    class="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition"
-                                >
-                                    Descargar Seleccionados
-                                </button>
+                                <h3 class="text-lg font-semibold text-primary"><span id="selected-count">0</span> genomas seleccionados</h3>
+                                <button id="download-selected-btn" class="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition">Descargar Seleccionados</button>
                             </div>
                             <div id="selected-list" class="space-y-2"></div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 2: BIBLIOTECA DE GENOMAS -->
+        <!-- SECCION: BIBLIOTECA -->
         <section id="section-library" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">📚 Mi Biblioteca de Genomas</h2>
-                        <p class="text-secondary">Genomas descargados y listos para análisis</p>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Mi Biblioteca de Genomas</h2>
+                        <p class="text-secondary">Genomas descargados y listos para analisis</p>
                     </div>
-
-                    <!-- Loading -->
                     <div id="library-loading" class="text-center py-12">
                         <div class="inline-block w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                         <p class="mt-4 text-secondary">Cargando biblioteca...</p>
                     </div>
-
-                    <!-- Grid de genomas -->
                     <div id="library-grid" class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-
-                    <!-- Estado vacío -->
                     <div id="library-empty" class="hidden text-center py-12">
                         <div class="text-6xl mb-4">📦</div>
                         <h3 class="text-xl font-semibold mb-2 text-primary">No hay genomas descargados</h3>
-                        <p class="text-secondary mb-6">Usa la sección "Buscar Genomas" para descargar tu primer genoma</p>
-                        <button onclick="showSection('search')" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition">
-                            Ir a Búsqueda
-                        </button>
+                        <p class="text-secondary mb-6">Usa "Buscar Genomas" para descargar tu primer genoma</p>
+                        <button onclick="showSection('search')" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition">Ir a Busqueda</button>
                     </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 3: EJECUTAR ANÁLISIS -->
+        <!-- SECCION: EJECUTAR ANALISIS -->
         <section id="section-analysis" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">📊 Ejecutar Análisis</h2>
-                        <p class="text-secondary">Selecciona un genoma y los análisis a ejecutar</p>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Ejecutar Analisis</h2>
+                        <p class="text-secondary">Selecciona un genoma y los analisis a ejecutar</p>
                     </div>
-
-                    <!-- Barra superior: selector genoma + botón analizar -->
                     <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
                         <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
                             <div class="flex-1">
@@ -258,82 +526,98 @@
                                     <option value="">Cargando genomas...</option>
                                 </select>
                             </div>
-                            <button id="run-analysis-btn" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition mt-auto">
-                                Analizar
-                            </button>
+                            <button id="run-analysis-btn" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition mt-auto">Analizar</button>
                         </div>
-
-                        <!-- Checkboxes de análisis (solo análisis individual) -->
                         <div class="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
-                            <p class="text-sm font-medium text-secondary mb-3">Análisis a ejecutar:</p>
+                            <p class="text-sm font-medium text-secondary mb-3">Analisis a ejecutar:</p>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_genes" checked>
-                                    <span class="text-sm text-primary">Análisis de Genes</span>
-                                    <span class="text-xs text-secondary">(exones, intrones, literatura)</span>
+                                    <span class="text-sm text-primary">Genes</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_codones" checked>
-                                    <span class="text-sm text-primary">Análisis de Codones</span>
-                                    <span class="text-xs text-secondary">(64 codones)</span>
+                                    <span class="text-sm text-primary">Codones</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_distancias_intergenicas" checked>
-                                    <span class="text-sm text-primary">Distancias Intergénicas</span>
+                                    <span class="text-sm text-primary">Distancias</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="visualizaciones" checked>
-                                    <span class="text-sm text-primary">Generar Graficos</span>
-                                    <span class="text-xs text-secondary">(matplotlib)</span>
+                                    <span class="text-sm text-primary">Graficos</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
                                     <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_estructura_gen" checked>
-                                    <span class="text-sm text-primary">Estructura Genomica</span>
-                                    <span class="text-xs text-secondary">(regiones, operones)</span>
+                                    <span class="text-sm text-primary">Estructura</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="analysis-check w-4 h-4 text-emerald-500 rounded" data-script="analisis_proteinas" checked>
+                                    <span class="text-sm text-primary">Proteinas</span>
                                 </label>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Loading / Progreso -->
                     <div id="analysis-progress" class="hidden mb-6">
                         <div class="bg-card rounded-xl p-6 border border-emerald-500/30">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                                 <div>
-                                    <p id="analysis-progress-text" class="text-primary font-medium">Ejecutando análisis...</p>
+                                    <p id="analysis-progress-text" class="text-primary font-medium">Ejecutando analisis...</p>
                                     <p id="analysis-progress-detail" class="text-sm text-secondary">Preparando...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Console de salida -->
                     <div id="analysis-console" class="hidden">
                         <div class="bg-slate-900 rounded-xl p-6 font-mono text-sm border border-slate-700">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-emerald-400 font-semibold">Console Output</h3>
+                                <h3 class="text-emerald-400 font-semibold">Salida de Consola</h3>
                                 <button id="clear-console" class="text-xs text-slate-400 hover:text-white transition">Limpiar</button>
                             </div>
                             <div id="console-output" class="text-slate-300 whitespace-pre-wrap max-h-96 overflow-y-auto"></div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 4: COMPARAR GENOMAS -->
+        <!-- SECCION: RESULTADOS / DASHBOARDS -->
+        <section id="section-results" class="section-panel">
+            <div class="px-6 py-8">
+                <div class="mx-auto" style="max-width: 1400px;">
+                    <!-- Selector de genoma + controles -->
+                    <div class="bg-card rounded-xl p-4 mb-6 border border-slate-200">
+                        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                            <div class="flex-1">
+                                <label class="text-sm font-medium text-secondary mb-1 block">Genoma</label>
+                                <select id="results-genome" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary text-sm">
+                                    <option value="">Cargando...</option>
+                                </select>
+                            </div>
+                            <button id="delete-all-results-btn" class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition">Eliminar todos</button>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard container -->
+                    <div id="dashboard-container">
+                        <div class="text-center py-12 text-secondary">
+                            <div class="text-6xl mb-3">📊</div>
+                            <p>Selecciona un genoma para ver sus dashboards</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCION: COMPARAR GENOMAS -->
         <section id="section-compare" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">🔬 Comparar Genomas</h2>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Comparar Genomas</h2>
                         <p class="text-secondary">Selecciona dos genomas para comparar lado a lado</p>
                     </div>
-
-                    <!-- Selectores de genomas -->
                     <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
                         <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
                             <div class="flex-1">
@@ -349,13 +633,9 @@
                                     <option value="">Cargando genomas...</option>
                                 </select>
                             </div>
-                            <button id="run-compare-btn" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition mt-auto">
-                                Comparar
-                            </button>
+                            <button id="run-compare-btn" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition mt-auto">Comparar</button>
                         </div>
                     </div>
-
-                    <!-- Progreso comparación -->
                     <div id="compare-progress" class="hidden mb-6">
                         <div class="bg-card rounded-xl p-6 border border-emerald-500/30">
                             <div class="flex items-center gap-4">
@@ -367,81 +647,60 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Dashboard de comparación -->
                     <div id="compare-dashboard"></div>
-
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 5: VER RESULTADOS (DASHBOARDS) -->
-        <section id="section-results" class="section-panel">
+        <!-- SECCION: VISOR 3D -->
+        <section id="section-visor3d" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
-
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold mb-2 text-primary">📈 Resultados de Análisis</h2>
-                        <p class="text-secondary">Dashboards interactivos con gráficos y tablas</p>
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Visor Molecular 3D</h2>
+                        <p class="text-secondary">Visualizacion interactiva de estructuras proteicas</p>
                     </div>
-
-                    <!-- Selector de genoma -->
+                    <!-- Selector de genoma para visor 3D -->
                     <div class="bg-card rounded-xl p-4 mb-6 border border-slate-200">
-                        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                            <div class="flex-1">
-                                <label class="text-sm font-medium text-secondary mb-1 block">Genoma</label>
-                                <select id="results-genome" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary text-sm">
-                                    <option value="">Cargando...</option>
-                                </select>
-                            </div>
-                            <button id="delete-all-results-btn" class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition">
-                                Eliminar todos
-                            </button>
+                        <div class="flex-1">
+                            <label class="text-sm font-medium text-secondary mb-1 block">Genoma (debe tener analisis de proteinas)</label>
+                            <select id="visor3d-genome" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary text-sm">
+                                <option value="">Cargando...</option>
+                            </select>
                         </div>
                     </div>
-
-                    <!-- Tabs por tipo de análisis -->
-                    <div class="flex gap-2 mb-6 flex-wrap px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-card" style="position:sticky; top:72px; z-index:40;">
-                        <button id="tab-genes" class="dashboard-tab active px-5 py-2.5 rounded-lg font-medium text-sm bg-emerald-500 text-white transition" data-analysis="genes">
-                            Genes
-                        </button>
-                        <button id="tab-codones" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="codones">
-                            Codones
-                        </button>
-                        <button id="tab-distancias" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="distancias">
-                            Distancias Intergénicas
-                        </button>
-                        <button id="tab-estructura" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="estructura">
-                            Estructura
-                        </button>
-                        <button id="tab-buscar" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="buscar">
-                            Localizar
-                        </button>
-                        <button id="tab-archivos" class="dashboard-tab px-5 py-2.5 rounded-lg font-medium text-sm text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 transition" data-analysis="archivos">
-                            Archivos
-                        </button>
-                        <button id="btn-chat-ia" class="ml-auto px-5 py-2.5 rounded-lg font-medium text-sm bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 transition shadow-lg" onclick="ChatIA.open(currentDashboardTab, currentResultsGenome)">
-                            ✨ Chat IA
-                        </button>
-                    </div>
-
-                    <!-- Contenedor del dashboard (se renderiza dinámicamente) -->
-                    <div id="dashboard-container">
+                    <!-- Contenido del visor (se renderiza segun sub-tab) -->
+                    <div id="visor3d-container">
                         <div class="text-center py-12 text-secondary">
-                            <div class="text-6xl mb-3">📊</div>
-                            <p>Selecciona un genoma para ver sus dashboards</p>
+                            <div class="text-6xl mb-3">🔬</div>
+                            <p>Selecciona una categoria de estructura en el menu lateral</p>
+                            <p class="text-sm mt-2">Primero ejecuta el analisis de proteinas</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
 
-                    <!-- Botón Generar Informe -->
-                    <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-700">
+        <!-- SECCION: INFORME PDF -->
+        <section id="section-informe" class="section-panel">
+            <div class="px-6 py-8">
+                <div class="mx-auto" style="max-width: 800px;">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Generar Informe PDF</h2>
+                        <p class="text-secondary">Genera un informe completo con interpretaciones de IA</p>
+                    </div>
+                    <div class="bg-card rounded-xl p-8 border border-slate-200">
+                        <div class="mb-6">
+                            <label class="text-sm font-medium text-secondary mb-1 block">Genoma (debe tener resultados de analisis)</label>
+                            <select id="informe-genome" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-emerald-500 outline-none text-primary">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
                         <div class="text-center">
                             <button id="generate-report-btn" class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-xl font-semibold text-lg transition shadow-lg hover:shadow-xl" onclick="generarInforme()">
                                 Generar Informe PDF (IEEE)
                             </button>
-                            <p class="text-sm text-secondary mt-3">Genera un informe completo de 20-40 paginas con interpretaciones de IA</p>
-                            
-                            <!-- Progress Bar -->
+                            <p class="text-sm text-secondary mt-3">Genera un informe de 20-40 paginas con interpretaciones de IA</p>
                             <div id="report-progress-container" class="hidden mt-6">
                                 <div class="flex items-center justify-between mb-2">
                                     <p class="text-sm font-medium text-primary">Generando informe...</p>
@@ -454,7 +713,49 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- SECCION: CHAT IA -->
+        <section id="section-chat" class="section-panel">
+            <div class="px-6 py-8">
+                <div class="mx-auto" style="max-width: 900px;">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Chat con IA</h2>
+                        <p class="text-secondary">Consulta con Gemini sobre tus analisis genomicos</p>
+                    </div>
+                    <div class="bg-card rounded-xl border border-slate-200 overflow-hidden" style="height: 70vh; display: flex; flex-direction: column;">
+                        <!-- Chat header -->
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">IA</div>
+                            <div>
+                                <p class="text-sm font-semibold text-primary">Gemini - Asistente Genomico</p>
+                                <p class="text-xs text-secondary">Potenciado por Gemini IA</p>
+                            </div>
+                            <div class="ml-auto">
+                                <select id="chat-genome" class="px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary">
+                                    <option value="">Sin genoma</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Chat messages -->
+                        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div class="text-center text-secondary text-sm py-8">
+                                <p>Pregunta lo que quieras sobre tus genomas y analisis</p>
+                            </div>
+                        </div>
+                        <!-- Chat input -->
+                        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700">
+                            <div class="flex gap-3">
+                                <input type="text" id="chat-input"
+                                    placeholder="Escribe tu pregunta sobre el genoma..."
+                                    class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-violet-500 outline-none text-primary text-sm"
+                                    onkeydown="if(event.key==='Enter') sendChatMessage()">
+                                <button onclick="sendChatMessage()" class="px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white rounded-lg font-medium transition text-sm">Enviar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

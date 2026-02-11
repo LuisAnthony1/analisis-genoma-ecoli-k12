@@ -5,6 +5,28 @@
  * Cada análisis tiene su propio dashboard con stats cards, gráficos y tablas.
  */
 
+// Mapeo global: abreviatura de aminoácido → nombre completo en español
+const AA_NOMBRE_COMPLETO = {
+    'Ala': 'Alanina', 'Arg': 'Arginina', 'Asn': 'Asparagina', 'Asp': 'Aspartato',
+    'Cys': 'Cisteina', 'Glu': 'Glutamato', 'Gln': 'Glutamina', 'Gly': 'Glicina',
+    'His': 'Histidina', 'Ile': 'Isoleucina', 'Leu': 'Leucina', 'Lys': 'Lisina',
+    'Met': 'Metionina', 'Phe': 'Fenilalanina', 'Pro': 'Prolina', 'Ser': 'Serina',
+    'Thr': 'Treonina', 'Trp': 'Triptofano', 'Tyr': 'Tirosina', 'Val': 'Valina',
+    'Stop': 'Codon de parada',
+    // Con letra entre parentesis (formato del backend)
+    'Ala (A)': 'Alanina', 'Arg (R)': 'Arginina', 'Asn (N)': 'Asparagina', 'Asp (D)': 'Aspartato',
+    'Cys (C)': 'Cisteina', 'Glu (E)': 'Glutamato', 'Gln (Q)': 'Glutamina', 'Gly (G)': 'Glicina',
+    'His (H)': 'Histidina', 'Ile (I)': 'Isoleucina', 'Leu (L)': 'Leucina', 'Lys (K)': 'Lisina',
+    'Met (M)': 'Metionina', 'Phe (F)': 'Fenilalanina', 'Pro (P)': 'Prolina', 'Ser (S)': 'Serina',
+    'Thr (T)': 'Treonina', 'Trp (W)': 'Triptofano', 'Tyr (Y)': 'Tirosina', 'Val (V)': 'Valina',
+    // Por letra sola
+    'A': 'Alanina', 'R': 'Arginina', 'N': 'Asparagina', 'D': 'Aspartato',
+    'C': 'Cisteina', 'E': 'Glutamato', 'Q': 'Glutamina', 'G': 'Glicina',
+    'H': 'Histidina', 'I': 'Isoleucina', 'L': 'Leucina', 'K': 'Lisina',
+    'M': 'Metionina', 'F': 'Fenilalanina', 'P': 'Prolina', 'S': 'Serina',
+    'T': 'Treonina', 'W': 'Triptofano', 'Y': 'Tirosina', 'V': 'Valina',
+};
+
 const DashboardRenderer = {
 
     // Charts activos para destruir al cambiar de vista
@@ -212,6 +234,93 @@ const DashboardRenderer = {
                 </div>
             </div>` : ''}
 
+            <!-- GC por Posicion de Codon -->
+            ${data.gc_por_posicion_codon ? (() => {
+                const gcp = data.gc_por_posicion_codon;
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Contenido GC por Posicion del Codon</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('GC1 (1ra pos.)', gcp.gc1_porcentaje + '%', 'Mas conservada', 'emerald')}
+                        ${this.statsCard('GC2 (2da pos.)', gcp.gc2_porcentaje + '%', 'Afecta aminoacido', 'cyan')}
+                        ${this.statsCard('GC3 (3ra pos.)', gcp.gc3_porcentaje + '%', 'Refleja sesgo codonico', 'amber')}
+                    </div>
+                    <canvas id="chart-genes-gc-pos" height="200"></canvas>
+                    <p class="text-xs text-secondary mt-3">${gcp.interpretacion || ''}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Genes Esenciales (Keio Collection) -->
+            ${data.genes_esenciales ? (() => {
+                const esc = data.genes_esenciales;
+                const cats = esc.categorias_esenciales || {};
+                const encontrados = esc.genes_encontrados || [];
+                const noEncontrados = esc.genes_no_encontrados || [];
+                const statsEsc = esc.estadisticas || {};
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Genes Esenciales (Keio Collection)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        ${this.statsCard('Encontrados', esc.total_encontrados + '/' + esc.total_referencia, 'genes esenciales', 'emerald')}
+                        ${this.statsCard('Cobertura', esc.porcentaje_encontrados + '%', 'del set de referencia', 'cyan')}
+                        ${this.statsCard('GC Promedio', (statsEsc.gc_promedio_esenciales || 'N/A') + '%', 'en genes esenciales', 'amber')}
+                        ${this.statsCard('Long. Promedio', this.fmt(Math.round(statsEsc.longitud_promedio_esenciales || 0)) + ' pb', 'genes esenciales', 'violet')}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <h4 class="text-xs font-semibold text-secondary mb-2">Categorias Funcionales</h4>
+                            <canvas id="chart-genes-esenciales-cat" height="250"></canvas>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-secondary mb-2">Genes Encontrados (${encontrados.length})</h4>
+                            <div class="max-h-64 overflow-y-auto">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                        <tr>
+                                            <th class="px-2 py-1 text-left text-secondary">Gen</th>
+                                            <th class="px-2 py-1 text-left text-secondary">Producto</th>
+                                            <th class="px-2 py-1 text-right text-secondary">pb</th>
+                                            <th class="px-2 py-1 text-right text-secondary">GC%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${encontrados.slice(0, 40).map(g => `
+                                            <tr class="border-t border-slate-100">
+                                                <td class="px-2 py-1 font-mono text-primary">${g.nombre_gen}</td>
+                                                <td class="px-2 py-1 text-secondary line-clamp-1">${(g.producto || '').substring(0, 40)}</td>
+                                                <td class="px-2 py-1 text-right text-primary">${this.fmt(g.longitud_pb)}</td>
+                                                <td class="px-2 py-1 text-right text-primary">${g.contenido_gc}%</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    ${noEncontrados.length > 0 ? `
+                    <div class="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+                        <p class="text-xs text-secondary"><strong class="text-amber-600">No encontrados (${noEncontrados.length}):</strong>
+                        <span class="font-mono">${noEncontrados.slice(0, 15).join(', ')}${noEncontrados.length > 15 ? '...' : ''}</span></p>
+                    </div>` : ''}
+                    <p class="text-xs text-secondary mt-2">Fuente: ${esc.fuente || 'Keio collection'}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Densidad Genica por Ventana -->
+            ${data.densidad_por_ventana ? (() => {
+                const dens = data.densidad_por_ventana;
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Densidad Genica a lo Largo del Genoma (ventana ${Math.round(dens.ventana_pb / 1000)} kb)</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('Promedio', dens.promedio_densidad + '%', 'densidad genica', 'emerald')}
+                        ${this.statsCard('Maxima', dens.max_densidad + '%', 'region mas densa', 'cyan')}
+                        ${this.statsCard('Minima', dens.min_densidad + '%', 'region menos densa', 'amber')}
+                    </div>
+                    <canvas id="chart-genes-densidad" height="200"></canvas>
+                </div>`;
+            })() : ''}
+
             <!-- Descargar datos -->
             <div class="flex gap-2">
                 <button onclick="DashboardRenderer.downloadJSON('genes')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">Descargar JSON</button>
@@ -244,7 +353,7 @@ const DashboardRenderer = {
                 this.createChart('chart-genes-strands', {
                     type: 'doughnut',
                     data: {
-                        labels: ['Forward (+)', 'Reverse (-)'],
+                        labels: ['Hebra directa (+)', 'Hebra complementaria (-)'],
                         datasets: [{
                             data: [stats.distribucion_hebras.forward, stats.distribucion_hebras.reverse],
                             backgroundColor: ['#10b981', '#06b6d4']
@@ -289,6 +398,80 @@ const DashboardRenderer = {
                     },
                     options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
                 });
+            }
+
+            // GC por posicion de codon
+            if (data.gc_por_posicion_codon) {
+                const gcp = data.gc_por_posicion_codon;
+                this.createChart('chart-genes-gc-pos', {
+                    type: 'bar',
+                    data: {
+                        labels: ['GC1 (1ra posicion)', 'GC2 (2da posicion)', 'GC3 (3ra posicion)'],
+                        datasets: [{
+                            label: 'Contenido GC (%)',
+                            data: [gcp.gc1_porcentaje, gcp.gc2_porcentaje, gcp.gc3_porcentaje],
+                            backgroundColor: ['#10b981', '#06b6d4', '#f59e0b'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'GC (%)' } } }
+                    }
+                });
+            }
+
+            // Genes esenciales - categorias funcionales
+            if (data.genes_esenciales) {
+                const cats = data.genes_esenciales.categorias_esenciales || {};
+                const catEntries = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+                if (catEntries.length > 0) {
+                    const paleta = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#a855f7'];
+                    this.createChart('chart-genes-esenciales-cat', {
+                        type: 'doughnut',
+                        data: {
+                            labels: catEntries.map(([k]) => k),
+                            datasets: [{
+                                data: catEntries.map(([, v]) => v),
+                                backgroundColor: catEntries.map((_, i) => paleta[i % paleta.length])
+                            }]
+                        },
+                        options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } } }
+                    });
+                }
+            }
+
+            // Densidad genica por ventana (line/area chart)
+            if (data.densidad_por_ventana) {
+                const dens = data.densidad_por_ventana;
+                const ventanas = dens.ventanas || [];
+                if (ventanas.length > 0) {
+                    this.createChart('chart-genes-densidad', {
+                        type: 'line',
+                        data: {
+                            labels: ventanas.map(v => Math.round(v.inicio_pb / 1000) + ' kb'),
+                            datasets: [{
+                                label: 'Densidad genica (%)',
+                                data: ventanas.map(v => v.densidad_porcentaje),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 0,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { title: { display: true, text: 'Posicion en el genoma' }, ticks: { maxTicksLimit: 15, font: { size: 9 } } },
+                                y: { beginAtZero: true, title: { display: true, text: 'Densidad (%)' } }
+                            }
+                        }
+                    });
+                }
             }
         }, 100);
     },
@@ -354,7 +537,7 @@ const DashboardRenderer = {
                             ${Object.entries(codones64.codones_detalle).sort((a, b) => b[1].conteo - a[1].conteo).map(([codon, info]) => `
                                 <tr class="border-t border-slate-100 dark:border-slate-800">
                                     <td class="px-3 py-2 font-mono font-bold text-primary">${codon}</td>
-                                    <td class="px-3 py-2 text-secondary">${info.aminoacido}</td>
+                                    <td class="px-3 py-2 text-secondary"><span title="${AA_NOMBRE_COMPLETO[info.aminoacido] || info.aminoacido}" class="cursor-help border-b border-dotted border-slate-400">${info.aminoacido}</span></td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(info.conteo)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${info.frecuencia_porcentaje}%</td>
                                     <td class="px-3 py-2 text-right text-secondary">${info.densidad_por_kb}</td>
@@ -364,6 +547,104 @@ const DashboardRenderer = {
                     </table>
                 </div>
             </div>` : ''}
+
+            <!-- RSCU (Uso Relativo de Codones Sinonimos) -->
+            ${data.rscu ? (() => {
+                const rscu = data.rscu;
+                const preferidos = rscu.codones_preferidos || {};
+                const evitados = rscu.codones_evitados || {};
+                const raros = rscu.codones_raros || {};
+                const rscuPorCodon = rscu.rscu_por_codon || {};
+                const topRscu = Object.entries(rscuPorCodon).sort((a, b) => b[1] - a[1]).slice(0, 25);
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">RSCU - Uso Relativo de Codones Sinonimos</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('Preferidos', rscu.total_preferidos || Object.keys(preferidos).length, 'RSCU > 1.3', 'emerald')}
+                        ${this.statsCard('Evitados', rscu.total_evitados || Object.keys(evitados).length, 'RSCU < 0.7', 'amber')}
+                        ${this.statsCard('Raros', rscu.total_raros || Object.keys(raros).length, 'RSCU < 0.5', 'red')}
+                    </div>
+                    <div class="mb-4" style="height: 400px;">
+                        <canvas id="chart-codones-rscu" height="380"></canvas>
+                    </div>
+                    ${Object.keys(raros).length > 0 ? `
+                    <div class="p-3 bg-red-50 dark:bg-red-900/10 rounded-lg mb-3">
+                        <h4 class="text-xs font-semibold text-red-600 mb-2">Codones Raros (RSCU < 0.5)</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${Object.entries(raros).map(([codon, val]) => `
+                                <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-xs font-mono text-red-700">${codon}: ${typeof val === 'number' ? val.toFixed(2) : val}</span>
+                            `).join('')}
+                        </div>
+                    </div>` : ''}
+                    <p class="text-xs text-secondary">RSCU = 1.0 indica uso sin sesgo. Valores > 1.3 indican preferencia, < 0.7 indican evitamiento. El sesgo codonico refleja presion selectiva por eficiencia traduccional.</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Numero Efectivo de Codones (Nc) -->
+            ${data.numero_efectivo_codones ? (() => {
+                const nc = data.numero_efectivo_codones;
+                const ncVal = nc.nc || nc.valor || 0;
+                const ncColor = ncVal < 35 ? 'amber' : ncVal < 45 ? 'cyan' : 'emerald';
+                return `
+                <div class="bg-gradient-to-br from-${ncColor}-500/5 to-${ncColor}-500/10 rounded-xl p-6 border border-${ncColor}-500/20 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Numero Efectivo de Codones (Nc)</h3>
+                    <div class="flex items-center gap-6">
+                        <div class="text-center">
+                            <p class="text-5xl font-bold text-${ncColor}-500">${typeof ncVal === 'number' ? ncVal.toFixed(1) : ncVal}</p>
+                            <p class="text-xs text-secondary mt-1">Nc</p>
+                        </div>
+                        <div class="flex-1">
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 mb-2">
+                                <div class="h-3 rounded-full bg-gradient-to-r from-amber-500 via-cyan-500 to-emerald-500" style="width: ${Math.min(100, ((ncVal - 20) / 41) * 100)}%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-secondary">
+                                <span>20 (sesgo maximo)</span>
+                                <span>40</span>
+                                <span>61 (sin sesgo)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-primary mt-4">${nc.interpretacion || (ncVal < 35 ? 'Sesgo codonico fuerte: el organismo usa un subconjunto restringido de codones sinonimos.' : ncVal < 45 ? 'Sesgo codonico moderado: preferencia parcial por ciertos codones.' : 'Sesgo codonico bajo: uso relativamente uniforme de codones sinonimos.')}</p>
+                    <p class="text-xs text-secondary mt-2">Referencia: ${nc.referencia || 'Wright F. (1990) Gene 87:23-29'}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Sesgo Codonico por Aminoacido -->
+            ${data.sesgo_por_aminoacido ? (() => {
+                const sesgo = data.sesgo_por_aminoacido;
+                const aaEntries = Object.entries(sesgo).filter(([, v]) => v.codones && v.codones.length > 1);
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Sesgo Codonico por Aminoacido</h3>
+                    <p class="text-xs text-secondary mb-3">Para cada aminoacido con codones sinonimos: codon preferido (verde) vs evitado (rojo).</p>
+                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-secondary font-medium">Aminoacido</th>
+                                    <th class="px-3 py-2 text-center text-secondary font-medium">Codon Preferido</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">% Uso</th>
+                                    <th class="px-3 py-2 text-center text-secondary font-medium">Codon Evitado</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">% Uso</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">Num. Codones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${aaEntries.map(([aa, info]) => `
+                                    <tr class="border-t border-slate-100 dark:border-slate-800">
+                                        <td class="px-3 py-2 font-medium text-primary"><span title="${AA_NOMBRE_COMPLETO[aa] || aa}" class="cursor-help border-b border-dotted border-slate-400">${aa}</span></td>
+                                        <td class="px-3 py-2 text-center font-mono font-bold text-emerald-500">${info.preferido || '-'}</td>
+                                        <td class="px-3 py-2 text-right text-emerald-600 font-medium">${info.preferido_porcentaje ? info.preferido_porcentaje + '%' : '-'}</td>
+                                        <td class="px-3 py-2 text-center font-mono font-bold text-red-500">${info.evitado || '-'}</td>
+                                        <td class="px-3 py-2 text-right text-red-600 font-medium">${info.evitado_porcentaje ? info.evitado_porcentaje + '%' : '-'}</td>
+                                        <td class="px-3 py-2 text-right text-secondary">${info.codones ? info.codones.length : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            })() : ''}
 
             <div class="flex gap-2">
                 <button onclick="DashboardRenderer.downloadJSON('codones')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">Descargar JSON</button>
@@ -409,6 +690,7 @@ const DashboardRenderer = {
                 const sorted = Object.entries(codones64.codones_detalle).sort((a, b) => b[1].conteo - a[1].conteo);
                 const labels = sorted.map(([c]) => c);
                 const values = sorted.map(([, i]) => i.conteo);
+                const aaInfo = sorted.map(([, i]) => i.aminoacido);
                 const colors = sorted.map(([, i]) => {
                     if (i.aminoacido === 'Stop') return '#ef4444';
                     if (i.aminoacido === 'Met (M)') return '#f59e0b';
@@ -429,13 +711,54 @@ const DashboardRenderer = {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: (ctx) => {
+                                        const aa = aaInfo[ctx.dataIndex];
+                                        const nombre = AA_NOMBRE_COMPLETO[aa] || aa;
+                                        return aa + (nombre !== aa ? ' - ' + nombre : '');
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             x: { ticks: { font: { size: 9, family: 'monospace' }, maxRotation: 90 } },
                             y: { beginAtZero: true }
                         }
                     }
                 });
+            }
+
+            // RSCU horizontal bar chart
+            if (data.rscu) {
+                const rscuPorCodon = data.rscu.rscu_por_codon || {};
+                const topRscu = Object.entries(rscuPorCodon).sort((a, b) => b[1] - a[1]).slice(0, 25);
+                if (topRscu.length > 0) {
+                    this.createChart('chart-codones-rscu', {
+                        type: 'bar',
+                        data: {
+                            labels: topRscu.map(([c]) => c),
+                            datasets: [{
+                                label: 'RSCU',
+                                data: topRscu.map(([, v]) => v),
+                                backgroundColor: topRscu.map(([, v]) => v > 1.3 ? '#10b981' : v < 0.7 ? '#ef4444' : '#94a3b8'),
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { beginAtZero: true, title: { display: true, text: 'RSCU' } },
+                                y: { ticks: { font: { size: 10, family: 'monospace' } } }
+                            }
+                        }
+                    });
+                }
             }
         }, 100);
     },
@@ -509,12 +832,12 @@ const DashboardRenderer = {
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-emerald-500 mb-1">Gen 1: ${r.gen1}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen1_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? 'Directa (+)' : 'Complementaria (-)'}</p>
                                             </div>
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-cyan-500 mb-1">Gen 2: ${r.gen2}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen2_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? 'Directa (+)' : 'Complementaria (-)'}</p>
                                             </div>
                                         </div>
                                         <p class="text-xs text-secondary mt-2">Distancia intergenica: <strong class="text-amber-500">${this.fmt(r.distancia_pb)} pb</strong> - Region grande que podria contener elementos regulatorios, islas genomicas o genes no anotados.</p>
@@ -555,7 +878,7 @@ const DashboardRenderer = {
                     labels: ['Misma hebra', 'Diferente hebra'],
                     datasets: [
                         {
-                            label: 'Total pares',
+                            label: 'Total de pares',
                             data: [hebra.misma_hebra_total || 0, hebra.diferente_hebra_total || 0],
                             backgroundColor: ['#10b981', '#06b6d4'],
                             borderRadius: 6
@@ -815,6 +1138,541 @@ const DashboardRenderer = {
     },
 
     // =========================================================================
+    // DASHBOARD DE PROTEINAS (con visor 3D)
+    // =========================================================================
+
+    renderProteinasDashboard(data, container) {
+        const meta = data.metadata || {};
+        const primaria = data.estructura_primaria || {};
+        const stats = primaria.estadisticas_generales || {};
+        const comp = primaria.composicion_aminoacidos || {};
+        const categorias = primaria.categorias_funcionales || {};
+        const peptidos = primaria.peptidos_senal || {};
+        const mutaciones = primaria.mutaciones_patogenicas || [];
+        const secundaria = data.estructura_secundaria || {};
+        const terciaria = data.estructura_terciaria || {};
+        const cuaternaria = data.estructura_cuaternaria || {};
+        const pdbList = terciaria.proteinas_con_pdb || [];
+        const afList = terciaria.proteinas_alphafold || [];
+        const cisteinas = terciaria.analisis_cisteinas || {};
+        const eduInfo = terciaria.info_educativa || {};
+        const topGrandes = primaria.top_10_mas_grandes || [];
+        const topPequenas = primaria.top_10_mas_pequenas || [];
+        const promSec = secundaria.promedio_proteoma || {};
+
+        // Unir proteinas con estructura disponible para el visor 3D
+        const proteinasConEstructura = [];
+        pdbList.forEach(p => {
+            if (p.encontrado && p.pdb_ids && p.pdb_ids.length > 0) {
+                proteinasConEstructura.push({
+                    label: `${p.nombre_gen || p.locus_tag} - ${(p.producto || '').substring(0, 50)}`,
+                    pdb_id: p.pdb_ids[0],
+                    source: 'rcsb',
+                    nombre_gen: p.nombre_gen,
+                    producto: p.producto
+                });
+            }
+        });
+        afList.forEach(p => {
+            if (p.encontrado && p.alphafold_url) {
+                proteinasConEstructura.push({
+                    label: `${p.nombre_gen || p.locus_tag} - ${(p.producto || '').substring(0, 50)} (AlphaFold)`,
+                    pdb_id: p.uniprot_id,
+                    source: 'alphafold',
+                    url: p.alphafold_url,
+                    nombre_gen: p.nombre_gen,
+                    producto: p.producto
+                });
+            }
+        });
+
+        // Generar opciones del selector 3D
+        const viewer3dOptions = proteinasConEstructura.length > 0
+            ? proteinasConEstructura.map((p, i) => `<option value="${i}">${p.label}</option>`).join('')
+            : '<option value="">No hay estructuras disponibles</option>';
+
+        container.innerHTML = `
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Total Proteinas', this.fmt(stats.total_analizadas || meta.total_proteinas), 'Proteoma completo')}
+                ${this.statsCard('Longitud Promedio', (stats.longitud_promedio_aa || 0) + ' aa', 'Mediana: ' + (stats.longitud_mediana_aa || 0) + ' aa', 'cyan')}
+                ${this.statsCard('Peso Molecular', this.fmt(Math.round((stats.peso_molecular_promedio_da || 0) / 1000)) + ' kDa', 'Promedio', 'amber')}
+                ${this.statsCard('pI Promedio', stats.pi_promedio || 0, 'Acidas: ' + this.fmt(stats.proteinas_acidas || 0) + ' / Basicas: ' + this.fmt(stats.proteinas_basicas || 0), 'violet')}
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('GRAVY', stats.gravy_promedio || 0, (stats.proteinas_hidrofobicas || 0) + ' hidrofobicas / ' + (stats.proteinas_hidrofilicas || 0) + ' hidrofilicas', 'emerald')}
+                ${this.statsCard('Estabilidad', this.fmt(stats.proteinas_estables || 0) + ' estables', (stats.proteinas_inestables || 0) + ' inestables (indice>40)', 'cyan')}
+                ${this.statsCard('Peptidos Senal', this.fmt(peptidos.total_detectados || 0), (peptidos.porcentaje || 0) + '% del proteoma', 'amber')}
+                ${this.statsCard('Complejos', this.fmt(cuaternaria.total_complejos || 0), (cuaternaria.total_subunidades || 0) + ' subunidades totales', 'violet')}
+            </div>
+
+            <!-- VISOR 3D DE PROTEINAS -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Visor 3D de Estructura Proteica</h3>
+                <p class="text-xs text-secondary mb-3">Selecciona una proteina con estructura conocida (base de datos PDB o prediccion AlphaFold) para visualizarla en 3D. Arrastra para rotar, rueda del mouse para acercar/alejar.</p>
+
+                <div class="flex flex-col md:flex-row gap-3 mb-3">
+                    <select id="protein-3d-select" class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary" onchange="DashboardRenderer._load3DProtein()">
+                        <option value="">-- Seleccionar proteina --</option>
+                        ${viewer3dOptions}
+                    </select>
+                    <div class="flex gap-2">
+                        <button onclick="DashboardRenderer._setStyle3D('cartoon')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-medium rounded-lg transition" title="Cintas (helices y laminas)">Cintas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('stick')" class="px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 text-xs font-medium rounded-lg transition" title="Varillas (enlaces atomicos)">Varillas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('sphere')" class="px-3 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-500 text-xs font-medium rounded-lg transition" title="Esferas (radio de van der Waals)">Esferas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('line')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-medium rounded-lg transition" title="Lineas (esqueleto de la proteina)">Lineas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('surface')" class="px-3 py-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 text-xs font-medium rounded-lg transition" title="Superficie molecular">Superficie</button>
+                    </div>
+                </div>
+
+                <div id="protein-3d-container" style="width:100%; height:450px; position:relative; border-radius:12px; overflow:hidden; background: #1a1a2e;">
+                    <div id="protein-3d-placeholder" class="flex items-center justify-center h-full">
+                        <div class="text-center">
+                            <div class="text-5xl mb-3 opacity-50">🧬</div>
+                            <p class="text-slate-400 text-sm">${proteinasConEstructura.length > 0 ? 'Selecciona una proteina de la lista para ver su estructura en 3D' : 'Ejecuta el analisis con conexion a internet para obtener estructuras de PDB y AlphaFold'}</p>
+                            ${proteinasConEstructura.length > 0 ? `<p class="text-slate-500 text-xs mt-1">${proteinasConEstructura.length} estructuras disponibles para visualizar</p>` : ''}
+                        </div>
+                    </div>
+                    <div id="protein-3d-viewer" style="width:100%; height:100%; position:absolute; top:0; left:0; display:none;"></div>
+                </div>
+                <div id="protein-3d-info" class="hidden mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <p id="protein-3d-name" class="text-sm font-semibold text-primary"></p>
+                    <p id="protein-3d-detail" class="text-xs text-secondary mt-1"></p>
+                </div>
+                <div id="protein-3d-loading" class="hidden mt-2 text-center">
+                    <div class="inline-block w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs text-secondary ml-2">Descargando y renderizando estructura 3D...</span>
+                </div>
+            </div>
+
+            <!-- Graficos principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Composicion de aminoacidos -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Composicion de Aminoacidos del Proteoma</h3>
+                    <canvas id="chart-prot-aminoacidos" height="280"></canvas>
+                </div>
+
+                <!-- Categorias funcionales -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Categorias Funcionales</h3>
+                    <canvas id="chart-prot-categorias" height="280"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Estructura secundaria -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Estructura Secundaria Promedio</h3>
+                    <canvas id="chart-prot-secundaria" height="280"></canvas>
+                </div>
+
+                <!-- Distribucion de pI -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Acidas vs Basicas (pI)</h3>
+                    <canvas id="chart-prot-pi" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- Top 10 proteinas mas grandes -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">Top 10 Proteinas mas Grandes</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">#</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Producto</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Longitud (aa)</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">MW (kDa)</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">pI</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">GRAVY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${topGrandes.map((p, i) => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${i+1}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono font-medium text-primary">${p.nombre_gen || p.locus_tag}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary max-w-[250px] truncate">${p.producto || ''}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right font-bold text-emerald-500">${this.fmt(p.longitud_aa)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${(p.peso_molecular_da / 1000).toFixed(1)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${p.punto_isoelectrico || '-'}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${p.gravy || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mutaciones Patogenicas -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Genes Criticos - Resistencia a Antibioticos</h3>
+                <p class="text-xs text-secondary mb-4">Genes involucrados en resistencia a antibioticos. Se analiza su presencia y posiciones clave de mutacion.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Descripcion</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Estado</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Longitud (aa)</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Posiciones Clave</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${mutaciones.map(m => {
+                                const estado = m.encontrado
+                                    ? (m.diferencia_longitud !== null && Math.abs(m.diferencia_longitud) < 20
+                                        ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px]">Normal</span>'
+                                        : '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded-full text-[10px]">Longitud atipica</span>')
+                                    : '<span class="px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full text-[10px]">No encontrado</span>';
+                                const posiciones = (m.posiciones_clave || []).map(pos =>
+                                    `<span class="inline-block px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] mr-1 mb-1" title="${pos.descripcion_mutacion}">pos${pos.posicion}: ${pos.aminoacido_actual}</span>`
+                                ).join('');
+                                return `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono font-bold text-primary">${m.gen}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary text-[11px] max-w-[250px]">${m.descripcion || ''}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${estado}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${m.encontrado ? (m.longitud_observada_aa + ' / ' + m.longitud_esperada_aa) : '-'}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${posiciones || '-'}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Complejos Cuaternarios -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Complejos Proteicos (Estructura Cuaternaria)</h3>
+                <p class="text-xs text-secondary mb-4">${cuaternaria.total_complejos || 0} complejos multi-subunidad detectados. Click para expandir.</p>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 bg-card">
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Complejo</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Subunidades</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Peso Total (aa)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(cuaternaria.complejos_detectados || []).slice(0, 25).map((c, i) => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition" onclick="DashboardRenderer._toggleExpandRow('complejo-detail-${i}')">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${(c.nombre_complejo || '').substring(0, 60)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-violet-500">${c.num_subunidades}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(c.peso_total_estimado_aa || 0)}</td>
+                                </tr>
+                                <tr id="complejo-detail-${i}" class="hidden">
+                                    <td colspan="3" class="px-3 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <p class="text-xs font-semibold text-primary mb-2">Subunidades:</p>
+                                        <div class="space-y-1">
+                                            ${(c.subunidades || []).map(s => `
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-mono text-emerald-500 text-[10px]">${s.nombre_gen || s.locus_tag}</span>
+                                                    <span class="text-secondary text-[10px]">${s.producto || ''}</span>
+                                                    <span class="text-slate-400 text-[10px]">(${s.longitud_aa} aa)</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Info Educativa - Estructura Terciaria -->
+            <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                <h3 class="text-lg font-bold text-primary mb-3">${eduInfo.titulo || 'Estructura Terciaria'}</h3>
+                <p class="text-sm text-secondary mb-4">${eduInfo.descripcion || ''}</p>
+
+                ${eduInfo.fuerzas_estabilizadoras ? `
+                <h4 class="text-sm font-semibold text-primary mb-2">Fuerzas Estabilizadoras</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    ${(eduInfo.fuerzas_estabilizadoras || []).map(f => `
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <p class="text-xs font-semibold text-emerald-500">${f.nombre}</p>
+                            <p class="text-xs text-secondary mt-1">${f.descripcion}</p>
+                        </div>
+                    `).join('')}
+                </div>` : ''}
+
+                ${eduInfo.metodos_experimentales ? `
+                <h4 class="text-sm font-semibold text-primary mb-2">Metodos de Determinacion Estructural</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    ${(eduInfo.metodos_experimentales || []).map(m => `
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <p class="text-xs font-semibold text-cyan-500">${m.nombre}</p>
+                            <p class="text-xs text-secondary mt-1">${m.descripcion}</p>
+                        </div>
+                    `).join('')}
+                </div>` : ''}
+
+                ${eduInfo.nota_bacterias ? `
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p class="text-xs text-amber-700 dark:text-amber-400">${eduInfo.nota_bacterias}</p>
+                </div>` : ''}
+            </div>
+
+            <!-- Cisteinas y Puentes Disulfuro -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Analisis de Cisteinas (Potenciales Puentes Disulfuro)</h3>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    ${this.statsCard('Con 2+ Cys', this.fmt(cisteinas.total_con_multiples_cys || 0), 'proteinas', 'amber')}
+                    ${this.statsCard('Puentes Potenciales', this.fmt(cisteinas.potenciales_puentes_disulfuro || 0), 'Cys/2 estimados', 'violet')}
+                    ${this.statsCard('Top Cisteinas', (cisteinas.proteinas && cisteinas.proteinas[0]) ? cisteinas.proteinas[0].num_cisteinas + ' Cys' : '-', (cisteinas.proteinas && cisteinas.proteinas[0]) ? (cisteinas.proteinas[0].nombre_gen || cisteinas.proteinas[0].locus_tag) : '', 'cyan')}
+                </div>
+            </div>
+        `;
+
+        // Guardar datos de proteinas 3D para el visor
+        this._proteinas3DData = proteinasConEstructura;
+        this._viewer3D = null;
+        this._current3DStyle = 'cartoon';
+
+        // Renderizar charts
+        setTimeout(() => {
+            this._renderProteinCharts(comp, categorias, promSec, stats);
+        }, 100);
+    },
+
+    // --- Charts de Proteinas ---
+    _renderProteinCharts(comp, categorias, promSec, stats) {
+        // 1. Composicion de aminoacidos (barras)
+        const compData = comp.composicion_porcentaje || comp;
+        if (compData && typeof compData === 'object') {
+            const aas = Object.keys(compData).filter(k => k.length === 1).sort();
+            const aaNames = {'A':'Ala','R':'Arg','N':'Asn','D':'Asp','C':'Cys','E':'Glu','Q':'Gln','G':'Gly','H':'His','I':'Ile','L':'Leu','K':'Lys','M':'Met','F':'Phe','P':'Pro','S':'Ser','T':'Thr','W':'Trp','Y':'Tyr','V':'Val'};
+            const valores = aas.map(aa => compData[aa] || 0);
+
+            this.createChart('chart-prot-aminoacidos', {
+                type: 'bar',
+                data: {
+                    labels: aas.map(aa => aa + ' (' + (aaNames[aa] || '') + ')'),
+                    datasets: [{
+                        label: 'Porcentaje (%)',
+                        data: valores,
+                        backgroundColor: valores.map(v => v > 7 ? '#10b981' : v > 4 ? '#3b82f6' : '#94a3b8'),
+                        borderRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const aa = aas[items[0].dataIndex];
+                                    const abr = aaNames[aa] || '';
+                                    return abr + ' - ' + (AA_NOMBRE_COMPLETO[aa] || '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: '%' } },
+                        x: { ticks: { font: { size: 9, family: 'monospace' } } }
+                    }
+                }
+            });
+        }
+
+        // 2. Categorias funcionales (doughnut)
+        if (categorias && typeof categorias === 'object') {
+            const catNames = Object.keys(categorias).filter(k => categorias[k].total > 0);
+            const catValues = catNames.map(k => categorias[k].total);
+            const catColors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#22c55e', '#64748b', '#ec4899'];
+
+            this.createChart('chart-prot-categorias', {
+                type: 'doughnut',
+                data: {
+                    labels: catNames.map((n, i) => n + ' (' + catValues[i] + ')'),
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: catColors.slice(0, catNames.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
+                }
+            });
+        }
+
+        // 3. Estructura secundaria (pie)
+        if (promSec && promSec.helix !== undefined) {
+            this.createChart('chart-prot-secundaria', {
+                type: 'pie',
+                data: {
+                    labels: [
+                        'Helice alfa (' + promSec.helix + '%)',
+                        'Lamina beta (' + promSec.sheet + '%)',
+                        'Giros/Coil (' + promSec.turn + '%)'
+                    ],
+                    datasets: [{
+                        data: [promSec.helix, promSec.sheet, promSec.turn],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+
+        // 4. Distribucion acidas vs basicas
+        if (stats.proteinas_acidas !== undefined) {
+            this.createChart('chart-prot-pi', {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        'Acidas pI<7 (' + this.fmt(stats.proteinas_acidas) + ')',
+                        'Basicas pI>7 (' + this.fmt(stats.proteinas_basicas) + ')'
+                    ],
+                    datasets: [{
+                        data: [stats.proteinas_acidas, stats.proteinas_basicas],
+                        backgroundColor: ['#ef4444', '#3b82f6'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+    },
+
+    // --- Visor 3D con 3Dmol.js ---
+    _proteinas3DData: [],
+    _viewer3D: null,
+    _current3DStyle: 'cartoon',
+
+    async _load3DProtein() {
+        const select = document.getElementById('protein-3d-select');
+        const viewerDiv = document.getElementById('protein-3d-viewer');
+        const placeholder = document.getElementById('protein-3d-placeholder');
+        const loadingDiv = document.getElementById('protein-3d-loading');
+        const infoDiv = document.getElementById('protein-3d-info');
+        const nameEl = document.getElementById('protein-3d-name');
+        const detailEl = document.getElementById('protein-3d-detail');
+
+        if (!select || select.value === '') return;
+
+        const idx = parseInt(select.value);
+        const proteinData = this._proteinas3DData[idx];
+        if (!proteinData) return;
+
+        // Mostrar loading
+        if (loadingDiv) loadingDiv.classList.remove('hidden');
+        if (placeholder) placeholder.style.display = 'none';
+        if (viewerDiv) viewerDiv.style.display = 'block';
+
+        try {
+            // Construir URL del proxy
+            let proxyUrl;
+            if (proteinData.source === 'alphafold' && proteinData.url) {
+                proxyUrl = `/api/proxy_pdb?pdb_id=${proteinData.pdb_id}&source=alphafold&url=${encodeURIComponent(proteinData.url)}`;
+            } else {
+                proxyUrl = `/api/proxy_pdb?pdb_id=${proteinData.pdb_id}&source=rcsb`;
+            }
+
+            const resp = await fetch(proxyUrl);
+            if (!resp.ok) {
+                throw new Error('No se pudo descargar la estructura');
+            }
+
+            const pdbData = await resp.text();
+
+            // Detectar formato
+            const format = pdbData.includes('_atom_site') ? 'cif' : 'pdb';
+
+            // Crear o limpiar visor
+            if (this._viewer3D) {
+                this._viewer3D.clear();
+            } else {
+                if (typeof $3Dmol !== 'undefined') {
+                    viewerDiv.innerHTML = '';
+                    this._viewer3D = $3Dmol.createViewer(viewerDiv, {
+                        backgroundColor: '#1a1a2e',
+                        antialias: true
+                    });
+                } else {
+                    throw new Error('3Dmol.js no cargado');
+                }
+            }
+
+            // Cargar estructura
+            this._viewer3D.addModel(pdbData, format);
+            this._applyStyle3D(this._current3DStyle);
+            this._viewer3D.zoomTo();
+            this._viewer3D.render();
+            this._viewer3D.spin('y', 0.5);
+
+            // Mostrar info
+            if (infoDiv) infoDiv.classList.remove('hidden');
+            if (nameEl) nameEl.textContent = `${proteinData.nombre_gen || ''} - ${proteinData.producto || ''}`;
+            if (detailEl) detailEl.textContent = `Fuente: ${proteinData.source === 'alphafold' ? 'AlphaFold (prediccion por inteligencia artificial)' : 'RCSB PDB (estructura experimental)'} | Identificador: ${proteinData.pdb_id} | Formato: ${format.toUpperCase()}`;
+
+        } catch (err) {
+            if (viewerDiv) viewerDiv.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm text-center px-4">${err.message || 'Error cargando estructura 3D'}</p></div>`;
+            if (infoDiv) infoDiv.classList.add('hidden');
+        }
+
+        if (loadingDiv) loadingDiv.classList.add('hidden');
+    },
+
+    _setStyle3D(style) {
+        this._current3DStyle = style;
+        if (this._viewer3D) {
+            this._applyStyle3D(style);
+            this._viewer3D.render();
+        }
+    },
+
+    _applyStyle3D(style) {
+        if (!this._viewer3D) return;
+        this._viewer3D.setStyle({}, {});
+        const colorScheme = { prop: 'ss', map: { h: '#10b981', s: '#3b82f6', c: '#94a3b8' } };
+
+        switch (style) {
+            case 'cartoon':
+                this._viewer3D.setStyle({}, { cartoon: { color: 'spectrum' } });
+                break;
+            case 'stick':
+                this._viewer3D.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.15 } });
+                break;
+            case 'sphere':
+                this._viewer3D.setStyle({}, { sphere: { colorscheme: 'Jmol', scale: 0.3 } });
+                break;
+            case 'line':
+                this._viewer3D.setStyle({}, { line: { colorscheme: 'Jmol' } });
+                break;
+            case 'surface':
+                this._viewer3D.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.5 } });
+                this._viewer3D.addSurface($3Dmol.SurfaceType.VDW, {
+                    opacity: 0.7,
+                    color: 'white',
+                    colorscheme: { prop: 'b', gradient: new $3Dmol.Gradient.RWB(0, 100) }
+                });
+                break;
+        }
+    },
+
+    // =========================================================================
     // VISTA DE ARCHIVOS (lista simple con descargar/eliminar)
     // =========================================================================
 
@@ -868,7 +1726,7 @@ const DashboardRenderer = {
                             <!-- Preview area -->
                             <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mb-3 max-h-48 overflow-y-auto">
                                 <div id="preview-${file.filename.replace(/\./g, '-')}" class="text-xs font-mono text-secondary">
-                                    <p class="text-center text-slate-400">Cargando preview...</p>
+                                    <p class="text-center text-slate-400">Cargando vista previa...</p>
                                 </div>
                             </div>
 
@@ -1065,11 +1923,11 @@ const DashboardRenderer = {
             <!-- Mapa del genoma -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h3 class="text-sm font-semibold text-primary mb-2">Mapa Lineal del Genoma</h3>
-                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes forward (+) arriba, reverse (-) abajo. Pase el cursor para ver detalles.</p>
+                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes en hebra directa (+) arriba, hebra complementaria (-) abajo. Pasa el cursor sobre un gen para ver detalles.</p>
                 <div class="flex gap-2 mb-3">
                     <button onclick="DashboardRenderer._zoomGenomeMap(1.5)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom +</button>
                     <button onclick="DashboardRenderer._zoomGenomeMap(0.67)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom -</button>
-                    <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reset</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reiniciar</button>
                     <span class="text-xs text-secondary ml-2 self-center" id="genome-map-zoom-label">100%</span>
                 </div>
                 <div id="genome-map-container" class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-lg" style="min-height: 180px;">
@@ -1168,7 +2026,7 @@ const DashboardRenderer = {
                                         <div class="flex flex-wrap gap-1">
                                             ${op.genes.map(g => `<span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded font-mono text-[10px]">${g}</span>`).join('')}
                                         </div>
-                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? 'Forward' : 'Reverse'} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
+                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? 'Directa' : 'Complementaria'} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1338,8 +2196,8 @@ const DashboardRenderer = {
         }
 
         // Labels de hebras
-        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Forward (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
-        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Reverse (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
+        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Directa (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
+        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Complementaria (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
 
         svg += '</svg>';
         container.innerHTML = svg;
@@ -1391,7 +2249,7 @@ const DashboardRenderer = {
                             Buscar
                         </button>
                     </div>
-                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras (forward y reverse complement). Maximo 200 resultados.</p>
+                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras (directa y complementaria inversa). Maximo 200 resultados.</p>
                 </div>
 
                 <!-- Resultados -->
@@ -1495,6 +2353,201 @@ const DashboardRenderer = {
         } catch (e) {
             resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
         }
+    },
+
+    // =========================================================================
+    // EXTRACTOR DE SECUENCIAS
+    // =========================================================================
+
+    renderExtractorSecuencia(genome, container) {
+        // Obtener total de genes del JSON de genes
+        this.fetchResultData(genome, `analisis_genes_${genome}.json`).then(genesData => {
+            const totalGenes = genesData?.estadisticas_generales?.total_genes || '?';
+            container.innerHTML = `
+                <div class="max-w-5xl mx-auto">
+                    <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                        <h3 class="text-lg font-bold text-primary mb-2">Extractor de Secuencias Genicas</h3>
+                        <p class="text-sm text-secondary mb-4">Extrae secuencias de ADN de un rango de genes. Los genes estan ordenados por posicion en el genoma.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Gen Inicio (1-based)</label>
+                                <input type="number" id="extractor-start" min="1" max="${totalGenes}" value="1"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Gen Fin (1-based)</label>
+                                <input type="number" id="extractor-end" min="1" max="${totalGenes}" value="5"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Modo</label>
+                                <select id="extractor-mode"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                                    <option value="cds">Solo CDS (secuencias codificantes)</option>
+                                    <option value="todo">Region completa (con ADN intergenico)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="DashboardRenderer._ejecutarExtraccion('${genome}')"
+                                    class="w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-lg font-medium text-sm transition shadow-lg">
+                                    Extraer
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-secondary">Total de genes en el genoma: <strong class="text-primary">${totalGenes}</strong>. E. coli no tiene intrones: "Solo CDS" = secuencias codificantes concatenadas, "Region completa" = incluye ADN intergenico.</p>
+                    </div>
+
+                    <div id="extractor-resultados"></div>
+                </div>
+            `;
+        });
+    },
+
+    async _ejecutarExtraccion(genome) {
+        const startInput = document.getElementById('extractor-start');
+        const endInput = document.getElementById('extractor-end');
+        const modeSelect = document.getElementById('extractor-mode');
+        const resultContainer = document.getElementById('extractor-resultados');
+
+        const geneStart = parseInt(startInput?.value) || 1;
+        const geneEnd = parseInt(endInput?.value) || 5;
+        const mode = modeSelect?.value || 'cds';
+
+        if (geneStart < 1 || geneEnd < geneStart) {
+            resultContainer.innerHTML = '<p class="text-amber-500 text-sm text-center py-4">Rango invalido: Gen inicio debe ser >= 1 y Gen fin >= Gen inicio</p>';
+            return;
+        }
+
+        resultContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p class="text-secondary text-sm">Extrayendo genes ${geneStart} a ${geneEnd} (modo: ${mode})...</p>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch(`/api/extraer_secuencia?genome=${genome}&gene_start=${geneStart}&gene_end=${geneEnd}&mode=${mode}`);
+            const data = await resp.json();
+
+            if (!data.success) {
+                resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${data.error}</p>`;
+                return;
+            }
+
+            const modoTexto = mode === 'cds' ? 'Solo CDS (codificantes)' : 'Region completa (con intergenico)';
+
+            // Formatear secuencia en formato FASTA (60 chars por linea con numeros de posicion)
+            const seq = data.secuencia_total || '';
+            let fastaLines = `>${genome}_genes_${geneStart}-${geneEnd}_${mode} | ${data.num_genes} genes | ${this.fmt(data.longitud_secuencia)} pb\n`;
+            for (let i = 0; i < seq.length; i += 60) {
+                fastaLines += seq.substring(i, i + 60) + '\n';
+            }
+
+            let html = `
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    ${this.statsCard('Genes Extraidos', data.num_genes, 'de ' + data.total_genes_genome + ' totales')}
+                    ${this.statsCard('Longitud', this.fmt(data.longitud_secuencia) + ' pb', modoTexto, 'cyan')}
+                    ${this.statsCard('Rango', geneStart + ' - ' + geneEnd, 'posicion en genoma', 'amber')}
+                    ${this.statsCard('Modo', mode === 'cds' ? 'CDS' : 'Completo', mode === 'cds' ? 'Solo codificante' : 'Con intergenico', 'violet')}
+                </div>
+
+                <!-- Tabla de genes -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h4 class="text-sm font-semibold text-primary mb-3">Genes en el Rango</h4>
+                    <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-2 text-left text-secondary">#</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Gen</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Locus</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Producto</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Inicio</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Fin</th>
+                                    <th class="px-2 py-2 text-center text-secondary">Hebra</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Longitud</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            for (const g of data.genes_info) {
+                html += `
+                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="px-2 py-2 text-secondary">${g.index}</td>
+                        <td class="px-2 py-2 font-mono font-bold text-primary">${g.nombre_gen || '-'}</td>
+                        <td class="px-2 py-2 font-mono text-secondary">${g.locus_tag}</td>
+                        <td class="px-2 py-2 text-secondary max-w-[250px] truncate">${g.producto || 'Sin anotacion'}</td>
+                        <td class="px-2 py-2 text-right text-primary">${this.fmt(g.inicio)}</td>
+                        <td class="px-2 py-2 text-right text-primary">${this.fmt(g.fin)}</td>
+                        <td class="px-2 py-2 text-center font-bold ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'}">${g.hebra}</td>
+                        <td class="px-2 py-2 text-right font-medium text-primary">${this.fmt(g.longitud_pb)} pb</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Secuencia FASTA -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-primary">Secuencia (formato FASTA)</h4>
+                        <div class="flex gap-2">
+                            <button onclick="DashboardRenderer._copiarSecuencia()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
+                                Copiar al Portapapeles
+                            </button>
+                            <button onclick="DashboardRenderer._descargarFASTA('${genome}', ${geneStart}, ${geneEnd}, '${mode}')" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white text-xs rounded-lg transition">
+                                Descargar FASTA
+                            </button>
+                        </div>
+                    </div>
+                    <pre id="extractor-secuencia-pre" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs font-mono overflow-x-auto max-h-[400px] overflow-y-auto leading-relaxed select-all">${fastaLines}</pre>
+                    <p class="text-xs text-secondary mt-2">${this.fmt(data.longitud_secuencia)} pares de bases | ${data.num_genes} genes | Modo: ${modoTexto}</p>
+                </div>
+            `;
+
+            resultContainer.innerHTML = html;
+
+            // Guardar secuencia para copiar
+            DashboardRenderer._extractedFasta = fastaLines;
+
+        } catch (e) {
+            resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
+        }
+    },
+
+    _extractedFasta: '',
+
+    async _copiarSecuencia() {
+        try {
+            await navigator.clipboard.writeText(DashboardRenderer._extractedFasta);
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copiado!';
+            btn.classList.replace('bg-emerald-500', 'bg-green-600');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.replace('bg-green-600', 'bg-emerald-500');
+            }, 2000);
+        } catch (e) {
+            alert('Error al copiar: ' + e.message);
+        }
+    },
+
+    _descargarFASTA(genome, start, end, mode) {
+        const blob = new Blob([DashboardRenderer._extractedFasta], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${genome}_genes_${start}-${end}_${mode}.fasta`;
+        a.click();
+        URL.revokeObjectURL(url);
     },
 
     // =========================================================================

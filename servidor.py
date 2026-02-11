@@ -282,6 +282,7 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
         "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 180},
         "generar_informe": {"file": "generar_informe.py", "timeout": 600},
+        "analisis_proteinas": {"file": "analisis_proteinas.py", "timeout": 300},
     }
 
     if script_name not in scripts_permitidos:
@@ -371,6 +372,51 @@ def mover_resultados_a_genoma(genome_basename, antes_tablas, antes_figuras):
 
 
 # =============================================================================
+# PROXY PDB/ALPHAFOLD (para visor 3D - evita CORS)
+# =============================================================================
+
+def proxy_pdb_structure(pdb_id="", source="rcsb", af_url=""):
+    """Descarga estructura PDB/mmCIF desde RCSB PDB o AlphaFold y la retorna."""
+    import urllib.request
+
+    try:
+        if af_url:
+            # URL directa de AlphaFold
+            url = af_url
+        elif source == "alphafold" and pdb_id:
+            # AlphaFold por UniProt ID
+            url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
+        else:
+            # RCSB PDB - intentar PDB format primero
+            url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+
+        req = urllib.request.Request(url, headers={"User-Agent": "GenomeHub/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read().decode("utf-8", errors="replace")
+
+        if len(data) < 50:
+            return {"success": False, "error": "Archivo PDB vacio o invalido"}
+
+        return {"success": True, "data": data, "source": source, "pdb_id": pdb_id}
+
+    except urllib.error.HTTPError as e:
+        # Si PDB falla, intentar mmCIF
+        if source == "rcsb" and not af_url:
+            try:
+                url_cif = f"https://files.rcsb.org/download/{pdb_id}.cif"
+                req2 = urllib.request.Request(url_cif, headers={"User-Agent": "GenomeHub/1.0"})
+                with urllib.request.urlopen(req2, timeout=15) as resp2:
+                    data2 = resp2.read().decode("utf-8", errors="replace")
+                if len(data2) > 50:
+                    return {"success": True, "data": data2, "source": "rcsb_cif", "pdb_id": pdb_id}
+            except Exception:
+                pass
+        return {"success": False, "error": f"No se pudo descargar: HTTP {e.code}"}
+    except Exception as e:
+        return {"success": False, "error": f"Error de conexion: {str(e)}"}
+
+
+# =============================================================================
 # SERVIDOR HTTP
 # =============================================================================
 
@@ -441,6 +487,24 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({"success": False, "error": resultado.get("error", "Error al generar informe"), "output": resultado.get("output", "")})
             return
 
+        if path == "/api/proxy_pdb":
+            pdb_id = query.get("pdb_id", [""])[0].strip().upper()
+            source = query.get("source", ["rcsb"])[0]  # rcsb o alphafold
+            af_url = query.get("url", [""])[0]  # URL directa para AlphaFold
+            if not pdb_id and not af_url:
+                self._json_response({"success": False, "error": "Falta pdb_id o url"}, 400)
+                return
+            resultado = proxy_pdb_structure(pdb_id, source, af_url)
+            if resultado.get("success"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(resultado["data"].encode("utf-8"))
+            else:
+                self._json_response(resultado, 404)
+            return
+
         if path == "/api/buscar_secuencia":
             genome = query.get("genome", [""])[0]
             secuencia = query.get("secuencia", [""])[0].upper().strip()
@@ -451,6 +515,27 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({"success": False, "error": "La secuencia debe tener al menos 4 nucleotidos"}, 400)
                 return
             resultado = buscar_secuencia_en_genoma(genome, secuencia)
+            self._json_response(resultado)
+            return
+
+        if path == "/api/extraer_secuencia":
+            genome = query.get("genome", [""])[0]
+            gene_start = query.get("gene_start", ["1"])[0]
+            gene_end = query.get("gene_end", ["1"])[0]
+            mode = query.get("mode", ["cds"])[0]
+            try:
+                gene_start = int(gene_start)
+                gene_end = int(gene_end)
+            except ValueError:
+                self._json_response({"success": False, "error": "gene_start y gene_end deben ser numeros enteros"}, 400)
+                return
+            if not genome:
+                self._json_response({"success": False, "error": "Falta el genoma"}, 400)
+                return
+            if gene_start < 1 or gene_end < gene_start:
+                self._json_response({"success": False, "error": "Rango invalido: gene_start >= 1 y gene_end >= gene_start"}, 400)
+                return
+            resultado = extraer_secuencia_genes(genome, gene_start, gene_end, mode)
             self._json_response(resultado)
             return
 
@@ -875,6 +960,91 @@ def buscar_secuencia_en_genoma(genome_basename, secuencia):
             "longitud_genoma": len(seq_str),
             "total_matches": len(matches),
             "matches": matches[:200]
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def extraer_secuencia_genes(genome_basename, gene_start, gene_end, mode="cds"):
+    """
+    Extrae secuencias de genes por rango (1-based).
+    mode='cds': concatena secuencias codificantes de cada gen.
+    mode='todo': extrae region genomica completa desde inicio del primer gen hasta fin del ultimo.
+    """
+    archivo_gb = os.path.join(RUTA_DATOS_CRUDO, f"{genome_basename}.gb")
+    if not os.path.exists(archivo_gb):
+        return {"success": False, "error": "Genoma no encontrado"}
+
+    try:
+        from Bio.Seq import Seq
+        registro = SeqIO.read(archivo_gb, "genbank")
+        seq_completa = str(registro.seq)
+
+        # Extraer todos los CDS ordenados por posicion
+        genes_cds = []
+        for feature in registro.features:
+            if feature.type == "CDS":
+                genes_cds.append({
+                    "inicio": int(feature.location.start),
+                    "fin": int(feature.location.end),
+                    "hebra": "+" if feature.location.strand == 1 else "-",
+                    "nombre_gen": feature.qualifiers.get("gene", [""])[0],
+                    "locus_tag": feature.qualifiers.get("locus_tag", [""])[0],
+                    "producto": feature.qualifiers.get("product", [""])[0],
+                    "proteina_id": feature.qualifiers.get("protein_id", [""])[0],
+                    "feature": feature
+                })
+
+        genes_cds.sort(key=lambda g: g["inicio"])
+        total_genes = len(genes_cds)
+
+        if gene_start > total_genes:
+            return {"success": False, "error": f"gene_start ({gene_start}) excede el total de genes ({total_genes})"}
+
+        gene_end = min(gene_end, total_genes)
+        seleccion = genes_cds[gene_start - 1 : gene_end]
+
+        genes_info = []
+        secuencias_cds = []
+
+        for idx, g in enumerate(seleccion):
+            # Extraer secuencia CDS
+            seq_cds = str(g["feature"].location.extract(registro.seq))
+            secuencias_cds.append(seq_cds)
+
+            genes_info.append({
+                "index": gene_start + idx,
+                "locus_tag": g["locus_tag"],
+                "nombre_gen": g["nombre_gen"],
+                "producto": g["producto"],
+                "proteina_id": g["proteina_id"],
+                "inicio": g["inicio"],
+                "fin": g["fin"],
+                "hebra": g["hebra"],
+                "longitud_pb": g["fin"] - g["inicio"],
+                "longitud_cds": len(seq_cds)
+            })
+
+        if mode == "todo":
+            # Region genomica completa desde inicio primer gen a fin ultimo gen
+            region_inicio = seleccion[0]["inicio"]
+            region_fin = seleccion[-1]["fin"]
+            secuencia_total = seq_completa[region_inicio:region_fin]
+        else:
+            # Solo CDS concatenados
+            secuencia_total = "".join(secuencias_cds)
+
+        return {
+            "success": True,
+            "genome": genome_basename,
+            "gene_start": gene_start,
+            "gene_end": gene_end,
+            "mode": mode,
+            "num_genes": len(seleccion),
+            "total_genes_genome": total_genes,
+            "longitud_secuencia": len(secuencia_total),
+            "genes_info": genes_info,
+            "secuencia_total": secuencia_total
         }
     except Exception as e:
         return {"success": False, "error": str(e)}

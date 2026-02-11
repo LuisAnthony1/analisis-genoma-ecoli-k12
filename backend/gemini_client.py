@@ -8,6 +8,7 @@ y hace fallback a otra clave si hay error de cuota (429).
 import json
 import os
 import random
+import time
 import urllib.request
 import urllib.error
 
@@ -15,6 +16,10 @@ DIRECTORIO_PROYECTO = os.path.dirname(os.path.dirname(os.path.abspath(__file__))
 ARCHIVO_CLAVES = os.path.join(DIRECTORIO_PROYECTO, "claves_api.txt")
 GEMINI_MODEL = "gemini-2.5-flash-lite"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
+# Throttle: minimo 1 segundo entre llamadas para no sobrecargar la API
+_THROTTLE_SEGUNDOS = 1.0
+_ultimo_llamado = 0.0
 
 
 def cargar_claves():
@@ -35,11 +40,23 @@ def consultar_gemini(prompt, contexto=""):
     """
     Envia prompt a Gemini API. Selecciona clave aleatoria.
     Si falla por cuota (429), prueba con otra clave.
+    Incluye throttle automatico de 1s entre llamadas.
 
     Returns:
         str: Texto de respuesta o None si falla
         str: Error message si falla, None si exito
     """
+    global _ultimo_llamado
+
+    # Throttle: esperar si la ultima llamada fue hace menos de _THROTTLE_SEGUNDOS
+    ahora = time.time()
+    transcurrido = ahora - _ultimo_llamado
+    if transcurrido < _THROTTLE_SEGUNDOS:
+        espera = _THROTTLE_SEGUNDOS - transcurrido
+        time.sleep(espera)
+
+    _ultimo_llamado = time.time()
+
     claves = cargar_claves()
     if not claves:
         return None, "No hay claves API configuradas en claves_api.txt"
