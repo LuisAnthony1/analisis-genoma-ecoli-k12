@@ -82,7 +82,7 @@ function showSection(sectionName) {
 
     // Sincronizar sidebar: buscar nav-item que corresponda a esta seccion y activarlo
     // 'results' se muestra bajo el nav-item 'analysis'
-    const sectionToNav = { results: 'analysis' };
+    const sectionToNav = { results: 'analysis', 'evo-results': 'evolucion' };
     const navSection = sectionToNav[sectionName] || sectionName;
     const navItem = document.querySelector(`.nav-item[data-section="${navSection}"]`);
     if (navItem && !navItem.classList.contains('active')) {
@@ -187,7 +187,8 @@ function navigateToSubItem(subItem) {
         showSection('visor3d');
         loadVisor3DTab(tab);
     } else if (section === 'evolucion') {
-        showSection('evolucion');
+        // Sub-items de evolucion → cargar dashboard de resultados
+        showSection('evo-results');
         loadEvolucionTab(tab);
     }
 }
@@ -789,14 +790,14 @@ async function runEvolucion() {
     const genomesList = Array.from(checked).map(cb => cb.value).join(',');
     const btn = document.getElementById('run-evolucion-btn');
     const progress = document.getElementById('evo-progress');
-    const dashboard = document.getElementById('evo-dashboard');
-    const tabs = document.getElementById('evo-tabs');
+    const consoleDiv = document.getElementById('evo-console');
+    const consoleOutput = document.getElementById('evo-console-output');
 
     btn.disabled = true;
     btn.textContent = 'Analizando...';
     progress.classList.remove('hidden');
-    if (tabs) tabs.classList.add('hidden');
-    dashboard.innerHTML = '';
+    consoleDiv.classList.remove('hidden');
+    consoleOutput.textContent = 'Iniciando analisis de comunidad bacteriana...\n';
 
     try {
         const resp = await fetch('/api/run_analysis', {
@@ -813,30 +814,36 @@ async function runEvolucion() {
         btn.disabled = false;
         btn.textContent = 'Comparar Bacterias';
 
-        if (result.success && result.return_code === 0) {
-            showNotification('Analisis completado', 'success');
-            loadEvolucionResults('evo-pangenoma');
-        } else {
-            showNotification('Error en el analisis', 'error');
-            dashboard.innerHTML = `
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-xl p-6">
-                    <h3 class="text-red-600 font-semibold mb-2">Error en el analisis</h3>
-                    <pre class="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">${result.output || result.error || 'Error desconocido'}</pre>
-                </div>
-            `;
+        // Show console output
+        if (result.output) {
+            consoleOutput.textContent += result.output;
         }
+        // Auto scroll console to bottom
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+
+        if (result.success && result.return_code === 0) {
+            consoleOutput.textContent += '\n[OK] Analisis completado exitosamente.\n';
+            consoleOutput.textContent += 'Haz click en las sub-pestanas del menu (Genes, Arbol, Parentesco) para ver los resultados.\n';
+            showNotification('Analisis completado. Ve a las sub-pestanas para ver resultados.', 'success');
+        } else {
+            consoleOutput.textContent += '\n[ERROR] El analisis fallo.\n';
+            showNotification('Error en el analisis. Revisa la consola.', 'error');
+        }
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
     } catch (error) {
         progress.classList.add('hidden');
         btn.disabled = false;
         btn.textContent = 'Comparar Bacterias';
+        consoleOutput.textContent += '\n[ERROR] Error de conexion: ' + error.message + '\n';
         showNotification('Error de conexion: ' + error.message, 'error');
     }
 }
 
 async function loadEvolucionResults(tab) {
     const dashboard = document.getElementById('evo-dashboard');
-    const tabs = document.getElementById('evo-tabs');
     if (!dashboard) return;
+
+    const activeTab = tab || AppState.currentTab || 'evo-pangenoma';
 
     dashboard.innerHTML = `
         <div class="flex items-center justify-center py-12">
@@ -850,21 +857,18 @@ async function loadEvolucionResults(tab) {
         const result = await resp.json();
 
         if (!result.success || !result.data) {
-            if (tabs) tabs.classList.add('hidden');
             dashboard.innerHTML = `
                 <div class="text-center py-12 text-secondary">
                     <div class="text-6xl mb-3">🧬</div>
-                    <p>No hay resultados todavia</p>
-                    <p class="text-sm mt-2">Selecciona tus bacterias arriba y presiona "Comparar Bacterias"</p>
+                    <p class="text-lg font-medium">No hay resultados todavia</p>
+                    <p class="text-sm mt-2">Primero ve a la pestana principal "Pangenoma" en el menu,<br>selecciona tus bacterias y presiona "Comparar Bacterias"</p>
+                    <button onclick="navigateToItem(document.querySelector('.nav-item[data-section=evolucion]'))" class="mt-4 px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm transition">
+                        Ir a configurar analisis
+                    </button>
                 </div>
             `;
             return;
         }
-
-        // Show tabs
-        if (tabs) tabs.classList.remove('hidden');
-        const activeTab = tab || AppState.currentTab || 'evo-pangenoma';
-        switchEvoTabUI(activeTab);
 
         const data = result.data;
         DashboardRenderer.destroyCharts();
@@ -887,20 +891,9 @@ async function loadEvolucionResults(tab) {
     }
 }
 
-function switchEvoTab(tab) {
-    AppState.currentTab = tab;
-    switchEvoTabUI(tab);
-    loadEvolucionResults(tab);
-}
-
-function switchEvoTabUI(tab) {
-    document.querySelectorAll('.evo-tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-evotab') === tab);
-    });
-}
-
 function loadEvolucionTab(tab) {
-    switchEvoTab(tab);
+    AppState.currentTab = tab;
+    loadEvolucionResults(tab);
 }
 
 // =============================================================================

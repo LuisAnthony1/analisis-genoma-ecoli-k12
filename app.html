@@ -133,11 +133,6 @@
         body.dark .hover\:bg-slate-50:hover { background-color: #262626 !important; }
         body.dark .hover\:bg-slate-100:hover { background-color: #333333 !important; }
 
-        /* Evo tabs */
-        .evo-tab-btn { background: rgba(100,116,139,0.1); color: #94a3b8; }
-        .evo-tab-btn:hover { background: rgba(16,185,129,0.1); color: #10b981; }
-        .evo-tab-btn.active { background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-
         /* Interactive tooltip */
         .evo-tooltip {
             position: absolute; z-index: 100; padding: 8px 12px;
@@ -522,9 +517,9 @@
                     <i data-lucide="chevron-down" class="submenu-arrow"></i>
                 </a>
                 <ul class="submenu">
-                    <li class="submenu-item" data-tab="evo-pangenoma"><i data-lucide="pie-chart"></i><span>Pangenoma</span></li>
+                    <li class="submenu-item" data-tab="evo-pangenoma"><i data-lucide="pie-chart"></i><span>Genes</span></li>
                     <li class="submenu-item" data-tab="evo-arbol"><i data-lucide="network"></i><span>Arbol</span></li>
-                    <li class="submenu-item" data-tab="evo-matriz"><i data-lucide="grid-3x3"></i><span>Matriz</span></li>
+                    <li class="submenu-item" data-tab="evo-matriz"><i data-lucide="grid-3x3"></i><span>Parentesco</span></li>
                 </ul>
             </li>
 
@@ -793,21 +788,21 @@
             </div>
         </section>
 
-        <!-- SECCION: EVOLUCION / PANGENOMA -->
+        <!-- SECCION: EVOLUCION - CONFIGURAR Y EJECUTAR (pestaña principal) -->
         <section id="section-evolucion" class="section-panel">
             <div class="px-6 py-8">
                 <div class="mx-auto" style="max-width: 1400px;">
                     <div class="mb-8">
                         <h2 class="text-3xl font-bold mb-2 text-primary">Analisis de Comunidad Bacteriana</h2>
-                        <p class="text-secondary">Compara tus bacterias descargadas: descubre que genes comparten, cuales son unicos, y como se relacionan entre si (como un arbol familiar)</p>
+                        <p class="text-secondary">Selecciona tus bacterias y ejecuta el analisis. Los resultados aparecen en las sub-pestanas del menu lateral (Pangenoma, Arbol, Matriz).</p>
                     </div>
 
                     <!-- Selector de genomas -->
-                    <div id="evo-selector-panel" class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
+                    <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-sm font-semibold text-primary">Selecciona las bacterias a comparar</h3>
-                                <p class="text-xs text-secondary mt-1">Marca al menos 2. Mientras mas selecciones, mas completo sera el analisis. Puedes mezclar especies diferentes para ver que tan distintas son.</p>
+                                <p class="text-xs text-secondary mt-1">Marca al menos 2. Mientras mas selecciones, mas completo sera el analisis. Puedes mezclar especies diferentes.</p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="evoSelectAll()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 transition">Todos</button>
@@ -832,29 +827,37 @@
                                 <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                                 <div>
                                     <p class="text-primary font-medium">Analizando comunidad bacteriana...</p>
-                                    <p class="text-sm text-secondary">Comparando genes de todas las bacterias seleccionadas. Esto puede tardar varios minutos segun la cantidad.</p>
+                                    <p id="evo-progress-detail" class="text-sm text-secondary">Comparando genes de todas las bacterias seleccionadas...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab switcher (aparece despues de analizar) -->
-                    <div id="evo-tabs" class="hidden mb-6">
-                        <div class="flex gap-2 flex-wrap">
-                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-pangenoma" onclick="switchEvoTab('evo-pangenoma')">
-                                Genes Compartidos
-                            </button>
-                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-arbol" onclick="switchEvoTab('evo-arbol')">
-                                Arbol Familiar
-                            </button>
-                            <button class="evo-tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition" data-evotab="evo-matriz" onclick="switchEvoTab('evo-matriz')">
-                                Mapa de Parentesco
-                            </button>
+                    <!-- Console output -->
+                    <div id="evo-console" class="hidden">
+                        <div class="bg-slate-900 rounded-xl p-6 font-mono text-sm border border-slate-700">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-emerald-400 font-semibold">Salida de Consola</h3>
+                                <button onclick="document.getElementById('evo-console-output').textContent=''" class="text-xs text-slate-400 hover:text-white transition">Limpiar</button>
+                            </div>
+                            <div id="evo-console-output" class="text-slate-300 whitespace-pre-wrap max-h-96 overflow-y-auto"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
 
-                    <!-- Dashboard container -->
-                    <div id="evo-dashboard"></div>
+        <!-- SECCION: EVOLUCION - RESULTADOS (sub-pestanas: Pangenoma, Arbol, Matriz) -->
+        <section id="section-evo-results" class="section-panel">
+            <div class="px-6 py-8">
+                <div class="mx-auto" style="max-width: 1400px;">
+                    <div id="evo-dashboard">
+                        <div class="text-center py-12 text-secondary">
+                            <div class="text-6xl mb-3">🧬</div>
+                            <p>No hay resultados todavia</p>
+                            <p class="text-sm mt-2">Ve a la pestana principal "Pangenoma" para seleccionar bacterias y ejecutar el analisis</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
