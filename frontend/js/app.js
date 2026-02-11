@@ -309,48 +309,101 @@ function renderVisor3DPrimaria(data, container) {
     const stats = primaria.estadisticas_generales || {};
     const comp = primaria.composicion_aminoacidos || {};
     const top10 = primaria.top_10_mas_grandes || [];
+    const top10peq = primaria.top_10_mas_pequenas || [];
+    const categorias = primaria.categorias_funcionales || {};
     const mutaciones = primaria.mutaciones_patogenicas || {};
     const mutList = mutaciones.genes_analizados || mutaciones.mutaciones || [];
 
-    // Calcular stats adicionales de composicion
     const compEntries = Object.entries(comp).sort((a, b) => b[1].porcentaje - a[1].porcentaje);
     const hidrof = compEntries.filter(([k]) => ['Ala', 'Val', 'Ile', 'Leu', 'Met', 'Phe', 'Trp', 'Pro', 'A', 'V', 'I', 'L', 'M', 'F', 'W', 'P'].includes(k));
     const hidrofPct = hidrof.reduce((s, [, v]) => s + (v.porcentaje || 0), 0);
 
+    // Categorias funcionales para grafico
+    const catEntries = Object.entries(categorias).filter(([, v]) => (v.total || v.cantidad || v) > 0).sort((a, b) => (b[1].total || b[1].cantidad || b[1]) - (a[1].total || a[1].cantidad || a[1]));
+    const catNombresES = {
+        'enzimas': 'Enzimas', 'transportadores': 'Transportadores', 'reguladores': 'Reguladores',
+        'estructurales': 'Estructurales', 'virulencia': 'Virulencia', 'chaperonas': 'Chaperonas',
+        'replicacion': 'Replicacion', 'hipoteticas': 'Hipoteticas', 'metabolismo': 'Metabolismo',
+        'enzymes': 'Enzimas', 'transporters': 'Transportadores', 'regulators': 'Reguladores',
+        'structural': 'Estructurales', 'chaperones': 'Chaperonas', 'replication': 'Replicacion',
+        'hypothetical': 'Hipoteticas', 'metabolism': 'Metabolismo'
+    };
+
     container.innerHTML = `
-        <h3 class="text-xl font-bold text-primary mb-4">Estructura Primaria - Secuencia de Aminoacidos</h3>
+        <h3 class="text-xl font-bold text-primary mb-2">Estructura Primaria - Secuencia de Aminoacidos</h3>
+        <p class="text-sm text-secondary mb-5">La estructura primaria es la secuencia lineal de aminoacidos que forma cada proteina. Aqui analizamos la composicion del proteoma completo del genoma.</p>
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             ${DashboardRenderer.statsCard('Total Proteinas', DashboardRenderer.fmt(stats.total_analizadas || stats.total_proteinas || 0), 'proteinas codificadas')}
-            ${DashboardRenderer.statsCard('Longitud Promedio', DashboardRenderer.fmt(Math.round(stats.longitud_promedio_aa || 0)) + ' aa', 'aminoacidos', 'cyan')}
-            ${DashboardRenderer.statsCard('Peso Molecular', DashboardRenderer.fmt(Math.round((stats.peso_molecular_promedio_da || 0) / 1000)) + ' kDa', 'promedio', 'violet')}
-            ${DashboardRenderer.statsCard('Punto Isoelectrico', (stats.pi_promedio || 0).toFixed(1), 'pI promedio', 'amber')}
+            ${DashboardRenderer.statsCard('Longitud Promedio', DashboardRenderer.fmt(Math.round(stats.longitud_promedio_aa || 0)) + ' aa', 'aminoacidos por proteina', 'cyan')}
+            ${DashboardRenderer.statsCard('Peso Molecular', DashboardRenderer.fmt(Math.round((stats.peso_molecular_promedio_da || 0) / 1000)) + ' kDa', 'promedio por proteina', 'violet')}
+            ${DashboardRenderer.statsCard('Punto Isoelectrico', (stats.pi_promedio || 0).toFixed(1), 'pI promedio (' + (stats.pi_promedio < 7 ? 'acido' : 'basico') + ')', 'amber')}
         </div>
 
-        <!-- Composicion de Aminoacidos -->
+        <!-- Resumen visual: que tipo de proteinas tiene este genoma -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            ${DashboardRenderer.statsCard('Hidrofobicas', DashboardRenderer.fmt(stats.proteinas_hidrofobicas || 0), `${((stats.proteinas_hidrofobicas || 0) / (stats.total_analizadas || 1) * 100).toFixed(0)}% del total`, 'amber')}
+            ${DashboardRenderer.statsCard('Hidrofilicas', DashboardRenderer.fmt(stats.proteinas_hidrofilicas || 0), `${((stats.proteinas_hidrofilicas || 0) / (stats.total_analizadas || 1) * 100).toFixed(0)}% del total`, 'cyan')}
+            ${DashboardRenderer.statsCard('Estables', DashboardRenderer.fmt(stats.proteinas_estables || 0), 'indice inestabilidad < 40', 'emerald')}
+            ${DashboardRenderer.statsCard('Inestables', DashboardRenderer.fmt(stats.proteinas_inestables || 0), 'indice inestabilidad >= 40', 'red')}
+        </div>
+
+        <!-- Composicion y Categorias lado a lado -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Composicion de Aminoacidos -->
+            ${compEntries.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-1">Composicion de Aminoacidos</h4>
+                <p class="text-[10px] text-secondary mb-3">Frecuencia de cada aminoacido en todas las proteinas del genoma. <span class="text-amber-500 font-bold">${hidrofPct.toFixed(1)}% hidrofobicos</span>, <span class="text-cyan-500 font-bold">${(100 - hidrofPct).toFixed(1)}% hidrofilicos</span>.</p>
+                <canvas id="chart-3d-aa-comp" height="250"></canvas>
+            </div>` : ''}
+
+            <!-- Categorias funcionales -->
+            ${catEntries.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-1">Categorias Funcionales</h4>
+                <p class="text-[10px] text-secondary mb-3">Clasificacion de proteinas segun su funcion en la celula.</p>
+                <canvas id="chart-3d-cat-func" height="250"></canvas>
+            </div>` : ''}
+        </div>
+
+        <!-- Aminoacidos visual grid -->
         ${compEntries.length > 0 ? `
         <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-            <h4 class="text-sm font-semibold text-primary mb-3">Composicion de Aminoacidos del Proteoma</h4>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                ${DashboardRenderer.statsCard('Hidrofobicos', hidrofPct.toFixed(1) + '%', 'Ala, Val, Ile, Leu, Met, Phe, Trp, Pro', 'amber')}
-                ${DashboardRenderer.statsCard('Hidrofilicos', (100 - hidrofPct).toFixed(1) + '%', 'Cargados + polares + otros', 'cyan')}
+            <h4 class="text-sm font-semibold text-primary mb-3">Los 20 Aminoacidos - Composicion del Proteoma</h4>
+            <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2">
+                ${compEntries.map(([k, v], i) => {
+                    const nombre = AA_NOMBRE_COMPLETO[k] || k;
+                    const pct = v.porcentaje || 0;
+                    const isHidrof = ['Ala', 'Val', 'Ile', 'Leu', 'Met', 'Phe', 'Trp', 'Pro', 'A', 'V', 'I', 'L', 'M', 'F', 'W', 'P'].includes(k);
+                    return `
+                    <div class="text-center p-2 rounded-lg ${isHidrof ? 'bg-amber-50 dark:bg-amber-900/15 border border-amber-200' : 'bg-cyan-50 dark:bg-cyan-900/15 border border-cyan-200'}" title="${nombre} (${k}) - ${pct.toFixed(2)}% - ${isHidrof ? 'Hidrofobico' : 'Hidrofilico'}">
+                        <p class="text-lg font-bold ${isHidrof ? 'text-amber-600' : 'text-cyan-600'}">${k}</p>
+                        <p class="text-[9px] text-secondary truncate">${nombre}</p>
+                        <p class="text-xs font-bold text-primary">${pct.toFixed(1)}%</p>
+                    </div>`;
+                }).join('')}
             </div>
-            <canvas id="chart-3d-aa-comp" height="280"></canvas>
+            <div class="flex gap-4 mt-3 text-[10px] text-secondary">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-200"></span> Hidrofobico (no polar)</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-cyan-100 border border-cyan-200"></span> Hidrofilico (polar/cargado)</span>
+            </div>
         </div>` : ''}
 
         <!-- Mutaciones Patogenicas -->
         ${mutList.length > 0 ? `
         <div class="bg-card rounded-xl p-5 border border-red-200 mb-6">
-            <h4 class="text-sm font-semibold text-red-600 mb-3">Mutaciones Patogenicas - Genes de Resistencia a Antibioticos</h4>
-            <p class="text-xs text-secondary mb-3">Genes asociados a resistencia antibiotica y virulencia detectados en el genoma.</p>
+            <h4 class="text-sm font-semibold text-red-600 mb-1">Genes de Resistencia a Antibioticos</h4>
+            <p class="text-xs text-secondary mb-3">Genes asociados a resistencia antibiotica detectados en el genoma. Estos pueden conferir resistencia a farmacos.</p>
             <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
                 <table class="w-full text-xs">
                     <thead class="bg-red-50 dark:bg-red-900/20 sticky top-0">
                         <tr>
                             <th class="px-2 py-2 text-left text-secondary">Gen</th>
-                            <th class="px-2 py-2 text-left text-secondary">Producto</th>
+                            <th class="px-2 py-2 text-left text-secondary">Funcion</th>
                             <th class="px-2 py-2 text-left text-secondary">Categoria</th>
-                            <th class="px-2 py-2 text-right text-secondary">Long. (aa)</th>
-                            <th class="px-2 py-2 text-right text-secondary">MW (kDa)</th>
+                            <th class="px-2 py-2 text-right text-secondary">Tamano (aa)</th>
+                            <th class="px-2 py-2 text-right text-secondary">Peso (kDa)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -368,39 +421,53 @@ function renderVisor3DPrimaria(data, container) {
             </div>
         </div>` : ''}
 
-        <!-- Top 10 Proteinas -->
-        <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-            <h4 class="text-sm font-semibold text-primary mb-3">Top 10 Proteinas mas Grandes</h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead><tr>
-                        <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">#</th>
-                        <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
-                        <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Producto</th>
-                        <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Long. (aa)</th>
-                        <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">MW (kDa)</th>
-                        <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">pI</th>
-                    </tr></thead>
-                    <tbody>
-                        ${top10.map((p, i) => `
-                            <tr class="border-t border-slate-100 hover:bg-emerald-50 dark:hover:bg-emerald-900/10">
-                                <td class="px-2 py-2 text-secondary">${i + 1}</td>
-                                <td class="px-2 py-2 font-medium text-primary">${p.nombre_gen || p.locus_tag || 'N/A'}</td>
-                                <td class="px-2 py-2 text-secondary line-clamp-1">${p.producto || 'N/A'}</td>
-                                <td class="px-2 py-2 text-right text-primary font-mono">${DashboardRenderer.fmt(p.longitud_aa || 0)}</td>
-                                <td class="px-2 py-2 text-right text-primary">${p.peso_molecular_kda ? p.peso_molecular_kda.toFixed(1) : ((p.peso_molecular_da || 0) / 1000).toFixed(1)}</td>
-                                <td class="px-2 py-2 text-right text-primary">${(p.punto_isoelectrico || 0).toFixed(1)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+        <!-- Top 10 proteinas grandes y pequenas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-card rounded-xl p-5 border border-emerald-200">
+                <h4 class="text-sm font-semibold text-emerald-600 mb-3">Top 10 Proteinas Mas Grandes</h4>
+                <div class="space-y-1.5">
+                    ${top10.map((p, i) => {
+                        const kda = p.peso_molecular_kda ? p.peso_molecular_kda : ((p.peso_molecular_da || 0) / 1000);
+                        const maxAA = top10[0]?.longitud_aa || 1;
+                        return `
+                        <div class="group cursor-default" title="${p.producto || 'Sin anotacion'} | ${DashboardRenderer.fmt(p.longitud_aa)} aa | ${kda.toFixed(1)} kDa | pI ${(p.punto_isoelectrico || 0).toFixed(1)}">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="text-secondary w-4 text-right">${i + 1}.</span>
+                                <span class="font-mono font-bold text-primary w-14 truncate">${p.nombre_gen || p.locus_tag || 'N/A'}</span>
+                                <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5">
+                                    <div class="h-2.5 rounded-full bg-emerald-500" style="width:${(p.longitud_aa / maxAA * 100).toFixed(0)}%"></div>
+                                </div>
+                                <span class="font-bold text-emerald-500 w-16 text-right">${DashboardRenderer.fmt(p.longitud_aa)} aa</span>
+                            </div>
+                            <p class="text-[10px] text-secondary pl-6 truncate hidden group-hover:block">${p.producto || 'Proteina hipotetica'}</p>
+                        </div>`;
+                    }).join('')}
+                </div>
             </div>
+            ${top10peq.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-amber-200">
+                <h4 class="text-sm font-semibold text-amber-600 mb-3">Top 10 Proteinas Mas Pequenas</h4>
+                <div class="space-y-1.5">
+                    ${top10peq.map((p, i) => {
+                        const kda = p.peso_molecular_kda ? p.peso_molecular_kda : ((p.peso_molecular_da || 0) / 1000);
+                        return `
+                        <div class="group cursor-default" title="${p.producto || 'Sin anotacion'} | ${DashboardRenderer.fmt(p.longitud_aa)} aa | ${kda.toFixed(1)} kDa">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="text-secondary w-4 text-right">${i + 1}.</span>
+                                <span class="font-mono font-bold text-primary w-14 truncate">${p.nombre_gen || p.locus_tag || 'N/A'}</span>
+                                <span class="text-amber-500 font-bold w-14 text-right">${DashboardRenderer.fmt(p.longitud_aa)} aa</span>
+                                <span class="text-secondary flex-1 truncate text-[10px]">${(p.producto || 'Hipotetica').substring(0, 35)}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : ''}
         </div>
     `;
 
-    // Chart de composicion de aminoacidos
-    if (compEntries.length > 0) {
-        setTimeout(() => {
+    // Charts
+    setTimeout(() => {
+        if (compEntries.length > 0) {
             const paleta = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#a855f7',
                             '#84cc16', '#22d3ee', '#c084fc', '#fb923c', '#f87171', '#818cf8', '#f472b6', '#2dd4bf', '#fbbf24', '#a78bfa'];
             DashboardRenderer.createChart('chart-3d-aa-comp', {
@@ -408,7 +475,7 @@ function renderVisor3DPrimaria(data, container) {
                 data: {
                     labels: compEntries.map(([k]) => {
                         const nombre = AA_NOMBRE_COMPLETO[k];
-                        return nombre ? k + ' (' + nombre.substring(0, 3) + ')' : k;
+                        return nombre ? nombre.substring(0, 4) : k;
                     }),
                     datasets: [{
                         label: 'Frecuencia (%)',
@@ -423,18 +490,37 @@ function renderVisor3DPrimaria(data, container) {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
+                                title: (ctx) => {
+                                    const key = compEntries[ctx[0].dataIndex][0];
+                                    return `${AA_NOMBRE_COMPLETO[key] || key} (${key})`;
+                                },
                                 afterLabel: (ctx) => {
-                                    const key = compEntries[ctx.dataIndex][0];
-                                    return AA_NOMBRE_COMPLETO[key] || '';
+                                    const [k, v] = compEntries[ctx.dataIndex];
+                                    return `Total: ${DashboardRenderer.fmt(v.total || v.cantidad || 0)} residuos`;
                                 }
                             }
                         }
                     },
-                    scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45 } }, y: { beginAtZero: true, title: { display: true, text: '%' } } }
+                    scales: { x: { ticks: { font: { size: 8 }, maxRotation: 60 } }, y: { beginAtZero: true, title: { display: true, text: '%' } } }
                 }
             });
-        }, 100);
-    }
+        }
+
+        if (catEntries.length > 0) {
+            const catColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6'];
+            DashboardRenderer.createChart('chart-3d-cat-func', {
+                type: 'doughnut',
+                data: {
+                    labels: catEntries.map(([k]) => catNombresES[k.toLowerCase()] || k),
+                    datasets: [{
+                        data: catEntries.map(([, v]) => v.total || v.cantidad || v),
+                        backgroundColor: catColors
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } }
+            });
+        }
+    }, 100);
 }
 
 function renderVisor3DSecundaria(data, container) {
@@ -443,90 +529,197 @@ function renderVisor3DSecundaria(data, container) {
     const topHelice = sec.top_10_mas_helice || [];
     const topLamina = sec.top_10_mas_lamina || [];
 
+    // Combinar ambas listas para obtener proteinas con datos de estructura secundaria
+    const allProteins = [];
+    const seen = new Set();
+    [...topHelice, ...topLamina].forEach(p => {
+        const key = p.locus_tag || p.nombre_gen;
+        if (!seen.has(key)) {
+            seen.add(key);
+            allProteins.push(p);
+        }
+    });
+
     container.innerHTML = `
-        <h3 class="text-xl font-bold text-primary mb-4">Estructura Secundaria - Helices, Laminas y Giros</h3>
+        <h3 class="text-xl font-bold text-primary mb-2">Estructura Secundaria - Helices Alfa, Laminas Beta y Bucles</h3>
+        <p class="text-sm text-secondary mb-5">La estructura secundaria son los patrones locales que forma la cadena de aminoacidos: espirales (helices alfa), flechas planas (laminas beta) y lazos flexibles (bucles).</p>
+
         <div class="grid grid-cols-3 gap-4 mb-6">
             ${DashboardRenderer.statsCard('Helice alfa', (prom.helix || 0).toFixed(1) + '%', 'promedio del proteoma', 'emerald')}
             ${DashboardRenderer.statsCard('Lamina beta', (prom.sheet || 0).toFixed(1) + '%', 'promedio del proteoma', 'cyan')}
             ${DashboardRenderer.statsCard('Giros/bucles', (prom.turn || prom.coil || 0).toFixed(1) + '%', 'promedio del proteoma', 'amber')}
         </div>
 
-        <!-- Pie chart distribucion -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div class="bg-card rounded-xl p-5 border border-slate-200">
-                <h4 class="text-sm font-semibold text-primary mb-3">Distribucion Promedio</h4>
-                <canvas id="chart-3d-sec-pie" height="250"></canvas>
-            </div>
-            <div class="bg-card rounded-xl p-5 border border-slate-200">
-                <h4 class="text-sm font-semibold text-primary mb-3">Interpretacion</h4>
-                <div class="space-y-3 text-sm text-secondary">
-                    <p><strong class="text-emerald-500">Helice alfa (${(prom.helix || 0).toFixed(1)}%):</strong> Estructura enrollada estabilizada por puentes de hidrogeno intracadena. Comun en proteinas transmembrana y factores de transcripcion.</p>
-                    <p><strong class="text-cyan-500">Lamina beta (${(prom.sheet || 0).toFixed(1)}%):</strong> Cadenas extendidas unidas lateralmente. Predomina en enzimas y proteinas de union a sustrato.</p>
-                    <p><strong class="text-amber-500">Giros/Bucles (${(prom.turn || prom.coil || 0).toFixed(1)}%):</strong> Regiones flexibles que conectan elementos de estructura secundaria. Importantes para la funcion y especificidad.</p>
-                    <p class="text-xs mt-2">Prediccion: metodo Chou-Fasman (BioPython). Para mayor precision, usar herramientas como DSSP sobre estructuras 3D experimentales.</p>
+        <!-- Ilustracion visual animada de estructuras secundarias -->
+        <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+            <h4 class="text-sm font-semibold text-primary mb-3">Como se ve cada tipo de estructura</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Helice alfa -->
+                <div class="text-center">
+                    <div class="bg-emerald-50 dark:bg-emerald-900/15 rounded-xl p-4 mb-3" style="min-height:180px;">
+                        <svg viewBox="0 0 200 160" width="200" height="160" class="mx-auto">
+                            <defs>
+                                <linearGradient id="helixGrad" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stop-color="#10b981"/>
+                                    <stop offset="100%" stop-color="#059669"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Helice alfa - espiral animada -->
+                            <path d="M30,140 C50,140 50,120 70,120 C90,120 90,100 110,100 C130,100 130,80 150,80 C170,80 170,60 180,50"
+                                  fill="none" stroke="url(#helixGrad)" stroke-width="4" stroke-linecap="round">
+                                <animate attributeName="stroke-dashoffset" from="300" to="0" dur="2s" fill="freeze"/>
+                                <animate attributeName="stroke-dasharray" from="0,300" to="300,0" dur="2s" fill="freeze"/>
+                            </path>
+                            <!-- Loops de la espiral -->
+                            ${[0,1,2,3,4].map(i => `
+                                <ellipse cx="${40 + i * 35}" cy="${130 - i * 20}" rx="18" ry="8"
+                                    fill="none" stroke="#10b981" stroke-width="2.5" opacity="0.6"
+                                    transform="rotate(-15, ${40 + i * 35}, ${130 - i * 20})">
+                                    <animate attributeName="opacity" from="0" to="0.6" begin="${i * 0.3}s" dur="0.5s" fill="freeze"/>
+                                </ellipse>
+                            `).join('')}
+                            <!-- Puentes de hidrogeno (lineas punteadas) -->
+                            ${[0,1,2,3].map(i => `
+                                <line x1="${45 + i * 35}" y1="${125 - i * 20}" x2="${55 + i * 35}" y2="${118 - i * 20}"
+                                    stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" opacity="0.5">
+                                    <animate attributeName="opacity" from="0" to="0.5" begin="${0.5 + i * 0.3}s" dur="0.5s" fill="freeze"/>
+                                </line>
+                            `).join('')}
+                            <text x="100" y="155" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">3.6 aa por giro</text>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-bold text-emerald-600">Helice Alfa</p>
+                    <p class="text-xs text-secondary mt-1">Espiral estabilizada por puentes de hidrogeno. Cada giro tiene 3.6 aminoacidos.</p>
+                </div>
+
+                <!-- Lamina beta -->
+                <div class="text-center">
+                    <div class="bg-cyan-50 dark:bg-cyan-900/15 rounded-xl p-4 mb-3" style="min-height:180px;">
+                        <svg viewBox="0 0 200 160" width="200" height="160" class="mx-auto">
+                            <!-- Flechas paralelas (laminas beta) -->
+                            ${[0,1,2,3].map(i => `
+                                <g>
+                                    <rect x="20" y="${20 + i * 35}" width="140" height="14" rx="2"
+                                        fill="${i % 2 === 0 ? '#06b6d4' : '#0891b2'}" opacity="0.7">
+                                        <animate attributeName="width" from="0" to="140" begin="${i * 0.25}s" dur="0.6s" fill="freeze"/>
+                                    </rect>
+                                    <polygon points="${i % 2 === 0 ? '160,' + (20 + i * 35) + ' 175,' + (27 + i * 35) + ' 160,' + (34 + i * 35) : '20,' + (20 + i * 35) + ' 5,' + (27 + i * 35) + ' 20,' + (34 + i * 35)}"
+                                        fill="${i % 2 === 0 ? '#06b6d4' : '#0891b2'}" opacity="0.7">
+                                        <animate attributeName="opacity" from="0" to="0.7" begin="${0.3 + i * 0.25}s" dur="0.3s" fill="freeze"/>
+                                    </polygon>
+                                </g>
+                            `).join('')}
+                            <!-- Puentes H entre laminas -->
+                            ${[0,1,2].map(i => `
+                                ${[0,1,2,3,4].map(j => `
+                                    <line x1="${35 + j * 30}" y1="${34 + i * 35}" x2="${35 + j * 30}" y2="${55 + i * 35}"
+                                        stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" opacity="0.4">
+                                        <animate attributeName="opacity" from="0" to="0.4" begin="${1 + (i * 5 + j) * 0.05}s" dur="0.3s" fill="freeze"/>
+                                    </line>
+                                `).join('')}
+                            `).join('')}
+                            <text x="100" y="155" text-anchor="middle" fill="#06b6d4" font-size="10" font-weight="bold">Cadenas paralelas/antiparalelas</text>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-bold text-cyan-600">Lamina Beta</p>
+                    <p class="text-xs text-secondary mt-1">Cadenas extendidas unidas por puentes de hidrogeno entre hebras adyacentes.</p>
+                </div>
+
+                <!-- Giros/Bucles -->
+                <div class="text-center">
+                    <div class="bg-amber-50 dark:bg-amber-900/15 rounded-xl p-4 mb-3" style="min-height:180px;">
+                        <svg viewBox="0 0 200 160" width="200" height="160" class="mx-auto">
+                            <!-- Curva irregular (bucle) -->
+                            <path d="M20,130 Q40,100 60,110 T100,70 T140,90 T180,40"
+                                  fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round">
+                                <animate attributeName="stroke-dashoffset" from="400" to="0" dur="2s" fill="freeze"/>
+                                <animate attributeName="stroke-dasharray" from="0,400" to="400,0" dur="2s" fill="freeze"/>
+                            </path>
+                            <!-- Aminoacidos como puntos -->
+                            ${[[30,118],[50,105],[75,95],[100,70],[120,82],[140,90],[160,65],[180,40]].map(([x,y], i) => `
+                                <circle cx="${x}" cy="${y}" r="4" fill="#f59e0b" opacity="0">
+                                    <animate attributeName="opacity" from="0" to="0.8" begin="${i * 0.2}s" dur="0.3s" fill="freeze"/>
+                                </circle>
+                            `).join('')}
+                            <text x="100" y="155" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="bold">Region flexible</text>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-bold text-amber-600">Giros y Bucles</p>
+                    <p class="text-xs text-secondary mt-1">Regiones flexibles que conectan helices y laminas. Claves para la funcion enzimatica.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Top proteinas con mas helice -->
-        ${topHelice.length > 0 ? `
-        <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-            <h4 class="text-sm font-semibold text-emerald-600 mb-3">Top 10 Proteinas con Mayor Contenido de Helice Alfa</h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead class="bg-emerald-50 dark:bg-emerald-900/20">
-                        <tr>
-                            <th class="px-2 py-2 text-left text-secondary">#</th>
-                            <th class="px-2 py-2 text-left text-secondary">Gen</th>
-                            <th class="px-2 py-2 text-left text-secondary">Producto</th>
-                            <th class="px-2 py-2 text-right text-secondary">Helice %</th>
-                            <th class="px-2 py-2 text-right text-secondary">Long. (aa)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${topHelice.map((p, i) => `
-                            <tr class="border-t border-slate-100">
-                                <td class="px-2 py-2 text-secondary">${i + 1}</td>
-                                <td class="px-2 py-2 font-mono font-bold text-primary">${p.nombre_gen || p.locus_tag || 'N/A'}</td>
-                                <td class="px-2 py-2 text-secondary">${(p.producto || '').substring(0, 45)}</td>
-                                <td class="px-2 py-2 text-right font-bold text-emerald-500">${(p.helix || p.porcentaje_helice || 0).toFixed(1)}%</td>
-                                <td class="px-2 py-2 text-right text-primary">${DashboardRenderer.fmt(p.longitud_aa || 0)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+        <!-- Distribucion visual y grafico -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-3">Distribucion Promedio del Proteoma</h4>
+                <canvas id="chart-3d-sec-pie" height="250"></canvas>
             </div>
-        </div>` : ''}
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-3">Composicion por Proteina</h4>
+                <p class="text-xs text-secondary mb-3">Barra visual de cada proteina analizada. <span class="text-emerald-500 font-bold">Verde</span> = helice, <span class="text-cyan-500 font-bold">azul</span> = lamina, <span class="text-amber-500 font-bold">amarillo</span> = bucle.</p>
+                <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    ${allProteins.slice(0, 20).map(p => {
+                        const h = p.helix || p.porcentaje_helice || 0;
+                        const s = p.sheet || p.porcentaje_lamina || 0;
+                        const t = Math.max(0, 100 - h - s);
+                        return `
+                        <div class="group">
+                            <div class="flex items-center gap-2 text-[10px] mb-0.5">
+                                <span class="font-mono font-bold text-primary w-16 truncate">${p.nombre_gen || p.locus_tag || '?'}</span>
+                                <span class="text-secondary truncate flex-1">${(p.producto || '').substring(0, 30)}</span>
+                            </div>
+                            <div class="flex h-3 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800" title="${(p.nombre_gen || p.locus_tag || '')} - Helice: ${h.toFixed(1)}%, Lamina: ${s.toFixed(1)}%, Bucle: ${t.toFixed(1)}%">
+                                <div style="width:${h}%; background:#10b981;" class="transition-all duration-500"></div>
+                                <div style="width:${s}%; background:#06b6d4;" class="transition-all duration-500"></div>
+                                <div style="width:${t}%; background:#f59e0b;" class="transition-all duration-500"></div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
 
-        <!-- Top proteinas con mas lamina -->
-        ${topLamina.length > 0 ? `
-        <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-            <h4 class="text-sm font-semibold text-cyan-600 mb-3">Top 10 Proteinas con Mayor Contenido de Lamina Beta</h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead class="bg-cyan-50 dark:bg-cyan-900/20">
-                        <tr>
-                            <th class="px-2 py-2 text-left text-secondary">#</th>
-                            <th class="px-2 py-2 text-left text-secondary">Gen</th>
-                            <th class="px-2 py-2 text-left text-secondary">Producto</th>
-                            <th class="px-2 py-2 text-right text-secondary">Lamina %</th>
-                            <th class="px-2 py-2 text-right text-secondary">Long. (aa)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${topLamina.map((p, i) => `
-                            <tr class="border-t border-slate-100">
-                                <td class="px-2 py-2 text-secondary">${i + 1}</td>
-                                <td class="px-2 py-2 font-mono font-bold text-primary">${p.nombre_gen || p.locus_tag || 'N/A'}</td>
-                                <td class="px-2 py-2 text-secondary">${(p.producto || '').substring(0, 45)}</td>
-                                <td class="px-2 py-2 text-right font-bold text-cyan-500">${(p.sheet || p.porcentaje_lamina || 0).toFixed(1)}%</td>
-                                <td class="px-2 py-2 text-right text-primary">${DashboardRenderer.fmt(p.longitud_aa || 0)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>` : ''}
+        <!-- Top proteinas por tipo -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            ${topHelice.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-emerald-200">
+                <h4 class="text-sm font-semibold text-emerald-600 mb-3">Top 10 - Mayor Helice Alfa</h4>
+                <div class="space-y-1.5">
+                    ${topHelice.map((p, i) => {
+                        const h = p.helix || p.porcentaje_helice || 0;
+                        return `
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-secondary w-4 text-right">${i + 1}.</span>
+                            <span class="font-mono font-bold text-primary w-14 truncate">${p.nombre_gen || p.locus_tag || 'N/A'}</span>
+                            <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5">
+                                <div class="h-2.5 rounded-full bg-emerald-500" style="width:${h}%"></div>
+                            </div>
+                            <span class="font-bold text-emerald-500 w-12 text-right">${h.toFixed(1)}%</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : ''}
+            ${topLamina.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-cyan-200">
+                <h4 class="text-sm font-semibold text-cyan-600 mb-3">Top 10 - Mayor Lamina Beta</h4>
+                <div class="space-y-1.5">
+                    ${topLamina.map((p, i) => {
+                        const s = p.sheet || p.porcentaje_lamina || 0;
+                        return `
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-secondary w-4 text-right">${i + 1}.</span>
+                            <span class="font-mono font-bold text-primary w-14 truncate">${p.nombre_gen || p.locus_tag || 'N/A'}</span>
+                            <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5">
+                                <div class="h-2.5 rounded-full bg-cyan-500" style="width:${s}%"></div>
+                            </div>
+                            <span class="font-bold text-cyan-500 w-12 text-right">${s.toFixed(1)}%</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : ''}
+        </div>
     `;
 
     // Pie chart
@@ -553,13 +746,13 @@ function renderVisor3DTerciaria(data, container) {
     const cisteinas = terciaria.analisis_cisteinas || {};
 
     const options = todas.length > 0
-        ? todas.map((p, i) => `<option value="${i}">${p.nombre_gen || p.locus_tag || 'Proteina'} - ${p.fuente || 'PDB'}: ${p.pdb_id || p.uniprot_id || 'N/A'}</option>`).join('')
+        ? todas.map((p, i) => `<option value="${i}">${p.nombre_gen || p.locus_tag || 'Proteina'} - ${(p.producto || '').substring(0, 40)} [${p.fuente || (p.pdb_id ? 'PDB' : 'AlphaFold')}]</option>`).join('')
         : '<option value="">No hay estructuras disponibles</option>';
 
     container.innerHTML = `
-        <h3 class="text-xl font-bold text-primary mb-4">Estructura Terciaria - Visor 3D</h3>
+        <h3 class="text-xl font-bold text-primary mb-2">Estructura Terciaria - Visor Molecular 3D</h3>
+        <p class="text-sm text-secondary mb-5">Visualiza la forma tridimensional de las proteinas. Usa el mouse para rotar (click + arrastrar), zoom (rueda del mouse) y mover (click derecho + arrastrar).</p>
 
-        <!-- Stats de estructuras encontradas -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             ${DashboardRenderer.statsCard('PDB (RCSB)', pdb.length, 'estructuras experimentales', 'emerald')}
             ${DashboardRenderer.statsCard('AlphaFold', af.length, 'predicciones IA', 'cyan')}
@@ -567,53 +760,73 @@ function renderVisor3DTerciaria(data, container) {
             ${DashboardRenderer.statsCard('Puentes S-S', cisteinas.total_puentes_disulfuro || cisteinas.total_cisteinas || 0, cisteinas.total_cisteinas ? cisteinas.total_cisteinas + ' cisteinas' : 'puentes disulfuro', 'amber')}
         </div>
 
-        <!-- Visor 3D -->
+        <!-- Visor 3D principal -->
         <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
             <div class="flex flex-wrap gap-3 items-center mb-4">
-                <select id="protein-3d-select" class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary" onchange="DashboardRenderer._load3DProtein()">
+                <select id="protein-3d-select" class="flex-1 min-w-[200px] px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary" onchange="DashboardRenderer._load3DProtein()">
                     ${options}
                 </select>
-                <div class="flex gap-1">
-                    <button onclick="DashboardRenderer._setStyle3D('cartoon')" class="px-3 py-1.5 bg-emerald-500 text-white text-xs rounded-lg">Cintas</button>
-                    <button onclick="DashboardRenderer._setStyle3D('stick')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg">Varillas</button>
-                    <button onclick="DashboardRenderer._setStyle3D('sphere')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg">Esferas</button>
-                    <button onclick="DashboardRenderer._setStyle3D('line')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg">Lineas</button>
-                    <button onclick="DashboardRenderer._setStyle3D('surface')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg">Superficie</button>
-                </div>
             </div>
-            <div id="protein-3d-viewer" style="width:100%; height:500px; position:relative; border-radius:12px; overflow:hidden; background:#1a1a2e;">
-                <p class="text-center text-secondary text-sm pt-12">Selecciona una proteina y espera a que cargue la estructura</p>
+            <div class="flex flex-wrap gap-1 mb-3">
+                <button id="btn-style-cartoon" onclick="DashboardRenderer._setStyle3D('cartoon')" class="px-3 py-1.5 bg-emerald-500 text-white text-xs rounded-lg transition">Cintas</button>
+                <button id="btn-style-stick" onclick="DashboardRenderer._setStyle3D('stick')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition">Varillas</button>
+                <button id="btn-style-sphere" onclick="DashboardRenderer._setStyle3D('sphere')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition">Esferas</button>
+                <button id="btn-style-line" onclick="DashboardRenderer._setStyle3D('line')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition">Lineas</button>
+                <button id="btn-style-surface" onclick="DashboardRenderer._setStyle3D('surface')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition">Superficie</button>
+                <button id="btn-style-ss" onclick="DashboardRenderer._setStyle3D('ss')" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition">Estructura 2&deg;</button>
+            </div>
+            <div style="position:relative;">
+                <div id="protein-3d-viewer" style="width:100%; height:550px; position:relative; border-radius:12px; overflow:hidden; background:#1a1a2e;">
+                    <p class="text-slate-400 text-sm text-center pt-12">Selecciona una proteina del desplegable para ver su estructura 3D</p>
+                </div>
+                <!-- Play/Pause button - esquina superior derecha -->
+                <button id="btn-3d-spin" onclick="DashboardRenderer._toggle3DSpin()"
+                    class="absolute top-3 right-3 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs rounded-lg backdrop-blur-sm transition z-20 border border-white/20"
+                    style="font-size:12px;">
+                    &#9654; Play
+                </button>
+                <!-- Leyenda de colores -->
+                <div class="absolute bottom-3 left-3 px-3 py-2 bg-black/50 backdrop-blur-sm rounded-lg text-[10px] text-white/80 z-20 border border-white/20">
+                    <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#ff0000"></span>N-terminal &nbsp;
+                    <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#00ff00"></span>Centro &nbsp;
+                    <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#0000ff"></span>C-terminal
+                </div>
+                <!-- Controles info -->
+                <div class="absolute top-3 left-3 px-3 py-2 bg-black/50 backdrop-blur-sm rounded-lg text-[10px] text-white/80 z-20 border border-white/20">
+                    Click + arrastrar = rotar &nbsp; | &nbsp; Rueda = zoom &nbsp; | &nbsp; Click derecho = mover
+                </div>
             </div>
             <div id="protein-3d-loading" class="hidden mt-2 text-center">
                 <div class="inline-block w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                 <span class="text-xs text-secondary ml-2">Descargando estructura 3D...</span>
             </div>
-            <div id="protein-3d-info" class="mt-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <p class="text-xs text-secondary" id="protein-3d-info-text">Selecciona una proteina del desplegable para ver su estructura tridimensional. Las fuentes incluyen RCSB PDB (experimental) y AlphaFold (prediccion).</p>
+            <div class="mt-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <p class="text-xs" id="protein-3d-info-text">Selecciona una proteina para ver su estructura tridimensional. Fuentes: RCSB PDB (experimental) y AlphaFold (prediccion IA).</p>
             </div>
         </div>
 
-        <!-- Tabla resumen de proteinas con estructura -->
+        <!-- Tabla de proteinas con estructura -->
         ${todas.length > 0 ? `
         <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-            <h4 class="text-sm font-semibold text-primary mb-3">Proteinas con Estructura 3D Disponible</h4>
+            <h4 class="text-sm font-semibold text-primary mb-1">Proteinas con Estructura 3D Disponible (${todas.length})</h4>
+            <p class="text-xs text-secondary mb-3">Click en una fila para cargarla en el visor 3D.</p>
             <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
                 <table class="w-full text-xs">
                     <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
                         <tr>
                             <th class="px-2 py-2 text-left text-secondary">Gen</th>
-                            <th class="px-2 py-2 text-left text-secondary">Producto</th>
+                            <th class="px-2 py-2 text-left text-secondary">Funcion</th>
                             <th class="px-2 py-2 text-center text-secondary">Fuente</th>
                             <th class="px-2 py-2 text-left text-secondary">ID</th>
-                            <th class="px-2 py-2 text-right text-secondary">Long. (aa)</th>
+                            <th class="px-2 py-2 text-right text-secondary">Tamano (aa)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${todas.map(p => `
-                            <tr class="border-t border-slate-100">
+                        ${todas.map((p, i) => `
+                            <tr class="border-t border-slate-100 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition" onclick="document.getElementById('protein-3d-select').value='${i}'; DashboardRenderer._load3DProtein();">
                                 <td class="px-2 py-2 font-mono font-bold text-primary">${p.nombre_gen || p.locus_tag || 'N/A'}</td>
-                                <td class="px-2 py-2 text-secondary">${(p.producto || '').substring(0, 40)}</td>
-                                <td class="px-2 py-2 text-center"><span class="px-1.5 py-0.5 ${p.fuente === 'PDB' || p.pdb_id ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-100 text-cyan-700'} rounded text-[10px]">${p.fuente || (p.pdb_id ? 'PDB' : 'AlphaFold')}</span></td>
+                                <td class="px-2 py-2 text-secondary">${(p.producto || 'Proteina hipotetica').substring(0, 45)}</td>
+                                <td class="px-2 py-2 text-center"><span class="px-1.5 py-0.5 ${p.fuente === 'PDB' || p.pdb_id ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' : 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700'} rounded text-[10px]">${p.fuente || (p.pdb_id ? 'PDB' : 'AlphaFold')}</span></td>
                                 <td class="px-2 py-2 font-mono text-primary">${p.pdb_id || p.uniprot_id || 'N/A'}</td>
                                 <td class="px-2 py-2 text-right text-primary">${DashboardRenderer.fmt(p.longitud_aa || 0)}</td>
                             </tr>
@@ -622,12 +835,107 @@ function renderVisor3DTerciaria(data, container) {
                 </table>
             </div>
         </div>` : ''}
+
+        <!-- Buscar cualquier proteina -->
+        <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+            <h4 class="text-sm font-semibold text-primary mb-1">Buscar cualquier proteina</h4>
+            <p class="text-xs text-secondary mb-3">Si una proteina no aparece en la lista, puedes buscarla por su ID de PDB (ej: <code>1L2Y</code>) o de UniProt/AlphaFold (ej: <code>P0A870</code>). Tambien puedes buscar por nombre de gen en UniProt.</p>
+            <div class="flex gap-2">
+                <input id="manual-protein-id" type="text" placeholder="ID de PDB o UniProt (ej: 1L2Y, P0A870)" class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary">
+                <select id="manual-protein-source" class="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">
+                    <option value="rcsb">PDB (RCSB)</option>
+                    <option value="alphafold">AlphaFold (UniProt ID)</option>
+                </select>
+                <button onclick="_loadManualProtein()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">Cargar</button>
+            </div>
+            <p id="manual-protein-status" class="text-xs text-secondary mt-2 hidden"></p>
+        </div>
+
+        <!-- Info educativa -->
+        <div class="bg-violet-50 dark:bg-violet-900/15 border border-violet-200 rounded-xl p-5">
+            <h4 class="text-sm font-semibold text-violet-700 mb-2">Sobre la estructura terciaria</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-secondary">
+                <div>
+                    <p class="mb-2">La <strong class="text-primary">estructura terciaria</strong> es la forma 3D completa de la proteina. Determina su funcion biologica.</p>
+                    <p class="mb-2"><strong>Fuerzas que la estabilizan:</strong></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><strong class="text-amber-600">Puentes disulfuro (S-S)</strong> - enlaces covalentes entre cisteinas</li>
+                        <li><strong class="text-emerald-600">Interacciones hidrofobicas</strong> - aminoacidos no polares se agrupan en el interior</li>
+                        <li><strong class="text-cyan-600">Puentes de hidrogeno</strong> - entre cadenas laterales polares</li>
+                        <li><strong class="text-violet-600">Interacciones ionicas</strong> - entre cargas opuestas</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>Metodos de determinacion:</strong></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><strong class="text-emerald-600">PDB (RCSB)</strong> - Rayos X, RMN, Cryo-EM (estructura real)</li>
+                        <li><strong class="text-cyan-600">AlphaFold</strong> - Prediccion por IA de Google DeepMind (muy precisa)</li>
+                    </ul>
+                    <p class="mt-2"><strong>Modos de visualizacion:</strong></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><strong>Cintas</strong> - muestra helices y laminas</li>
+                        <li><strong>Varillas</strong> - muestra cada enlace quimico</li>
+                        <li><strong>Esferas</strong> - muestra el tamano real de los atomos</li>
+                        <li><strong>Superficie</strong> - muestra la forma externa de la proteina</li>
+                        <li><strong>Estructura 2&deg;</strong> - colorea por tipo: <span class="text-emerald-500">helice</span>, <span class="text-blue-500">lamina</span>, <span class="text-amber-500">bucle</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     `;
 
     // Guardar datos para el visor
     DashboardRenderer._proteinas3DData = todas;
     DashboardRenderer._viewer3D = null;
     DashboardRenderer._current3DStyle = 'cartoon';
+    DashboardRenderer._spinning3D = false;
+}
+
+async function _loadManualProtein() {
+    const idInput = document.getElementById('manual-protein-id');
+    const sourceSelect = document.getElementById('manual-protein-source');
+    const status = document.getElementById('manual-protein-status');
+    if (!idInput || !sourceSelect) return;
+
+    const id = idInput.value.trim();
+    if (!id) { status.textContent = 'Escribe un ID'; status.classList.remove('hidden'); return; }
+
+    const source = sourceSelect.value;
+    status.textContent = 'Buscando estructura...';
+    status.className = 'text-xs text-amber-500 mt-2';
+
+    // Add as a manual entry to the protein list
+    const manualProtein = {
+        nombre_gen: id,
+        producto: `Busqueda manual (${source === 'alphafold' ? 'AlphaFold' : 'PDB'})`,
+        pdb_id: id,
+        uniprot_id: source === 'alphafold' ? id : '',
+        source: source,
+        fuente: source === 'alphafold' ? 'AlphaFold' : 'PDB',
+        url: source === 'alphafold' ? `https://alphafold.ebi.ac.uk/files/AF-${id}-F1-model_v4.pdb` : ''
+    };
+
+    DashboardRenderer._proteinas3DData.push(manualProtein);
+    const newIdx = DashboardRenderer._proteinas3DData.length - 1;
+
+    // Set the select to the new index and load
+    const select = document.getElementById('protein-3d-select');
+    if (select) {
+        const opt = document.createElement('option');
+        opt.value = newIdx;
+        opt.textContent = `${id} - Busqueda manual [${source === 'alphafold' ? 'AlphaFold' : 'PDB'}]`;
+        select.appendChild(opt);
+        select.value = newIdx;
+    }
+
+    try {
+        await DashboardRenderer._load3DProtein();
+        status.textContent = 'Estructura cargada correctamente';
+        status.className = 'text-xs text-emerald-500 mt-2';
+    } catch (e) {
+        status.textContent = 'No se encontro la estructura. Verifica el ID.';
+        status.className = 'text-xs text-red-500 mt-2';
+    }
 }
 
 function renderVisor3DCuaternaria(data, container) {

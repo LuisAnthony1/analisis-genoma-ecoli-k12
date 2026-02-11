@@ -65,6 +65,16 @@ const DashboardRenderer = {
     },
 
     /**
+     * Etiqueta de hebra biologica
+     */
+    hebraLabel(hebra, format = 'short') {
+        if (hebra === '+' || hebra === '1' || hebra === 1) {
+            return format === 'full' ? "Hebra 5'\u21923' (+)" : "5'\u21923'";
+        }
+        return format === 'full' ? "Hebra 3'\u21925' (-)" : "3'\u21925'";
+    },
+
+    /**
      * Formatear números grandes
      */
     fmt(num) {
@@ -103,7 +113,8 @@ const DashboardRenderer = {
 
                 <!-- Distribución por hebra -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Distribución por Hebra</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-1">Distribucion por Hebra</h3>
+                    <p class="text-[10px] text-secondary mb-3"><span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background:#10b981"></span>5'&rarr;3' = hebra directa (+) &nbsp; <span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background:#06b6d4"></span>3'&rarr;5' = hebra complementaria (-)</p>
                     <canvas id="chart-genes-strands" height="250"></canvas>
                 </div>
             </div>
@@ -162,7 +173,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(g.longitud_pb)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
-                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="gene-largo-${i}" class="hidden">
                                     <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -206,7 +217,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-amber-500">${this.fmt(g.longitud_pb)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
-                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="gene-corto-${i}" class="hidden">
                                     <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -353,7 +364,7 @@ const DashboardRenderer = {
                 this.createChart('chart-genes-strands', {
                     type: 'doughnut',
                     data: {
-                        labels: ['Hebra directa (+)', 'Hebra complementaria (-)'],
+                        labels: ["Hebra 5'\u21923' (+)", "Hebra 3'\u21925' (-)"],
                         datasets: [{
                             data: [stats.distribucion_hebras.forward, stats.distribucion_hebras.reverse],
                             backgroundColor: ['#10b981', '#06b6d4']
@@ -792,7 +803,8 @@ const DashboardRenderer = {
 
                 <!-- Por hebra -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Análisis por Hebra</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-1">Analisis por Hebra</h3>
+                    <p class="text-[10px] text-secondary mb-3">Misma hebra = ambos genes en 5'&rarr;3' o ambos en 3'&rarr;5'. Diferente hebra = uno en cada direccion.</p>
                     <canvas id="chart-dist-strand" height="250"></canvas>
                 </div>
             </div>
@@ -824,7 +836,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 font-mono font-bold text-primary">${r.gen2}</td>
                                     <td class="px-3 py-2 text-secondary text-xs">${r.gen2_producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(r.distancia_pb)}</td>
-                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1} -> ${r.hebra_gen2}</td>
+                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1 === '+' ? "5'\u21923'" : "3'\u21925'"} &rarr; ${r.hebra_gen2 === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="dist-detail-${i}" class="hidden">
                                     <td colspan="7" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -832,12 +844,12 @@ const DashboardRenderer = {
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-emerald-500 mb-1">Gen 1: ${r.gen1}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen1_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? 'Directa (+)' : 'Complementaria (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"}</p>
                                             </div>
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-cyan-500 mb-1">Gen 2: ${r.gen2}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen2_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? 'Directa (+)' : 'Complementaria (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"}</p>
                                             </div>
                                         </div>
                                         <p class="text-xs text-secondary mt-2">Distancia intergenica: <strong class="text-amber-500">${this.fmt(r.distancia_pb)} pb</strong> - Region grande que podria contener elementos regulatorios, islas genomicas o genes no anotados.</p>
@@ -1560,15 +1572,13 @@ const DashboardRenderer = {
     _proteinas3DData: [],
     _viewer3D: null,
     _current3DStyle: 'cartoon',
+    _spinning3D: false,
 
     async _load3DProtein() {
         const select = document.getElementById('protein-3d-select');
         const viewerDiv = document.getElementById('protein-3d-viewer');
-        const placeholder = document.getElementById('protein-3d-placeholder');
         const loadingDiv = document.getElementById('protein-3d-loading');
-        const infoDiv = document.getElementById('protein-3d-info');
-        const nameEl = document.getElementById('protein-3d-name');
-        const detailEl = document.getElementById('protein-3d-detail');
+        const infoText = document.getElementById('protein-3d-info-text');
 
         if (!select || select.value === '') return;
 
@@ -1576,13 +1586,9 @@ const DashboardRenderer = {
         const proteinData = this._proteinas3DData[idx];
         if (!proteinData) return;
 
-        // Mostrar loading
         if (loadingDiv) loadingDiv.classList.remove('hidden');
-        if (placeholder) placeholder.style.display = 'none';
-        if (viewerDiv) viewerDiv.style.display = 'block';
 
         try {
-            // Construir URL del proxy
             let proxyUrl;
             if (proteinData.source === 'alphafold' && proteinData.url) {
                 proxyUrl = `/api/proxy_pdb?pdb_id=${proteinData.pdb_id}&source=alphafold&url=${encodeURIComponent(proteinData.url)}`;
@@ -1591,48 +1597,78 @@ const DashboardRenderer = {
             }
 
             const resp = await fetch(proxyUrl);
-            if (!resp.ok) {
-                throw new Error('No se pudo descargar la estructura');
-            }
-
+            if (!resp.ok) throw new Error('No se pudo descargar la estructura');
             const pdbData = await resp.text();
-
-            // Detectar formato
             const format = pdbData.includes('_atom_site') ? 'cif' : 'pdb';
 
             // Crear o limpiar visor
             if (this._viewer3D) {
                 this._viewer3D.clear();
+            } else if (typeof $3Dmol !== 'undefined') {
+                viewerDiv.innerHTML = '';
+                this._viewer3D = $3Dmol.createViewer(viewerDiv, {
+                    backgroundColor: '#1a1a2e',
+                    antialias: true
+                });
+
+                // Invertir scroll wheel para zoom
+                const self = this;
+                viewerDiv.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!self._viewer3D) return;
+                    // Invertido: deltaY > 0 (scroll down) = zoom IN
+                    const factor = e.deltaY > 0 ? 1.08 : 0.92;
+                    self._viewer3D.zoom(factor);
+                    self._viewer3D.render();
+                }, { passive: false, capture: true });
+
+                // Auto-pausar spin al hacer click
+                viewerDiv.addEventListener('mousedown', () => {
+                    if (self._spinning3D) {
+                        self._spinning3D = false;
+                        self._viewer3D.spin(false);
+                        const btn = document.getElementById('btn-3d-spin');
+                        if (btn) btn.textContent = '\u25B6 Play';
+                    }
+                });
             } else {
-                if (typeof $3Dmol !== 'undefined') {
-                    viewerDiv.innerHTML = '';
-                    this._viewer3D = $3Dmol.createViewer(viewerDiv, {
-                        backgroundColor: '#1a1a2e',
-                        antialias: true
-                    });
-                } else {
-                    throw new Error('3Dmol.js no cargado');
-                }
+                throw new Error('3Dmol.js no cargado');
             }
 
-            // Cargar estructura
+            // Cargar estructura - SIN auto-spin (estatico por defecto)
             this._viewer3D.addModel(pdbData, format);
             this._applyStyle3D(this._current3DStyle);
             this._viewer3D.zoomTo();
             this._viewer3D.render();
-            this._viewer3D.spin('y', 0.5);
+            this._spinning3D = false;
+            this._viewer3D.spin(false);
+            const spinBtn = document.getElementById('btn-3d-spin');
+            if (spinBtn) spinBtn.textContent = '\u25B6 Play';
 
-            // Mostrar info
-            if (infoDiv) infoDiv.classList.remove('hidden');
-            if (nameEl) nameEl.textContent = `${proteinData.nombre_gen || ''} - ${proteinData.producto || ''}`;
-            if (detailEl) detailEl.textContent = `Fuente: ${proteinData.source === 'alphafold' ? 'AlphaFold (prediccion por inteligencia artificial)' : 'RCSB PDB (estructura experimental)'} | Identificador: ${proteinData.pdb_id} | Formato: ${format.toUpperCase()}`;
+            // Info
+            if (infoText) {
+                const fuente = proteinData.source === 'alphafold' ? 'AlphaFold (prediccion IA)' : 'RCSB PDB (experimental)';
+                infoText.innerHTML = `<strong>${proteinData.nombre_gen || proteinData.locus_tag || ''}</strong> - ${proteinData.producto || 'Proteina'}<br><span class="text-secondary">Fuente: ${fuente} | ID: ${proteinData.pdb_id || proteinData.uniprot_id || 'N/A'} | Formato: ${format.toUpperCase()}</span>`;
+            }
 
         } catch (err) {
-            if (viewerDiv) viewerDiv.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm text-center px-4">${err.message || 'Error cargando estructura 3D'}</p></div>`;
-            if (infoDiv) infoDiv.classList.add('hidden');
+            viewerDiv.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm text-center px-4">${err.message || 'Error cargando estructura 3D'}</p></div>`;
         }
 
         if (loadingDiv) loadingDiv.classList.add('hidden');
+    },
+
+    _toggle3DSpin() {
+        if (!this._viewer3D) return;
+        this._spinning3D = !this._spinning3D;
+        if (this._spinning3D) {
+            this._viewer3D.spin('y', 0.8);
+        } else {
+            this._viewer3D.spin(false);
+        }
+        const btn = document.getElementById('btn-3d-spin');
+        if (btn) btn.textContent = this._spinning3D ? '\u23F8 Pause' : '\u25B6 Play';
     },
 
     _setStyle3D(style) {
@@ -1641,12 +1677,22 @@ const DashboardRenderer = {
             this._applyStyle3D(style);
             this._viewer3D.render();
         }
+        // Update button active states
+        ['cartoon', 'stick', 'sphere', 'line', 'surface'].forEach(s => {
+            const btn = document.getElementById(`btn-style-${s}`);
+            if (btn) {
+                if (s === style) {
+                    btn.className = 'px-3 py-1.5 bg-emerald-500 text-white text-xs rounded-lg transition';
+                } else {
+                    btn.className = 'px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition';
+                }
+            }
+        });
     },
 
     _applyStyle3D(style) {
         if (!this._viewer3D) return;
         this._viewer3D.setStyle({}, {});
-        const colorScheme = { prop: 'ss', map: { h: '#10b981', s: '#3b82f6', c: '#94a3b8' } };
 
         switch (style) {
             case 'cartoon':
@@ -1668,6 +1714,16 @@ const DashboardRenderer = {
                     color: 'white',
                     colorscheme: { prop: 'b', gradient: new $3Dmol.Gradient.RWB(0, 100) }
                 });
+                break;
+            case 'ss':
+                // Color by secondary structure type
+                this._viewer3D.setStyle({}, { cartoon: {
+                    colorfunc: function(atom) {
+                        if (atom.ss === 'h') return '#10b981'; // helix = verde
+                        if (atom.ss === 's') return '#3b82f6'; // sheet = azul
+                        return '#f59e0b'; // coil = amarillo
+                    }
+                }});
                 break;
         }
     },
@@ -1923,7 +1979,7 @@ const DashboardRenderer = {
             <!-- Mapa del genoma -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h3 class="text-sm font-semibold text-primary mb-2">Mapa Lineal del Genoma</h3>
-                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes en hebra directa (+) arriba, hebra complementaria (-) abajo. Pasa el cursor sobre un gen para ver detalles.</p>
+                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes en hebra 5'&rarr;3' (+) arriba, hebra 3'&rarr;5' (-) abajo. Pasa el cursor sobre un gen para ver detalles.</p>
                 <div class="flex gap-2 mb-3">
                     <button onclick="DashboardRenderer._zoomGenomeMap(1.5)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom +</button>
                     <button onclick="DashboardRenderer._zoomGenomeMap(0.67)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom -</button>
@@ -2015,7 +2071,7 @@ const DashboardRenderer = {
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${op.numero}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-primary">${op.genes.slice(0, 6).join(', ')}${op.genes.length > 6 ? ' ...' : ''}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-emerald-500">${op.num_genes}</td>
-                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${op.hebra}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${op.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.inicio)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.fin)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.longitud_total)} pb</td>
@@ -2026,7 +2082,7 @@ const DashboardRenderer = {
                                         <div class="flex flex-wrap gap-1">
                                             ${op.genes.map(g => `<span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded font-mono text-[10px]">${g}</span>`).join('')}
                                         </div>
-                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? 'Directa' : 'Complementaria'} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
+                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -2191,13 +2247,13 @@ const DashboardRenderer = {
             const color = hebra === '+' || hebra === '1' ? '#10b981' : '#06b6d4';
 
             svg += `<rect x="${x}" y="${y}" width="${w}" height="${geneH}" fill="${color}" opacity="0.6" rx="1">`;
-            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra})\n${this.fmt(fin - inicio)} pb</title>`;
+            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra === '+' ? "5'\u21923'" : "3'\u21925'"})\n${this.fmt(fin - inicio)} pb</title>`;
             svg += `</rect>`;
         }
 
         // Labels de hebras
-        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Directa (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
-        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Complementaria (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
+        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Hebra 5\u2019\u21923\u2019 (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
+        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Hebra 3\u2019\u21925\u2019 (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
 
         svg += '</svg>';
         container.innerHTML = svg;
@@ -2249,7 +2305,7 @@ const DashboardRenderer = {
                             Buscar
                         </button>
                     </div>
-                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras (directa y complementaria inversa). Maximo 200 resultados.</p>
+                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras: 5'&rarr;3' (+) y 3'&rarr;5' (-). Maximo 200 resultados.</p>
                 </div>
 
                 <!-- Resultados -->
@@ -2340,7 +2396,7 @@ const DashboardRenderer = {
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${i + 1}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono">${this.fmt(m.posicion)}-${this.fmt(m.fin)}</td>
-                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold ${hebraColor}">${m.hebra}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold ${hebraColor}">${m.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${genNombre}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary max-w-[200px] truncate">${genProducto}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-[10px]">${contexto}</td>
@@ -2482,7 +2538,7 @@ const DashboardRenderer = {
                         <td class="px-2 py-2 text-secondary max-w-[250px] truncate">${g.producto || 'Sin anotacion'}</td>
                         <td class="px-2 py-2 text-right text-primary">${this.fmt(g.inicio)}</td>
                         <td class="px-2 py-2 text-right text-primary">${this.fmt(g.fin)}</td>
-                        <td class="px-2 py-2 text-center font-bold ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'}">${g.hebra}</td>
+                        <td class="px-2 py-2 text-center font-bold ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'}">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                         <td class="px-2 py-2 text-right font-medium text-primary">${this.fmt(g.longitud_pb)} pb</td>
                     </tr>
                 `;
@@ -2870,12 +2926,16 @@ const DashboardRenderer = {
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6 relative">
                 <div class="flex items-center justify-between mb-3">
                     <div>
-                        <h4 class="text-sm font-semibold text-primary">Arbol de Parentesco</h4>
-                        <p class="text-xs text-secondary">Pasa el mouse sobre cada bacteria para ver detalles. Las lineas cortas = muy parecidas, lineas largas = muy diferentes.</p>
+                        <h4 class="text-sm font-semibold text-primary">Arbol de Parentesco (vertical)</h4>
+                        <p class="text-xs text-secondary">El ancestro comun esta arriba. Las bacterias mas parecidas se conectan mas abajo (ramas cortas). Pasa el mouse sobre cada nombre.</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-[10px] text-secondary">
+                        <span class="flex items-center gap-1"><span class="w-8 h-0.5 inline-block" style="background:#10b981;"></span> Ramas</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full inline-block" style="background:#10b981;"></span> Bacteria</span>
                     </div>
                 </div>
-                <div class="overflow-x-auto" style="position:relative;">
-                    <canvas id="canvas-evo-tree" width="950" height="${Math.max(450, genomas.length * 50 + 100)}"></canvas>
+                <div class="overflow-x-auto overflow-y-auto" style="position:relative; max-height:700px;">
+                    <canvas id="canvas-evo-tree" width="${Math.max(900, genomas.length * 140 + 120)}" height="${Math.max(650, 500)}"></canvas>
                     <div id="evo-tree-tooltip" class="evo-tooltip hidden" style="position:absolute; top:0; left:0;"></div>
                 </div>
             </div>
@@ -2902,9 +2962,12 @@ const DashboardRenderer = {
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
 
-        // HiDPI support
-        const displayW = canvas.width;
-        const displayH = canvas.height;
+        const hojas = nodos.filter(n => n.hoja);
+        const numHojas = hojas.length;
+
+        // Vertical layout: wide for leaves, tall for depth + labels
+        const displayW = Math.max(900, numHojas * 140 + 120);
+        const displayH = Math.max(650, 500);
         canvas.width = displayW * dpr;
         canvas.height = displayH * dpr;
         canvas.style.width = displayW + 'px';
@@ -2913,99 +2976,112 @@ const DashboardRenderer = {
 
         const isDark = document.body.classList.contains('dark');
         const textColor = isDark ? '#e2e8f0' : '#1e293b';
-        const lineColor = isDark ? '#475569' : '#94a3b8';
-        const accentColor = '#10b981';
         const highlightColor = '#06b6d4';
+        const branchColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899', '#6366f1', '#ef4444', '#14b8a6'];
 
-        const hojas = nodos.filter(n => n.hoja);
-        const numHojas = hojas.length;
-        const marginLeft = 70;
-        const marginRight = 280;
-        const marginTop = 50;
-        const marginBottom = 50;
+        const marginLeft = 65;
+        const marginRight = 50;
+        const marginTop = 55;
+        const marginBottom = 130; // space for rotated labels
         const treeWidth = displayW - marginLeft - marginRight;
         const treeHeight = displayH - marginTop - marginBottom;
-        const leafSpacing = treeHeight / Math.max(numHojas - 1, 1);
 
         let maxDist = 0;
         nodos.forEach(n => { if (n.distancia > maxDist) maxDist = n.distancia; });
         if (maxDist === 0) maxDist = 1;
 
-        const yPos = {};
         const xPos = {};
+        const yPos = {};
         let leafIdx = 0;
-
-        // Store positions for hover detection
         const leafPositions = [];
 
+        // Vertical tree: x = leaf spread horizontal, y = distance from top
+        // Root (maxDist) at top, leaves (dist~0) at bottom
         function assignPositions(nid) {
             const n = nodos[nid];
             if (!n) return 0;
             if (n.hoja) {
-                const y = marginTop + leafIdx * leafSpacing;
-                yPos[nid] = y;
-                xPos[nid] = marginLeft + (n.distancia / maxDist) * treeWidth;
+                xPos[nid] = marginLeft + leafIdx * (treeWidth / Math.max(numHojas - 1, 1));
+                yPos[nid] = marginTop + treeHeight; // leaves at bottom
                 leafIdx++;
-                return y;
+                return xPos[nid];
             }
-            const childYs = (n.hijos || []).map(cid => assignPositions(cid));
-            const avg = childYs.reduce((a, b) => a + b, 0) / childYs.length;
-            yPos[nid] = avg;
-            xPos[nid] = marginLeft + (n.distancia / maxDist) * treeWidth;
-            return avg;
+            const childXs = (n.hijos || []).map(cid => assignPositions(cid));
+            xPos[nid] = childXs.reduce((a, b) => a + b, 0) / childXs.length;
+            yPos[nid] = marginTop + (1 - n.distancia / maxDist) * treeHeight;
+            return xPos[nid];
         }
         assignPositions(raizId);
+
+        // Assign colors per subtree from root
+        const nodeColors = {};
+        function assignColors(nid, colorIdx) {
+            nodeColors[nid] = branchColors[colorIdx % branchColors.length];
+            const n = nodos[nid];
+            if (n && !n.hoja) {
+                (n.hijos || []).forEach((cid, i) => {
+                    assignColors(cid, nid === raizId ? i : colorIdx);
+                });
+            }
+        }
+        assignColors(raizId, 0);
 
         function drawTree(highlightId) {
             ctx.clearRect(0, 0, displayW, displayH);
 
-            // Title
+            // Title at top center
             ctx.fillStyle = textColor;
             ctx.font = 'bold 13px Space Grotesk, sans-serif';
-            ctx.fillText('Raiz (ancestro comun)', marginLeft - 5, marginTop - 25);
+            ctx.textAlign = 'center';
+            ctx.fillText('Ancestro comun (raiz)', displayW / 2, marginTop - 30);
+            ctx.textAlign = 'left';
 
-            // Dashed grid lines
-            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-            ctx.lineWidth = 0.5;
-            ctx.setLineDash([3, 5]);
+            // Horizontal grid lines with similarity %
+            ctx.font = '9px JetBrains Mono, monospace';
             for (let i = 0; i <= 4; i++) {
-                const x = marginLeft + (treeWidth / 4) * i;
+                const y = marginTop + (treeHeight / 4) * i;
+                const dist = maxDist * (1 - i / 4);
+                const simPct = ((1 - dist) * 100).toFixed(0);
+
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                ctx.lineWidth = 0.5;
+                ctx.setLineDash([3, 5]);
                 ctx.beginPath();
-                ctx.moveTo(x, marginTop - 10);
-                ctx.lineTo(x, marginTop + treeHeight + 10);
+                ctx.moveTo(marginLeft - 10, y);
+                ctx.lineTo(displayW - marginRight + 10, y);
                 ctx.stroke();
-                const d = (maxDist / 4) * i;
+                ctx.setLineDash([]);
+
                 ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
-                ctx.font = '9px JetBrains Mono, monospace';
-                const simPct = ((1 - d) * 100).toFixed(0);
-                ctx.fillText(`${simPct}%`, x - 10, marginTop - 12);
+                ctx.textAlign = 'right';
+                ctx.fillText(`${simPct}%`, marginLeft - 15, y + 3);
+                ctx.textAlign = 'left';
             }
-            ctx.setLineDash([]);
 
-            // Similarity label
+            // Vertical axis label
+            ctx.save();
+            ctx.translate(14, marginTop + treeHeight / 2);
+            ctx.rotate(-Math.PI / 2);
             ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
-            ctx.font = '9px Space Grotesk, sans-serif';
-            ctx.fillText('Similitud genetica', marginLeft + treeWidth / 2 - 40, marginTop - 35);
-
-            function xForDist(dist) {
-                return marginLeft + (dist / maxDist) * treeWidth;
-            }
+            ctx.font = '10px Space Grotesk, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Similitud genetica', 0, 0);
+            ctx.restore();
 
             function drawNode(nid) {
                 const n = nodos[nid];
                 if (!n) return;
-                const x = xForDist(n.distancia);
+                const x = xPos[nid];
                 const y = yPos[nid];
 
                 if (n.hoja) {
                     const isHighlight = nid === highlightId;
-                    const r = isHighlight ? 7 : 5;
-                    const color = isHighlight ? highlightColor : accentColor;
+                    const r = isHighlight ? 9 : 7;
+                    const color = isHighlight ? highlightColor : nodeColors[nid] || '#10b981';
 
-                    // Glow effect on hover
                     if (isHighlight) {
                         ctx.shadowColor = highlightColor;
-                        ctx.shadowBlur = 12;
+                        ctx.shadowBlur = 16;
                     }
                     ctx.fillStyle = color;
                     ctx.beginPath();
@@ -3013,38 +3089,56 @@ const DashboardRenderer = {
                     ctx.fill();
                     ctx.shadowBlur = 0;
 
-                    // Label
-                    ctx.fillStyle = isHighlight ? highlightColor : textColor;
-                    ctx.font = isHighlight ? 'bold 12px Space Grotesk, sans-serif' : '11px Space Grotesk, sans-serif';
-                    const label = (n.nombre || '').replace(/_/g, ' ').substring(0, 35);
-                    ctx.fillText(label, x + 12, y + 4);
-
-                    leafPositions.push({ nid, x, y, r: 15, nombre: n.nombre });
-                } else {
-                    const hijos = n.hijos || [];
-                    const childYs = hijos.map(cid => yPos[cid]);
-                    const minY = Math.min(...childYs);
-                    const maxY = Math.max(...childYs);
-
-                    // Vertical connector
-                    ctx.strokeStyle = lineColor;
+                    // White border
+                    ctx.strokeStyle = isDark ? '#1e293b' : '#ffffff';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    ctx.moveTo(x, minY);
-                    ctx.lineTo(x, maxY);
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
                     ctx.stroke();
 
+                    // Rotated label below leaf
+                    ctx.save();
+                    ctx.translate(x, y + r + 8);
+                    ctx.rotate(Math.PI / 5);
+                    ctx.fillStyle = isHighlight ? highlightColor : textColor;
+                    ctx.font = isHighlight ? 'bold 11px Space Grotesk, sans-serif' : '10px Space Grotesk, sans-serif';
+                    ctx.textAlign = 'left';
+                    const label = (n.nombre || '').replace(/_/g, ' ').substring(0, 32);
+                    ctx.fillText(label, 0, 0);
+                    ctx.restore();
+
+                    leafPositions.push({ nid, x, y, r: 18, nombre: n.nombre });
+                } else {
+                    const hijos = n.hijos || [];
+                    const childXs = hijos.map(cid => xPos[cid]);
+                    const minX = Math.min(...childXs);
+                    const maxX = Math.max(...childXs);
+
+                    // Horizontal connector at parent's y level
+                    ctx.strokeStyle = nodeColors[nid] || '#10b981';
+                    ctx.lineWidth = 3.5;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(minX, y);
+                    ctx.lineTo(maxX, y);
+                    ctx.stroke();
+
+                    // Small dot at junction
+                    ctx.fillStyle = nodeColors[nid] || '#10b981';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+
                     hijos.forEach(cid => {
-                        const child = nodos[cid];
-                        if (!child) return;
-                        const cx = xForDist(child.distancia);
+                        const cx = xPos[cid];
                         const cy = yPos[cid];
 
-                        // Horizontal branch
-                        ctx.strokeStyle = lineColor;
-                        ctx.lineWidth = 2;
+                        // Vertical branch down
+                        ctx.strokeStyle = nodeColors[cid] || '#10b981';
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
                         ctx.beginPath();
-                        ctx.moveTo(x, cy);
+                        ctx.moveTo(cx, y);
                         ctx.lineTo(cx, cy);
                         ctx.stroke();
 
@@ -3056,18 +3150,30 @@ const DashboardRenderer = {
             leafPositions.length = 0;
             drawNode(raizId);
 
-            // Scale bar
+            // Vertical scale bar on right side
+            const scaleLen = treeHeight * 0.2;
             ctx.strokeStyle = textColor;
             ctx.lineWidth = 1.5;
-            const scaleLen = treeWidth * 0.2;
             ctx.beginPath();
-            ctx.moveTo(marginLeft, displayH - 20);
-            ctx.lineTo(marginLeft + scaleLen, displayH - 20);
+            ctx.moveTo(displayW - marginRight + 25, marginTop + treeHeight);
+            ctx.lineTo(displayW - marginRight + 25, marginTop + treeHeight - scaleLen);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(displayW - marginRight + 20, marginTop + treeHeight);
+            ctx.lineTo(displayW - marginRight + 30, marginTop + treeHeight);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(displayW - marginRight + 20, marginTop + treeHeight - scaleLen);
+            ctx.lineTo(displayW - marginRight + 30, marginTop + treeHeight - scaleLen);
             ctx.stroke();
             ctx.fillStyle = textColor;
-            ctx.font = '10px JetBrains Mono, monospace';
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
             const scaleVal = (maxDist * 0.2 * 100).toFixed(0);
-            ctx.fillText(`${scaleVal}% diferencia genetica`, marginLeft, displayH - 6);
+            ctx.fillText(`${scaleVal}%`, displayW - marginRight + 25, marginTop + treeHeight + 14);
+            ctx.fillText('diferencia', displayW - marginRight + 25, marginTop + treeHeight + 24);
+            ctx.textAlign = 'left';
         }
 
         drawTree(null);
@@ -3078,8 +3184,8 @@ const DashboardRenderer = {
 
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            const mx = (e.clientX - rect.left);
-            const my = (e.clientY - rect.top);
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
 
             let found = null;
             for (const leaf of leafPositions) {
@@ -3096,8 +3202,9 @@ const DashboardRenderer = {
                 const gInfo = genomas.find(g => g.basename === found.nombre) || {};
                 const gpg = genesPorGenoma[found.nombre] || {};
                 tooltip.classList.remove('hidden');
+                // Position tooltip above the leaf node
                 tooltip.style.left = (found.x + 20) + 'px';
-                tooltip.style.top = (found.y - 30) + 'px';
+                tooltip.style.top = (found.y - 80) + 'px';
                 tooltip.innerHTML = `
                     <strong>${(found.nombre || '').replace(/_/g, ' ')}</strong><br>
                     <span style="color:#06b6d4">Genes totales:</span> ${gInfo.total_genes || '?'}<br>
@@ -3129,16 +3236,27 @@ const DashboardRenderer = {
         const matriz = dist.matriz || [];
         const presencia = data.matriz_presencia || {};
 
-        // Build all pairs sorted
+        // Store presencia for click-to-expand
+        DashboardRenderer._evoPresencia = presencia;
+
+        // Build all pairs sorted, filter out 0% similarity
         const pares = [];
+        const paresCero = [];
         for (let i = 0; i < matrizGenomas.length; i++) {
             for (let j = i + 1; j < matrizGenomas.length; j++) {
-                pares.push({
+                const d = matriz[i]?.[j] || 0;
+                const sim = ((1 - d) * 100);
+                const par = {
                     a: matrizGenomas[i],
                     b: matrizGenomas[j],
-                    distancia: matriz[i]?.[j] || 0,
-                    similitud: ((1 - (matriz[i]?.[j] || 0)) * 100).toFixed(1)
-                });
+                    distancia: d,
+                    similitud: sim.toFixed(1)
+                };
+                if (sim > 0.5) {
+                    pares.push(par);
+                } else {
+                    paresCero.push(par);
+                }
             }
         }
         pares.sort((a, b) => a.distancia - b.distancia);
@@ -3151,41 +3269,55 @@ const DashboardRenderer = {
                     Este mapa muestra <strong>que tan parecida es cada bacteria con cada otra</strong>, basandose en cuantos genes comparten.
                     El color <strong class="text-emerald-600">verde</strong> significa "muy parecidas" (comparten muchos genes, como hermanos).
                     El color <strong class="text-red-600">rojo</strong> significa "muy diferentes" (comparten pocos genes, como especies distintas).
-                    Pasa el mouse sobre cada celda para ver los detalles.
+                    <strong>Haz click en cualquier par</strong> para ver que genes comparten y en que se diferencian.
                 </p>
             </div>
 
-            <!-- Ranking de pares -->
+            <!-- Ranking de pares (solo los que comparten algo) -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h4 class="text-sm font-semibold text-primary mb-1">Ranking de Similitud</h4>
-                <p class="text-xs text-secondary mb-3">Todas las comparaciones ordenadas de mas parecidas a mas diferentes. Pasa el mouse para ver detalles.</p>
-                <div class="space-y-1.5 max-h-[350px] overflow-y-auto">
+                <p class="text-xs text-secondary mb-3">Pares que comparten al menos algun gen, ordenados de mas a menos parecidos. <strong>Click para ver genes en detalle.</strong></p>
+                <div class="space-y-1 max-h-[450px] overflow-y-auto" id="evo-ranking-list">
+                    ${pares.length === 0 ? '<p class="text-sm text-secondary py-4 text-center">No hay pares con genes en comun</p>' : ''}
                     ${pares.map((p, idx) => {
                         const simPct = parseFloat(p.similitud);
                         const barColor = simPct > 80 ? '#10b981' : simPct > 50 ? '#f59e0b' : '#ef4444';
                         const relacion = simPct > 90 ? 'Casi identicos' : simPct > 70 ? 'Muy parecidos' : simPct > 50 ? 'Moderadamente parecidos' : simPct > 30 ? 'Bastante diferentes' : 'Muy diferentes';
+                        const emoji = simPct > 90 ? '&#9733;' : simPct > 70 ? '&#9830;' : simPct > 50 ? '&#9679;' : '&#9651;';
                         return `
-                            <div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-default group"
-                                 title="${p.a.replace(/_/g,' ')} vs ${p.b.replace(/_/g,' ')}: comparten ${p.similitud}% de sus genes. ${relacion}.">
-                                <span class="text-xs font-mono text-secondary w-6 text-right">${idx + 1}.</span>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1 text-xs">
-                                        <span class="text-primary font-medium truncate">${p.a.replace(/_/g,' ').substring(0,25)}</span>
-                                        <span class="text-secondary">vs</span>
-                                        <span class="text-primary font-medium truncate">${p.b.replace(/_/g,' ').substring(0,25)}</span>
+                            <div class="rounded-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                <div class="flex items-center gap-3 p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
+                                     onclick="DashboardRenderer._expandParDetail(${idx}, '${p.a}', '${p.b}')">
+                                    <span class="text-xs font-mono text-secondary w-6 text-right">${idx + 1}.</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 text-xs">
+                                            <span class="text-primary font-medium truncate">${p.a.replace(/_/g,' ').substring(0,28)}</span>
+                                            <span class="text-secondary">vs</span>
+                                            <span class="text-primary font-medium truncate">${p.b.replace(/_/g,' ').substring(0,28)}</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mt-1.5">
+                                            <div class="h-2 rounded-full transition-all" style="width:${simPct}%; background:${barColor};"></div>
+                                        </div>
                                     </div>
-                                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mt-1.5">
-                                        <div class="h-2 rounded-full transition-all" style="width:${simPct}%; background:${barColor};"></div>
+                                    <div class="text-right shrink-0 flex items-center gap-2">
+                                        <div>
+                                            <span class="text-sm font-bold" style="color:${barColor}">${p.similitud}%</span>
+                                            <p class="text-[10px] text-secondary">${relacion}</p>
+                                        </div>
+                                        <span class="text-secondary text-xs" id="par-arrow-${idx}">&#9654;</span>
                                     </div>
                                 </div>
-                                <div class="text-right shrink-0">
-                                    <span class="text-sm font-bold" style="color:${barColor}">${p.similitud}%</span>
-                                    <p class="text-[10px] text-secondary hidden group-hover:block">${relacion}</p>
+                                <div id="par-detail-${idx}" class="hidden border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-3">
+                                    <p class="text-xs text-secondary">Calculando genes...</p>
                                 </div>
                             </div>
                         `;
                     }).join('')}
                 </div>
+                ${paresCero.length > 0 ? `
+                <div class="mt-3 p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-slate-200">
+                    <p class="text-xs text-secondary"><strong>${paresCero.length} pares</strong> no comparten ningun gen (0% similitud) y no se muestran en el ranking.</p>
+                </div>` : ''}
             </div>
 
             <!-- Heatmap -->
@@ -3252,6 +3384,84 @@ const DashboardRenderer = {
                 </div>
                 ${(presencia.genes || []).length > 100 ? `<p class="text-xs text-secondary mt-2">Mostrando 100 de ${this.fmt(presencia.genes.length)} genes</p>` : ''}
             </div>` : ''}
+        `;
+    },
+
+    _expandParDetail(idx, a, b) {
+        const el = document.getElementById(`par-detail-${idx}`);
+        const arrow = document.getElementById(`par-arrow-${idx}`);
+        if (!el) return;
+
+        if (!el.classList.contains('hidden')) {
+            el.classList.add('hidden');
+            if (arrow) arrow.innerHTML = '&#9654;';
+            return;
+        }
+        el.classList.remove('hidden');
+        if (arrow) arrow.innerHTML = '&#9660;';
+
+        // Skip recomputation if already done
+        if (el.dataset.computed) return;
+        el.dataset.computed = '1';
+
+        const presencia = DashboardRenderer._evoPresencia || {};
+        const genes = presencia.genes || [];
+        const genomas = presencia.genomas || [];
+        const matrizP = presencia.matriz || [];
+        const idxA = genomas.indexOf(a);
+        const idxB = genomas.indexOf(b);
+
+        if (idxA < 0 || idxB < 0 || genes.length === 0) {
+            el.innerHTML = '<p class="text-xs text-secondary p-2">No hay datos de presencia/ausencia disponibles para este par.</p>';
+            return;
+        }
+
+        const compartidos = [];
+        const soloA = [];
+        const soloB = [];
+
+        for (let i = 0; i < genes.length; i++) {
+            const inA = matrizP[i]?.[idxA] || 0;
+            const inB = matrizP[i]?.[idxB] || 0;
+            if (inA && inB) compartidos.push(genes[i]);
+            else if (inA) soloA.push(genes[i]);
+            else if (inB) soloB.push(genes[i]);
+        }
+
+        const labelA = a.replace(/_/g, ' ').substring(0, 22);
+        const labelB = b.replace(/_/g, ' ').substring(0, 22);
+        const maxShow = 40;
+
+        el.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-emerald-50 dark:bg-emerald-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-emerald-600 mb-2">Genes compartidos (${this.fmt(compartidos.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Estos genes estan en ambas bacterias:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${compartidos.slice(0, maxShow).map(g => `<span class="inline-block bg-emerald-100 dark:bg-emerald-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${compartidos.length > maxShow ? `<p class="text-[10px] text-emerald-600 mt-1">...y ${this.fmt(compartidos.length - maxShow)} genes mas</p>` : ''}
+                        ${compartidos.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+                <div class="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-amber-600 mb-2">Solo en ${labelA} (${this.fmt(soloA.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Genes que la otra bacteria NO tiene:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${soloA.slice(0, maxShow).map(g => `<span class="inline-block bg-amber-100 dark:bg-amber-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${soloA.length > maxShow ? `<p class="text-[10px] text-amber-600 mt-1">...y ${this.fmt(soloA.length - maxShow)} genes mas</p>` : ''}
+                        ${soloA.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+                <div class="bg-red-50 dark:bg-red-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-red-600 mb-2">Solo en ${labelB} (${this.fmt(soloB.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Genes que la otra bacteria NO tiene:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${soloB.slice(0, maxShow).map(g => `<span class="inline-block bg-red-100 dark:bg-red-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${soloB.length > maxShow ? `<p class="text-[10px] text-red-600 mt-1">...y ${this.fmt(soloB.length - maxShow)} genes mas</p>` : ''}
+                        ${soloB.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+            </div>
         `;
     },
 
