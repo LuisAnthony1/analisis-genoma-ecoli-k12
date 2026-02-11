@@ -6,6 +6,7 @@
     <title>GenomeHub - Plataforma de Análisis Genómico Interactiva | UNSAAC</title>
     <meta name="description" content="Aplicación web interactiva para búsqueda, descarga y análisis de genomas bacterianos desde NCBI">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -27,18 +28,28 @@
         body.light .bg-card { background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
         body.light .text-primary { color: #0f172a; }
         body.light .text-secondary { color: #334155; }
-        body.light .sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; }
+
+        /* Sidebar - tema claro */
+        body.light .sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; box-shadow: 2px 0 10px rgba(0,0,0,0.08); }
         body.light .sidebar .indicator { background: #e2e8f0; }
         body.light .sidebar .indicator::before { box-shadow: 25px 25px 0 10px #e2e8f0; }
         body.light .sidebar .indicator::after { box-shadow: 25px -25px 0 10px #e2e8f0; }
         body.light .sidebar .nav-link { color: #64748b; }
+        body.light .sidebar .nav-link:hover { color: #334155; }
         body.light .sidebar .nav-item.active .nav-link { color: #0f172a; }
         body.light .sidebar .category-label { color: #94a3b8; }
         body.light .sidebar .submenu { background: #f1f5f9; }
-        body.light .sidebar .submenu-item { color: #64748b; }
-        body.light .sidebar .submenu-item:hover,
-        body.light .sidebar .submenu-item.active { color: #0f172a; background: #e2e8f0; }
+        body.light .sidebar .submenu-item { color: #475569; }
+        body.light .sidebar .submenu-item:hover { color: #0f172a; background: #e2e8f0; }
+        body.light .sidebar .submenu-item.active { color: #059669; background: #ecfdf5; font-weight: 600; }
         body.light .sidebar-footer { border-top-color: #e2e8f0; }
+        body.light .sidebar-footer .theme-toggle-btn { background: #f1f5f9; color: #475569; }
+        body.light .sidebar-footer .theme-toggle-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+        /* Formularios y tablas - tema claro */
+        body.light input, body.light select, body.light textarea { color: #0f172a; }
+        body.light table th { color: #334155; }
+        body.light table td { color: #1e293b; }
 
         /* ================================================================
            TEMA OSCURO
@@ -48,11 +59,79 @@
         body.dark .bg-card { background-color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         body.dark .text-primary { color: #f8fafc; }
         body.dark .text-secondary { color: #cbd5e1; }
-        body.dark .bg-slate-100, body.dark .bg-slate-50 { background-color: #262626 !important; }
+
+        /* Sidebar - tema oscuro (mejorar visibilidad submenu) */
+        body.dark .sidebar .submenu-item { color: #94a3b8; }
+        body.dark .sidebar .submenu-item:hover { color: #f1f5f9; background: rgba(16,185,129,0.12); }
+        body.dark .sidebar .submenu-item.active { color: #34d399; }
+        body.dark .sidebar .category-label { color: #64748b; }
+
+        /* Slate backgrounds */
+        body.dark .bg-slate-50, body.dark .bg-slate-100 { background-color: #262626 !important; }
+        body.dark .bg-slate-200 { background-color: #333333 !important; }
         body.dark .bg-white { background-color: #1a1a1a !important; }
+
+        /* Slate text */
         body.dark .text-slate-900, body.dark .text-slate-800, body.dark .text-slate-700 { color: #e2e8f0 !important; }
         body.dark .text-slate-600, body.dark .text-slate-500 { color: #94a3b8 !important; }
-        body.dark .border-slate-200, body.dark .border-slate-300 { border-color: rgba(255,255,255,0.1) !important; }
+
+        /* Borders */
+        body.dark .border-slate-200, body.dark .border-slate-300, body.dark .border-slate-100 { border-color: rgba(255,255,255,0.1) !important; }
+
+        /* Colored backgrounds - light shades to dark equivalents */
+        body.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+        body.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
+        body.dark .bg-cyan-50 { background-color: rgba(6, 182, 212, 0.1) !important; }
+        body.dark .bg-cyan-100 { background-color: rgba(6, 182, 212, 0.15) !important; }
+        body.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+        body.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
+        body.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
+        body.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.15) !important; }
+        body.dark .bg-violet-50 { background-color: rgba(139, 92, 246, 0.1) !important; }
+        body.dark .bg-pink-50 { background-color: rgba(236, 72, 153, 0.1) !important; }
+        body.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+        body.dark .bg-yellow-200 { background-color: rgba(234, 179, 8, 0.2) !important; }
+        body.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.1) !important; }
+        body.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.1) !important; }
+        body.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.1) !important; }
+        body.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.1) !important; }
+
+        /* Colored text - dark shades to lighter for dark bg readability */
+        body.dark .text-emerald-700 { color: #34d399 !important; }
+        body.dark .text-emerald-600 { color: #34d399 !important; }
+        body.dark .text-cyan-700 { color: #22d3ee !important; }
+        body.dark .text-cyan-600 { color: #22d3ee !important; }
+        body.dark .text-red-700 { color: #f87171 !important; }
+        body.dark .text-red-600 { color: #f87171 !important; }
+        body.dark .text-amber-700 { color: #fbbf24 !important; }
+        body.dark .text-amber-600 { color: #fbbf24 !important; }
+        body.dark .text-violet-600 { color: #a78bfa !important; }
+        body.dark .text-violet-700 { color: #a78bfa !important; }
+        body.dark .text-pink-700 { color: #f472b6 !important; }
+        body.dark .text-pink-600 { color: #f472b6 !important; }
+        body.dark .text-yellow-800 { color: #fbbf24 !important; }
+        body.dark .text-blue-700 { color: #60a5fa !important; }
+        body.dark .text-blue-600 { color: #60a5fa !important; }
+        body.dark .text-orange-700 { color: #fb923c !important; }
+
+        /* Colored borders */
+        body.dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.3) !important; }
+        body.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.3) !important; }
+        body.dark .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
+        body.dark .border-cyan-200 { border-color: rgba(6, 182, 212, 0.3) !important; }
+        body.dark .border-violet-200 { border-color: rgba(139, 92, 246, 0.3) !important; }
+
+        /* Form elements */
+        body.dark input, body.dark select, body.dark textarea { color: #e2e8f0; }
+        body.dark input::placeholder, body.dark textarea::placeholder { color: #64748b; }
+        body.dark table th { color: #cbd5e1; }
+        body.dark table td { color: #cbd5e1; }
+
+        /* Hover states - override light hover bgs */
+        body.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.15) !important; }
+        body.dark .hover\:bg-amber-50:hover { background-color: rgba(245, 158, 11, 0.15) !important; }
+        body.dark .hover\:bg-slate-50:hover { background-color: #262626 !important; }
+        body.dark .hover\:bg-slate-100:hover { background-color: #333333 !important; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -324,7 +403,6 @@
         (function() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.className = savedTheme;
-            document.body.className = savedTheme;
         })();
     </script>
 </head>
@@ -413,6 +491,21 @@
                     <li class="submenu-item" data-tab="3d-secundaria"><i data-lucide="waves"></i><span>Secundaria</span></li>
                     <li class="submenu-item" data-tab="3d-terciaria"><i data-lucide="box"></i><span>Terciaria</span></li>
                     <li class="submenu-item" data-tab="3d-cuaternaria"><i data-lucide="boxes"></i><span>Cuaternaria</span></li>
+                </ul>
+            </li>
+
+            <!-- EVOLUCION -->
+            <div class="category-label">Evolucion</div>
+            <li class="nav-item has-submenu" data-section="evolucion">
+                <a class="nav-link">
+                    <i data-lucide="git-branch"></i>
+                    <span class="link-text">Pangenoma</span>
+                    <i data-lucide="chevron-down" class="submenu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" data-tab="evo-pangenoma"><i data-lucide="pie-chart"></i><span>Pangenoma</span></li>
+                    <li class="submenu-item" data-tab="evo-arbol"><i data-lucide="network"></i><span>Arbol</span></li>
+                    <li class="submenu-item" data-tab="evo-matriz"><i data-lucide="grid-3x3"></i><span>Matriz</span></li>
                 </ul>
             </li>
 
@@ -677,6 +770,57 @@
                             <p class="text-sm mt-2">Primero ejecuta el analisis de proteinas</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCION: EVOLUCION / PANGENOMA -->
+        <section id="section-evolucion" class="section-panel">
+            <div class="px-6 py-8">
+                <div class="mx-auto" style="max-width: 1400px;">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold mb-2 text-primary">Evolucion Genomica / Pangenoma</h2>
+                        <p class="text-secondary">Compara multiples genomas: genes compartidos, unicos, arbol filogenetico y distancias</p>
+                    </div>
+
+                    <!-- Selector de genomas -->
+                    <div class="bg-card rounded-xl p-6 mb-6 border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-primary">Seleccionar Genomas</h3>
+                                <p class="text-xs text-secondary mt-1">Marca al menos 2 genomas para comparar. Se necesitan 3+ para resultados significativos.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="evoSelectAll()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 transition">Todos</button>
+                                <button onclick="evoSelectNone()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-500 transition">Ninguno</button>
+                            </div>
+                        </div>
+                        <div id="evo-genome-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4 max-h-[300px] overflow-y-auto">
+                            <p class="text-sm text-secondary col-span-full text-center py-4">Cargando genomas...</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <p class="text-sm text-secondary"><span id="evo-selected-count" class="font-bold text-emerald-500">0</span> genomas seleccionados</p>
+                            <button id="run-evolucion-btn" onclick="runEvolucion()" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                Analizar Evolucion
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress -->
+                    <div id="evo-progress" class="hidden mb-6">
+                        <div class="bg-card rounded-xl p-6 border border-emerald-500/30">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                <div>
+                                    <p class="text-primary font-medium">Analizando evolucion genomica...</p>
+                                    <p class="text-sm text-secondary">Comparando genomas, construyendo pangenoma y arbol UPGMA. Esto puede tardar varios minutos.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard container -->
+                    <div id="evo-dashboard"></div>
                 </div>
             </div>
         </section>

@@ -24,6 +24,7 @@ import os
 import sys
 import json
 import csv
+import statistics
 from datetime import datetime
 from collections import Counter
 

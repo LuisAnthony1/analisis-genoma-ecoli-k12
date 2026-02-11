@@ -80,6 +80,17 @@ function showSection(sectionName) {
 
     AppState.currentSection = sectionName;
 
+    // Sincronizar sidebar: buscar nav-item que corresponda a esta seccion y activarlo
+    // 'results' se muestra bajo el nav-item 'analysis'
+    const sectionToNav = { results: 'analysis' };
+    const navSection = sectionToNav[sectionName] || sectionName;
+    const navItem = document.querySelector(`.nav-item[data-section="${navSection}"]`);
+    if (navItem && !navItem.classList.contains('active')) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        navItem.classList.add('active');
+        moveIndicator(navItem);
+    }
+
     // Cargar datos segun seccion
     if (sectionName === 'library') {
         loadLibrary();
@@ -95,6 +106,8 @@ function showSection(sectionName) {
         loadInformeGenomeSelector();
     } else if (sectionName === 'chat') {
         loadChatGenomeSelector();
+    } else if (sectionName === 'evolucion') {
+        loadEvolucionGenomeSelector();
     }
 }
 
@@ -122,6 +135,8 @@ function navigateToItem(navItem) {
             showSection('compare');
         } else if (section === 'visor3d') {
             showSection('visor3d');
+        } else if (section === 'evolucion') {
+            showSection('evolucion');
         }
     } else {
         // Cerrar submenus abiertos
@@ -171,6 +186,9 @@ function navigateToSubItem(subItem) {
     } else if (section === 'visor3d') {
         showSection('visor3d');
         loadVisor3DTab(tab);
+    } else if (section === 'evolucion') {
+        showSection('evolucion');
+        loadEvolucionTab(tab);
     }
 }
 
@@ -709,6 +727,160 @@ function renderVisor3DCuaternaria(data, container) {
 }
 
 // =============================================================================
+// EVOLUCION / PANGENOMA
+// =============================================================================
+
+async function loadEvolucionGenomeSelector() {
+    const container = document.getElementById('evo-genome-list');
+    if (!container) return;
+
+    try {
+        const resp = await fetch('/api/genomes');
+        const data = await resp.json();
+        if (data.success && data.genomes && data.genomes.length > 0) {
+            container.innerHTML = data.genomes.map(g => `
+                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition text-xs">
+                    <input type="checkbox" class="evo-genome-check w-3.5 h-3.5 text-emerald-500 rounded" value="${g.basename}">
+                    <span class="text-primary truncate" title="${g.organism || g.basename}">${(g.organism || g.basename).substring(0, 35)}</span>
+                </label>
+            `).join('');
+
+            // Update counter on change
+            container.querySelectorAll('.evo-genome-check').forEach(cb => {
+                cb.addEventListener('change', updateEvoCount);
+            });
+        } else {
+            container.innerHTML = '<p class="text-sm text-secondary col-span-full text-center py-4">No hay genomas descargados</p>';
+        }
+    } catch {
+        container.innerHTML = '<p class="text-sm text-red-500 col-span-full text-center py-4">Error al cargar genomas</p>';
+    }
+}
+
+function updateEvoCount() {
+    const checked = document.querySelectorAll('.evo-genome-check:checked');
+    const countEl = document.getElementById('evo-selected-count');
+    if (countEl) countEl.textContent = checked.length;
+}
+
+function evoSelectAll() {
+    document.querySelectorAll('.evo-genome-check').forEach(cb => { cb.checked = true; });
+    updateEvoCount();
+}
+
+function evoSelectNone() {
+    document.querySelectorAll('.evo-genome-check').forEach(cb => { cb.checked = false; });
+    updateEvoCount();
+}
+
+async function runEvolucion() {
+    const checked = document.querySelectorAll('.evo-genome-check:checked');
+    if (checked.length < 2) {
+        showNotification('Selecciona al menos 2 genomas para el analisis de evolucion', 'warning');
+        return;
+    }
+
+    const genomesList = Array.from(checked).map(cb => cb.value).join(',');
+    const btn = document.getElementById('run-evolucion-btn');
+    const progress = document.getElementById('evo-progress');
+    const dashboard = document.getElementById('evo-dashboard');
+
+    btn.disabled = true;
+    btn.textContent = 'Analizando...';
+    progress.classList.remove('hidden');
+    dashboard.innerHTML = '';
+
+    try {
+        const resp = await fetch('/api/run_analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                script: 'analisis_evolucion',
+                genome_basename: genomesList
+            })
+        });
+
+        const result = await resp.json();
+        progress.classList.add('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Analizar Evolucion';
+
+        if (result.success && result.return_code === 0) {
+            showNotification('Analisis de evolucion completado', 'success');
+            // Load and display results
+            loadEvolucionResults();
+        } else {
+            showNotification('Error en analisis de evolucion', 'error');
+            dashboard.innerHTML = `
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-xl p-6">
+                    <h3 class="text-red-600 font-semibold mb-2">Error en el analisis</h3>
+                    <pre class="text-xs text-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">${result.output || result.error || 'Error desconocido'}</pre>
+                </div>
+            `;
+        }
+    } catch (error) {
+        progress.classList.add('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Analizar Evolucion';
+        showNotification('Error de conexion: ' + error.message, 'error');
+    }
+}
+
+async function loadEvolucionResults(tab) {
+    const dashboard = document.getElementById('evo-dashboard');
+    if (!dashboard) return;
+
+    dashboard.innerHTML = `
+        <div class="flex items-center justify-center py-12">
+            <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mr-4"></div>
+            <span class="text-secondary">Cargando resultados de evolucion...</span>
+        </div>
+    `;
+
+    try {
+        const resp = await fetch('/api/evolucion_resultado');
+        const result = await resp.json();
+
+        if (!result.success || !result.data) {
+            dashboard.innerHTML = `
+                <div class="text-center py-12 text-secondary">
+                    <div class="text-6xl mb-3">🧬</div>
+                    <p>No hay resultados de evolucion disponibles</p>
+                    <p class="text-sm mt-2">Selecciona genomas y ejecuta el analisis</p>
+                </div>
+            `;
+            return;
+        }
+
+        const data = result.data;
+        const activeTab = tab || AppState.currentTab || 'evo-pangenoma';
+
+        DashboardRenderer.destroyCharts();
+
+        if (activeTab === 'evo-pangenoma') {
+            DashboardRenderer.renderEvolucionPangenoma(data, dashboard);
+        } else if (activeTab === 'evo-arbol') {
+            DashboardRenderer.renderEvolucionArbol(data, dashboard);
+        } else if (activeTab === 'evo-matriz') {
+            DashboardRenderer.renderEvolucionMatriz(data, dashboard);
+        } else {
+            DashboardRenderer.renderEvolucionPangenoma(data, dashboard);
+        }
+    } catch (error) {
+        dashboard.innerHTML = `
+            <div class="text-center py-12 text-red-500">
+                <p>Error al cargar resultados: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+function loadEvolucionTab(tab) {
+    AppState.currentTab = tab;
+    loadEvolucionResults(tab);
+}
+
+// =============================================================================
 // CHAT (seccion completa en vez de modal)
 // =============================================================================
 
@@ -786,13 +958,19 @@ function toggleTheme() {
 }
 
 function applyTheme(theme) {
+    // Actualizar clase en <html> (para Tailwind dark: prefixes) y <body>
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
     document.body.classList.remove('light', 'dark');
     document.body.classList.add(theme);
 
     // Actualizar icono y texto del boton de tema
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
-        const iconEl = btn.querySelector('svg, i');
+        const iconEl = btn.querySelector('#theme-icon');
+        if (iconEl) {
+            iconEl.setAttribute('data-lucide', theme === 'dark' ? 'moon' : 'sun');
+        }
         const textEl = btn.querySelector('.link-text');
         if (textEl) textEl.textContent = theme === 'dark' ? 'Tema Oscuro' : 'Tema Claro';
     }

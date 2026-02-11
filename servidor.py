@@ -283,6 +283,7 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 180},
         "generar_informe": {"file": "generar_informe.py", "timeout": 600},
         "analisis_proteinas": {"file": "analisis_proteinas.py", "timeout": 300},
+        "analisis_evolucion": {"file": "analisis_evolucion.py", "timeout": 300},
     }
 
     if script_name not in scripts_permitidos:
@@ -296,10 +297,15 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
 
     # Construir comando - todos los scripts reciben genome_basename como argumento
     cmd = [sys.executable, script_path]
-    if genome_basename:
-        cmd.append(genome_basename)
-    if genome_basename_2:
-        cmd.append(genome_basename_2)
+    if script_name == "analisis_evolucion":
+        # Evolucion recibe lista de genomas separada por coma (o "all")
+        genomes_list = genome_basename or "all"
+        cmd.append(genomes_list)
+    else:
+        if genome_basename:
+            cmd.append(genome_basename)
+        if genome_basename_2:
+            cmd.append(genome_basename_2)
 
     # Registrar archivos existentes ANTES del análisis
     archivos_antes_tablas = set()
@@ -320,8 +326,8 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         )
         elapsed = round(time.time() - start, 2)
 
-        # Mover archivos nuevos a carpeta del genoma
-        if genome_basename:
+        # Mover archivos nuevos a carpeta del genoma (no aplica a evolucion)
+        if genome_basename and script_name != "analisis_evolucion":
             mover_resultados_a_genoma(
                 genome_basename, archivos_antes_tablas, archivos_antes_figuras
             )
@@ -537,6 +543,19 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
                 return
             resultado = extraer_secuencia_genes(genome, gene_start, gene_end, mode)
             self._json_response(resultado)
+            return
+
+        if path == "/api/evolucion_resultado":
+            ruta_evo = os.path.join(RUTA_RESULTADOS, "evolucion", "analisis_evolucion.json")
+            if not os.path.exists(ruta_evo):
+                self._json_response({"success": False, "error": "No hay resultado de evolucion. Ejecuta el analisis primero."})
+                return
+            try:
+                with open(ruta_evo, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self._json_response({"success": True, "data": data})
+            except Exception as e:
+                self._json_response({"success": False, "error": str(e)})
             return
 
         if path == "/api/result_data":
@@ -799,8 +818,8 @@ def listar_genomas_con_resultados():
 
     for nombre in sorted(os.listdir(RUTA_RESULTADOS)):
         ruta = os.path.join(RUTA_RESULTADOS, nombre)
-        # Solo carpetas que NO sean 'tablas' o 'figuras' (legacy)
-        if os.path.isdir(ruta) and nombre not in ("tablas", "figuras"):
+        # Solo carpetas que NO sean 'tablas', 'figuras' (legacy) ni 'evolucion'
+        if os.path.isdir(ruta) and nombre not in ("tablas", "figuras", "evolucion"):
             # Contar archivos
             num_tablas = 0
             num_figuras = 0

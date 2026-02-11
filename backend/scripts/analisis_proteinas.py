@@ -43,7 +43,8 @@ except ImportError:
 # CONFIGURACION
 # =============================================================================
 
-DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
+DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
 GENOME_BASENAME = sys.argv[1] if len(sys.argv) >= 2 else None
 
 if not GENOME_BASENAME:
@@ -51,7 +52,7 @@ if not GENOME_BASENAME:
     sys.exit(1)
 
 # Buscar archivo GenBank
-RUTA_DATOS = os.path.join(DIRECTORIO_BASE, "datos", "crudo")
+RUTA_DATOS = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
 archivo_gb = None
 for ext in [".gb", ".gbk", ".genbank"]:
     ruta = os.path.join(RUTA_DATOS, GENOME_BASENAME + ext)

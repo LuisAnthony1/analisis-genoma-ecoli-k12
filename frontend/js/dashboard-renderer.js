@@ -2592,6 +2592,461 @@ const DashboardRenderer = {
         this._cache = {};
     },
 
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - PANGENOMA
+    // =========================================================================
+
+    renderEvolucionPangenoma(data, container) {
+        const pan = data.pangenoma || {};
+        const curva = data.curva_pangenoma || [];
+        const genomas = data.genomas_analizados || [];
+        const genesDetalle = pan.genes_unicos_detalle || {};
+        const genesPorGenoma = pan.genes_por_genoma || {};
+
+        container.innerHTML = `
+            <h3 class="text-xl font-bold text-primary mb-4">Pangenoma - ${data.total_genomas || 0} Genomas Analizados</h3>
+
+            <!-- Stat cards principales -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Pan-genoma', this.fmt(pan.total_genes_unicos || 0), 'genes unicos totales', 'emerald')}
+                ${this.statsCard('Core Genome', this.fmt(pan.core_genome || 0), 'presentes en TODOS', 'cyan')}
+                ${this.statsCard('Accessory', this.fmt(pan.accessory_genome || 0), 'en algunos genomas', 'amber')}
+                ${this.statsCard('Unicos', this.fmt(pan.genes_unicos_total || 0), 'en solo 1 genoma', 'red')}
+            </div>
+
+            <!-- Charts row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Donut distribucion -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h4 class="text-sm font-semibold text-primary mb-3">Distribucion del Pangenoma</h4>
+                    <canvas id="chart-evo-donut" height="260"></canvas>
+                </div>
+
+                <!-- Curva pangenoma -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h4 class="text-sm font-semibold text-primary mb-3">Curva del Pangenoma</h4>
+                    <canvas id="chart-evo-curva" height="260"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabla por genoma -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-3">Detalle por Genoma</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-secondary">Genoma</th>
+                                <th class="px-3 py-2 text-right text-secondary">Total Genes</th>
+                                <th class="px-3 py-2 text-right text-secondary">Core</th>
+                                <th class="px-3 py-2 text-right text-secondary">Unicos</th>
+                                <th class="px-3 py-2 text-right text-secondary">GC%</th>
+                                <th class="px-3 py-2 text-right text-secondary">Longitud (Mb)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${genomas.map(g => {
+                                const gpg = genesPorGenoma[g.basename] || {};
+                                return `
+                                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/10">
+                                        <td class="px-3 py-2 font-medium text-primary">${(g.nombre || g.basename).substring(0, 45)}</td>
+                                        <td class="px-3 py-2 text-right text-primary">${this.fmt(g.total_genes)}</td>
+                                        <td class="px-3 py-2 text-right text-cyan-500 font-medium">${this.fmt(gpg.core || 0)}</td>
+                                        <td class="px-3 py-2 text-right text-red-500 font-medium">${this.fmt(gpg.unicos || 0)}</td>
+                                        <td class="px-3 py-2 text-right text-primary">${(g.gc_porcentaje || 0).toFixed(1)}%</td>
+                                        <td class="px-3 py-2 text-right text-primary">${((g.longitud_pb || 0) / 1e6).toFixed(2)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Genes unicos por genoma (expandibles) -->
+            ${Object.keys(genesDetalle).length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-3">Genes Unicos por Genoma</h4>
+                <div class="space-y-2 max-h-[400px] overflow-y-auto">
+                    ${Object.entries(genesDetalle).map(([basename, genes]) => `
+                        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                             onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium text-sm text-primary">${basename}</span>
+                                <span class="text-xs px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full">${genes.length} genes unicos</span>
+                            </div>
+                        </div>
+                        <div class="hidden px-3 pb-2">
+                            <div class="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 text-xs max-h-[200px] overflow-y-auto">
+                                ${genes.slice(0, 50).map(g => `
+                                    <div class="py-1 border-b border-slate-50 dark:border-slate-800 flex justify-between">
+                                        <span class="text-secondary">${g.producto || 'hypothetical'}</span>
+                                        <span class="text-primary font-mono">${g.locus_tag || ''}</span>
+                                    </div>
+                                `).join('')}
+                                ${genes.length > 50 ? `<p class="text-secondary mt-2">... y ${genes.length - 50} mas</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        `;
+
+        // Create charts
+        setTimeout(() => {
+            // Donut
+            this.createChart('chart-evo-donut', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Core Genome', 'Accessory', 'Unicos'],
+                    datasets: [{
+                        data: [pan.core_genome || 0, pan.accessory_genome || 0, pan.genes_unicos_total || 0],
+                        backgroundColor: ['#06b6d4', '#f59e0b', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: document.body.classList.contains('dark') ? '#1a1a1a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = pan.total_genes_unicos || 1;
+                                    const pct = ((ctx.raw / total) * 100).toFixed(1);
+                                    return `${ctx.label}: ${this.fmt(ctx.raw)} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Curva pangenoma
+            if (curva.length > 0) {
+                this.createChart('chart-evo-curva', {
+                    type: 'line',
+                    data: {
+                        labels: curva.map(c => c.n_genomas),
+                        datasets: [
+                            {
+                                label: 'Pan-genoma',
+                                data: curva.map(c => c.pan),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Core Genome',
+                                data: curva.map(c => c.core),
+                                borderColor: '#06b6d4',
+                                backgroundColor: 'rgba(6,182,212,0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {
+                            x: { title: { display: true, text: 'Numero de genomas' } },
+                            y: { title: { display: true, text: 'Genes' }, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        }, 100);
+    },
+
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - ARBOL UPGMA
+    // =========================================================================
+
+    renderEvolucionArbol(data, container) {
+        const arbol = data.arbol_upgma || {};
+        const nodos = arbol.nodos || [];
+        const genomas = data.genomas_analizados || [];
+        const raiz = arbol.raiz || 0;
+
+        container.innerHTML = `
+            <h3 class="text-xl font-bold text-primary mb-4">Arbol Filogenetico UPGMA</h3>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Genomas', genomas.length, 'hojas del arbol', 'emerald')}
+                ${this.statsCard('Metodo', 'UPGMA', 'distancia Jaccard', 'cyan')}
+                ${this.statsCard('Nodos Internos', nodos.filter(n => !n.hoja).length, 'puntos de divergencia', 'violet')}
+                ${this.statsCard('Newick', 'Disponible', arbol.newick ? arbol.newick.length + ' caracteres' : 'N/A', 'amber')}
+            </div>
+
+            <!-- Canvas del dendrograma -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-semibold text-primary">Dendrograma</h4>
+                    <p class="text-xs text-secondary">Distancia Jaccard (0=identicos, 1=sin genes compartidos)</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <canvas id="canvas-evo-tree" width="900" height="${Math.max(400, genomas.length * 45 + 80)}"></canvas>
+                </div>
+            </div>
+
+            <!-- Newick string -->
+            ${arbol.newick ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-2">Formato Newick</h4>
+                <p class="text-xs text-secondary mb-2">Puedes copiar este texto para usar en herramientas externas como iTOL, FigTree, etc.</p>
+                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 font-mono text-xs break-all max-h-[150px] overflow-y-auto select-all cursor-pointer" onclick="navigator.clipboard.writeText(this.textContent).then(()=>showNotification('Newick copiado','success'))">${arbol.newick}</div>
+            </div>` : ''}
+        `;
+
+        // Draw the tree on canvas
+        setTimeout(() => {
+            this._drawDendrograma('canvas-evo-tree', nodos, raiz, genomas);
+        }, 100);
+    },
+
+    _drawDendrograma(canvasId, nodos, raizId, genomas) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || nodos.length === 0) return;
+        const ctx = canvas.getContext('2d');
+
+        const isDark = document.body.classList.contains('dark');
+        const textColor = isDark ? '#e2e8f0' : '#1e293b';
+        const lineColor = isDark ? '#475569' : '#94a3b8';
+        const accentColor = '#10b981';
+
+        const hojas = nodos.filter(n => n.hoja);
+        const numHojas = hojas.length;
+        const marginLeft = 60;
+        const marginRight = 220;
+        const marginTop = 40;
+        const marginBottom = 40;
+        const treeWidth = canvas.width - marginLeft - marginRight;
+        const treeHeight = canvas.height - marginTop - marginBottom;
+        const leafSpacing = treeHeight / Math.max(numHojas - 1, 1);
+
+        // Find max distance for scaling
+        let maxDist = 0;
+        nodos.forEach(n => { if (n.distancia > maxDist) maxDist = n.distancia; });
+        if (maxDist === 0) maxDist = 1;
+
+        // Assign y positions to leaves
+        const yPos = {};
+        let leafIdx = 0;
+
+        function assignPositions(nid) {
+            const n = nodos[nid];
+            if (!n) return 0;
+            if (n.hoja) {
+                yPos[nid] = marginTop + leafIdx * leafSpacing;
+                leafIdx++;
+                return yPos[nid];
+            }
+            // Internal: average of children
+            const childYs = (n.hijos || []).map(cid => assignPositions(cid));
+            const avg = childYs.reduce((a, b) => a + b, 0) / childYs.length;
+            yPos[nid] = avg;
+            return avg;
+        }
+        assignPositions(raizId);
+
+        // Clear
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Scale bar
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1;
+        ctx.fillStyle = textColor;
+        ctx.font = '10px JetBrains Mono, monospace';
+        const scaleLen = treeWidth * 0.2;
+        const scaleVal = (maxDist * 0.2).toFixed(3);
+        ctx.beginPath();
+        ctx.moveTo(marginLeft, canvas.height - 15);
+        ctx.lineTo(marginLeft + scaleLen, canvas.height - 15);
+        ctx.stroke();
+        ctx.fillText(scaleVal, marginLeft + scaleLen / 2 - 15, canvas.height - 4);
+
+        // Draw tree
+        function xForDist(dist) {
+            return marginLeft + (dist / maxDist) * treeWidth;
+        }
+
+        function drawNode(nid) {
+            const n = nodos[nid];
+            if (!n) return;
+            const x = xForDist(n.distancia);
+            const y = yPos[nid];
+
+            if (n.hoja) {
+                // Leaf node - draw circle and label
+                ctx.fillStyle = accentColor;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = textColor;
+                ctx.font = '11px Space Grotesk, sans-serif';
+                const label = (n.nombre || '').substring(0, 30).replace(/_/g, ' ');
+                ctx.fillText(label, x + 10, y + 4);
+            } else {
+                // Internal node - draw branches to children
+                const hijos = n.hijos || [];
+                hijos.forEach(cid => {
+                    const child = nodos[cid];
+                    if (!child) return;
+                    const cx = xForDist(child.distancia);
+                    const cy = yPos[cid];
+
+                    // Horizontal line from child to parent's x
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(x, cy);
+                    ctx.stroke();
+
+                    // Vertical line connecting children
+                    ctx.beginPath();
+                    ctx.moveTo(x, cy);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+
+                    drawNode(cid);
+                });
+
+                // Small dot at internal node
+                ctx.fillStyle = lineColor;
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        drawNode(raizId);
+
+        // Distance axis
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([3, 3]);
+        for (let i = 0; i <= 5; i++) {
+            const d = (maxDist / 5) * i;
+            const x = xForDist(d);
+            ctx.beginPath();
+            ctx.moveTo(x, marginTop - 15);
+            ctx.lineTo(x, marginTop + treeHeight + 5);
+            ctx.stroke();
+            ctx.fillStyle = textColor;
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.fillText(d.toFixed(3), x - 12, marginTop - 20);
+        }
+        ctx.setLineDash([]);
+    },
+
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - MATRIZ DE DISTANCIAS
+    // =========================================================================
+
+    renderEvolucionMatriz(data, container) {
+        const dist = data.distancias_jaccard || {};
+        const matrizGenomas = dist.genomas || [];
+        const matriz = dist.matriz || [];
+        const presencia = data.matriz_presencia || {};
+        const pan = data.pangenoma || {};
+
+        container.innerHTML = `
+            <h3 class="text-xl font-bold text-primary mb-4">Matriz de Distancias y Presencia/Ausencia</h3>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Genomas', matrizGenomas.length, 'en la matriz', 'emerald')}
+                ${this.statsCard('Comparaciones', matrizGenomas.length > 1 ? this.fmt(matrizGenomas.length * (matrizGenomas.length - 1) / 2) : '0', 'pares analizados', 'cyan')}
+                ${this.statsCard('Dist. Min', matriz.length > 1 ? this._matrizMinMax(matriz).min.toFixed(4) : 'N/A', 'par mas cercano', 'emerald')}
+                ${this.statsCard('Dist. Max', matriz.length > 1 ? this._matrizMinMax(matriz).max.toFixed(4) : 'N/A', 'par mas lejano', 'red')}
+            </div>
+
+            <!-- Heatmap de distancias Jaccard -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-3">Heatmap de Distancias Jaccard</h4>
+                <p class="text-xs text-secondary mb-3">Verde = genomas cercanos (muchos genes compartidos), Rojo = genomas lejanos (pocos genes compartidos)</p>
+                <div class="overflow-x-auto">
+                    <table class="text-xs border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-10"></th>
+                                ${matrizGenomas.map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:120px; font-size:10px;">${g.substring(0, 20)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${matrizGenomas.map((g, i) => `
+                                <tr>
+                                    <td class="px-2 py-1 text-secondary font-medium whitespace-nowrap sticky left-0 bg-card z-10" style="font-size:10px;">${g.substring(0, 25)}</td>
+                                    ${matrizGenomas.map((_, j) => {
+                                        const val = (matriz[i] && matriz[i][j] !== undefined) ? matriz[i][j] : 0;
+                                        const color = i === j ? 'rgba(16,185,129,0.3)' : this._distToColor(val);
+                                        return `<td class="px-1 py-1 text-center font-mono" style="background:${color}; min-width:40px; font-size:9px;" title="${g} vs ${matrizGenomas[j]}: ${val.toFixed(4)}">${i === j ? '-' : val.toFixed(2)}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Resumen de presencia/ausencia -->
+            ${presencia.genes && presencia.genes.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-2">Matriz de Presencia/Ausencia</h4>
+                <p class="text-xs text-secondary mb-3">Mostrando los primeros 100 genes del pangenoma. Verde = presente, Gris = ausente.</p>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table class="text-[9px] border-collapse">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-card">
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-20">Gen</th>
+                                ${(presencia.genomas || []).map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:100px;">${g.substring(0, 15)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(presencia.genes || []).slice(0, 100).map((gen, gi) => `
+                                <tr class="border-t border-slate-50 dark:border-slate-900">
+                                    <td class="px-1 py-0.5 text-secondary whitespace-nowrap sticky left-0 bg-card z-10" style="max-width:180px; overflow:hidden; text-overflow:ellipsis;">${gen.substring(0, 30)}</td>
+                                    ${(presencia.genomas || []).map((_, gj) => {
+                                        const val = presencia.matriz && presencia.matriz[gi] ? presencia.matriz[gi][gj] : 0;
+                                        return `<td class="px-1 py-0.5 text-center" style="background:${val ? 'rgba(16,185,129,0.25)' : 'rgba(100,116,139,0.1)'}; min-width:20px;">${val ? '1' : ''}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${(presencia.genes || []).length > 100 ? `<p class="text-xs text-secondary mt-2">Mostrando 100 de ${this.fmt(presencia.genes.length)} genes totales</p>` : ''}
+            </div>` : ''}
+        `;
+    },
+
+    _matrizMinMax(matriz) {
+        let min = Infinity, max = -Infinity;
+        for (let i = 0; i < matriz.length; i++) {
+            for (let j = i + 1; j < matriz.length; j++) {
+                const v = matriz[i][j];
+                if (v < min) min = v;
+                if (v > max) max = v;
+            }
+        }
+        return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
+    },
+
+    _distToColor(val) {
+        // 0 = green (close), 1 = red (far)
+        const clamped = Math.max(0, Math.min(1, val));
+        const r = Math.round(239 * clamped + 16 * (1 - clamped));
+        const g = Math.round(68 * clamped + 185 * (1 - clamped));
+        const b = Math.round(68 * clamped + 129 * (1 - clamped));
+        return `rgba(${r},${g},${b},0.3)`;
+    },
+
     downloadJSON(type) {
         const genome = document.getElementById('results-genome')?.value;
         if (!genome) return;

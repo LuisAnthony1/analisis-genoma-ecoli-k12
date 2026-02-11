@@ -30,7 +30,6 @@ try:
     DIRECTORIO_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/
     DIRECTORIO_PROYECTO = os.path.dirname(DIRECTORIO_BASE)  # raiz del proyecto
     RUTA_DATOS_CRUDO = os.path.join(DIRECTORIO_PROYECTO, "datos", "crudo")
-    RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", "tablas")
 
     # Validar argumentos
     if len(sys.argv) < 2:
@@ -38,6 +37,7 @@ try:
         sys.exit(1)
 
     GENOME_BASENAME = sys.argv[1]
+    RUTA_RESULTADOS = os.path.join(DIRECTORIO_BASE, "resultados", GENOME_BASENAME, "tablas")
     ARCHIVO_GENBANK = os.path.join(RUTA_DATOS_CRUDO, f"{GENOME_BASENAME}.gb")
     
     # Crear directorio de resultados
