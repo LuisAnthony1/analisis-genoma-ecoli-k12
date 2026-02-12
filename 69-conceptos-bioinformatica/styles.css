@@ -2,9 +2,6 @@
    Mapa Mental 3D · Bioinformática — Premium Dark Theme
    ============================================================ */
 
-/* Google Font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -95,8 +92,10 @@ body::after {
 #glass-panel {
   position: relative;
   z-index: 2;
-  width: 380px;
+  width: 420px;
+  min-width: 320px;
   max-width: 50vw;
+  flex-shrink: 0;
   padding: 24px;
   margin: 16px;
   border-radius: var(--radius-xl);
