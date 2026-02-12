@@ -36,6 +36,7 @@
   let conceptList = [];
   let currentIndex = 0;
   let currentActiveNodeId = null;
+  let _blockFocusTimer = null;
 
   // Helper: extraer ID de source/target (puede ser string o objeto)
   function getId(nodeOrId) {
@@ -225,7 +226,8 @@
     if (!fromCheckbox) {
       updateFilteredGraphData();
     }
-    setTimeout(() => {
+    if (_blockFocusTimer) clearTimeout(_blockFocusTimer);
+    _blockFocusTimer = setTimeout(() => {
       const first = conceptList[0];
       if (first) {
         focusConcept(first.id);
@@ -319,6 +321,8 @@
     }
     if (!found) return;
     setSelectedBlock(found.bloque, false);
+    // Cancelar el auto-focus al primer concepto del bloque
+    if (_blockFocusTimer) { clearTimeout(_blockFocusTimer); _blockFocusTimer = null; }
     currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === found.id));
     focusConcept(found.id);
   }
