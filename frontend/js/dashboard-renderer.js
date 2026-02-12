@@ -914,89 +914,389 @@ const DashboardRenderer = {
         const distTamanos = data.distribucion_tamanos || {};
         const distGc = data.distribucion_gc || {};
         const interpretacionIA = data.interpretacion_ia || '';
+        const ortologos = data.ortologos || {};
+        const mutaciones = data.mutaciones || {};
+        const sintenia = data.sintenia || {};
+        const islas = data.islas_genomicas || {};
+        const funcional = data.categorias_funcionales || {};
+        const trnaRrna = data.trna_rrna || {};
+        const resistencia = data.resistencia_antibiotica || {};
+        const gcRegional = data.gc_regional || {};
+        const aniData = data.ani || {};
 
-        const ecoli = metricas.ecoli || {};
-        const salmonella = metricas.salmonella || {};
+        const ec = metricas.ecoli || {};
+        const sal = metricas.salmonella || {};
+        const nombre1 = ec.nombre || organismos.organismo_1?.nombre || 'Genoma 1';
+        const nombre2 = sal.nombre || organismos.organismo_2?.nombre || 'Genoma 2';
+        const n1 = nombre1.length > 25 ? nombre1.substring(0, 25) + '...' : nombre1;
+        const n2 = nombre2.length > 25 ? nombre2.substring(0, 25) + '...' : nombre2;
+        const ortoStats = ortologos.estadisticas || {};
+        const mutStats = mutaciones.estadisticas || {};
+        const sinStats = sintenia.estadisticas || {};
+        const islStats = islas.estadisticas || {};
+        const rnaStats = trnaRrna.estadisticas || {};
+        const resStats = resistencia.estadisticas || {};
+        const gcStats = gcRegional.estadisticas || {};
 
-        const nombre1 = ecoli.nombre || organismos.organismo_1?.nombre || 'Genoma 1';
-        const nombre2 = salmonella.nombre || organismos.organismo_2?.nombre || 'Genoma 2';
-
-        const tamStats1 = distTamanos.ecoli?.estadisticas || {};
-        const tamStats2 = distTamanos.salmonella?.estadisticas || {};
-        const gcStats1 = distGc.ecoli?.estadisticas || {};
-        const gcStats2 = distGc.salmonella?.estadisticas || {};
+        // Helper for ANI badge color
+        const ani = aniData.ani_estimado || mutStats.ani_ortologos || 0;
+        const aniColor = ani >= 96 ? 'emerald' : ani >= 90 ? 'amber' : 'red';
+        const kaKs = mutStats.ratio_ka_ks || 0;
+        const kaKsLabel = kaKs < 1 ? 'Seleccion purificadora' : kaKs > 1 ? 'Seleccion positiva' : 'Neutral';
 
         container.innerHTML = `
-            <!-- Stats lado a lado -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-card rounded-xl p-5 border border-emerald-500/30">
-                    <h3 class="text-lg font-bold text-emerald-500 mb-3">${nombre1}</h3>
-                    <div class="space-y-2 text-sm">
-                        <p><span class="text-secondary">Longitud:</span> <span class="font-bold text-primary">${this.fmt(ecoli.longitud_genoma_pb)} pb</span></p>
-                        <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(ecoli.total_genes_cds)}</span></p>
-                        <p><span class="text-secondary">GC:</span> <span class="font-bold text-primary">${ecoli.contenido_gc_porcentaje}%</span></p>
-                        <p><span class="text-secondary">Densidad:</span> <span class="font-bold text-primary">${ecoli.densidad_genica_porcentaje}%</span></p>
-                        <p><span class="text-secondary">Tam. promedio gen:</span> <span class="font-bold text-primary">${this.fmt(tamStats1.promedio || ecoli.tamano_promedio_gen_pb || 0)} pb</span></p>
+            <!-- Mini-nav -->
+            <div class="sticky top-0 z-20 bg-card/90 backdrop-blur-sm rounded-xl p-3 border border-slate-200 mb-6 flex flex-wrap gap-2">
+                <a href="#sec-resumen" class="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs rounded-full hover:bg-emerald-500/20 transition">Resumen</a>
+                <a href="#sec-ortologos" class="px-3 py-1 bg-violet-500/10 text-violet-500 text-xs rounded-full hover:bg-violet-500/20 transition">Ortologos</a>
+                <a href="#sec-mutaciones" class="px-3 py-1 bg-rose-500/10 text-rose-500 text-xs rounded-full hover:bg-rose-500/20 transition">Mutaciones</a>
+                <a href="#sec-sintenia" class="px-3 py-1 bg-blue-500/10 text-blue-500 text-xs rounded-full hover:bg-blue-500/20 transition">Sintenia</a>
+                <a href="#sec-islas" class="px-3 py-1 bg-amber-500/10 text-amber-500 text-xs rounded-full hover:bg-amber-500/20 transition">Islas Genomicas</a>
+                <a href="#sec-funcional" class="px-3 py-1 bg-cyan-500/10 text-cyan-500 text-xs rounded-full hover:bg-cyan-500/20 transition">Funcional</a>
+                <a href="#sec-resistencia" class="px-3 py-1 bg-red-500/10 text-red-500 text-xs rounded-full hover:bg-red-500/20 transition">Resistencia</a>
+                <a href="#sec-arn" class="px-3 py-1 bg-indigo-500/10 text-indigo-500 text-xs rounded-full hover:bg-indigo-500/20 transition">tRNA/rRNA</a>
+                <a href="#sec-gc" class="px-3 py-1 bg-teal-500/10 text-teal-500 text-xs rounded-full hover:bg-teal-500/20 transition">GC Regional</a>
+                <a href="#sec-codones" class="px-3 py-1 bg-pink-500/10 text-pink-500 text-xs rounded-full hover:bg-pink-500/20 transition">Codones</a>
+            </div>
+
+            <!-- =============== SECCION: RESUMEN =============== -->
+            <div id="sec-resumen" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span> Resumen General</h2>
+
+                <!-- ANI Badge -->
+                <div class="bg-gradient-to-r from-${aniColor}-500/10 to-${aniColor}-500/5 rounded-xl p-5 border border-${aniColor}-500/30 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-secondary">Identidad Nucleotidica Promedio (ANI)</p>
+                            <p class="text-3xl font-black text-${aniColor}-500">${ani}%</p>
+                            <p class="text-sm text-secondary mt-1">${aniData.clasificacion || ''}</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p class="text-secondary">Ka/Ks: <span class="font-bold text-primary">${kaKs}</span></p>
+                            <p class="text-xs text-${kaKs < 1 ? 'emerald' : kaKs > 1 ? 'red' : 'amber'}-500">${kaKsLabel}</p>
+                            <p class="text-secondary mt-1">Ti/Tv: <span class="font-bold text-primary">${mutStats.ratio_ti_tv || 0}</span></p>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-card rounded-xl p-5 border border-cyan-500/30">
-                    <h3 class="text-lg font-bold text-cyan-500 mb-3">${nombre2}</h3>
-                    <div class="space-y-2 text-sm">
-                        <p><span class="text-secondary">Longitud:</span> <span class="font-bold text-primary">${this.fmt(salmonella.longitud_genoma_pb)} pb</span></p>
-                        <p><span class="text-secondary">Genes CDS:</span> <span class="font-bold text-primary">${this.fmt(salmonella.total_genes_cds)}</span></p>
-                        <p><span class="text-secondary">GC:</span> <span class="font-bold text-primary">${salmonella.contenido_gc_porcentaje}%</span></p>
-                        <p><span class="text-secondary">Densidad:</span> <span class="font-bold text-primary">${salmonella.densidad_genica_porcentaje}%</span></p>
-                        <p><span class="text-secondary">Tam. promedio gen:</span> <span class="font-bold text-primary">${this.fmt(tamStats2.promedio || salmonella.tamano_promedio_gen_pb || 0)} pb</span></p>
+
+                <!-- Stats lado a lado -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-emerald-500/30">
+                        <h3 class="text-lg font-bold text-emerald-500 mb-3">${nombre1}</h3>
+                        <div class="space-y-1.5 text-sm">
+                            <p><span class="text-secondary">Longitud:</span> <strong class="text-primary">${this.fmt(ec.longitud_genoma_pb)} pb</strong></p>
+                            <p><span class="text-secondary">Genes CDS:</span> <strong class="text-primary">${this.fmt(ec.total_genes_cds)}</strong></p>
+                            <p><span class="text-secondary">GC:</span> <strong class="text-primary">${ec.contenido_gc_porcentaje}%</strong></p>
+                            <p><span class="text-secondary">Densidad:</span> <strong class="text-primary">${ec.densidad_genica_porcentaje}%</strong></p>
+                        </div>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-cyan-500/30">
+                        <h3 class="text-lg font-bold text-cyan-500 mb-3">${nombre2}</h3>
+                        <div class="space-y-1.5 text-sm">
+                            <p><span class="text-secondary">Longitud:</span> <strong class="text-primary">${this.fmt(sal.longitud_genoma_pb)} pb</strong></p>
+                            <p><span class="text-secondary">Genes CDS:</span> <strong class="text-primary">${this.fmt(sal.total_genes_cds)}</strong></p>
+                            <p><span class="text-secondary">GC:</span> <strong class="text-primary">${sal.contenido_gc_porcentaje}%</strong></p>
+                            <p><span class="text-secondary">Densidad:</span> <strong class="text-primary">${sal.densidad_genica_porcentaje}%</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Metricas Generales</h3>
+                        <canvas id="chart-compare-metrics" height="250"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Distribucion Tamanos de Genes</h3>
+                        <canvas id="chart-compare-sizes" height="250"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Graficos comparativos - fila 1 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Comparacion de Metricas Generales</h3>
-                    <canvas id="chart-compare-metrics" height="250"></canvas>
+            <!-- =============== SECCION: ORTOLOGOS =============== -->
+            <div id="sec-ortologos" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-violet-500 rounded-full"></span> Genes Ortologos (Compartidos vs Unicos)</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('Compartidos', this.fmt(ortoStats.total_ortologos || 0), 'Genes ortologos', 'emerald')}
+                    ${this.statsCard('Unicos ' + n1, this.fmt(ortoStats.unicos_genoma_1 || 0), (ortoStats.porcentaje_compartido_1 || 0) + '% compartido')}
+                    ${this.statsCard('Unicos ' + n2, this.fmt(ortoStats.unicos_genoma_2 || 0), (ortoStats.porcentaje_compartido_2 || 0) + '% compartido', 'cyan')}
+                    ${this.statsCard('Hipoteticas', (ortoStats.hipoteticos_genoma_1 || 0) + ' / ' + (ortoStats.hipoteticos_genoma_2 || 0), 'G1 / G2', 'amber')}
                 </div>
-                <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Genes de Virulencia</h3>
-                    <canvas id="chart-compare-virulence" height="250"></canvas>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de Genes</h3>
+                        <canvas id="chart-ortologos-dist" height="250"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Conservacion de Hebra en Ortologos</h3>
+                        <canvas id="chart-ortologos-hebra" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Genes unicos G1 -->
+                ${(ortologos.unicos_genoma_1 || []).length > 0 ? `
+                <div class="bg-card rounded-xl p-5 border border-emerald-500/20 mb-4">
+                    <h4 class="text-sm font-semibold text-emerald-500 mb-3">Genes Unicos en ${n1} (top ${ortologos.total_unicos_1 || 0})</h4>
+                    <div class="overflow-x-auto max-h-[250px] overflow-y-auto">
+                        <table class="w-full text-xs"><thead class="sticky top-0 bg-card"><tr>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Locus</th>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Gen</th>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Producto</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Longitud</th>
+                        </tr></thead><tbody>
+                        ${(ortologos.unicos_genoma_1 || []).slice(0, 30).map(g => `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800"><td class="px-2 py-1 font-mono">${g.locus}</td><td class="px-2 py-1 font-medium text-primary">${g.nombre || '-'}</td><td class="px-2 py-1 text-secondary truncate max-w-[200px]">${g.producto}</td><td class="px-2 py-1 text-right">${this.fmt(g.longitud)} pb</td></tr>`).join('')}
+                        </tbody></table>
+                    </div>
+                </div>` : ''}
+
+                <!-- Genes unicos G2 -->
+                ${(ortologos.unicos_genoma_2 || []).length > 0 ? `
+                <div class="bg-card rounded-xl p-5 border border-cyan-500/20 mb-4">
+                    <h4 class="text-sm font-semibold text-cyan-500 mb-3">Genes Unicos en ${n2} (top ${ortologos.total_unicos_2 || 0})</h4>
+                    <div class="overflow-x-auto max-h-[250px] overflow-y-auto">
+                        <table class="w-full text-xs"><thead class="sticky top-0 bg-card"><tr>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Locus</th>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Gen</th>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Producto</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Longitud</th>
+                        </tr></thead><tbody>
+                        ${(ortologos.unicos_genoma_2 || []).slice(0, 30).map(g => `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800"><td class="px-2 py-1 font-mono">${g.locus}</td><td class="px-2 py-1 font-medium text-primary">${g.nombre || '-'}</td><td class="px-2 py-1 text-secondary truncate max-w-[200px]">${g.producto}</td><td class="px-2 py-1 text-right">${this.fmt(g.longitud)} pb</td></tr>`).join('')}
+                        </tbody></table>
+                    </div>
+                </div>` : ''}
+
+                <!-- Ortologos mas divergentes -->
+                ${(ortologos.ortologos_divergentes || []).length > 0 ? `
+                <div class="bg-card rounded-xl p-5 border border-amber-500/20 mb-4">
+                    <h4 class="text-sm font-semibold text-amber-500 mb-3">Ortologos Mas Divergentes (mayor diferencia de tamano)</h4>
+                    <div class="overflow-x-auto max-h-[250px] overflow-y-auto">
+                        <table class="w-full text-xs"><thead class="sticky top-0 bg-card"><tr>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Producto</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Long. G1</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Long. G2</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Diferencia</th>
+                        </tr></thead><tbody>
+                        ${(ortologos.ortologos_divergentes || []).slice(0, 20).map(o => `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800"><td class="px-2 py-1 text-primary truncate max-w-[250px]">${o.producto}</td><td class="px-2 py-1 text-right">${this.fmt(o.longitud_1)} pb</td><td class="px-2 py-1 text-right">${this.fmt(o.longitud_2)} pb</td><td class="px-2 py-1 text-right font-bold text-amber-500">${this.fmt(o.dif_longitud)} pb</td></tr>`).join('')}
+                        </tbody></table>
+                    </div>
+                </div>` : ''}
+            </div>
+
+            <!-- =============== SECCION: MUTACIONES =============== -->
+            <div id="sec-mutaciones" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-rose-500 rounded-full"></span> Mutaciones en Ortologos</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                    ${this.statsCard('ANI', mutStats.ani_ortologos + '%', 'Identidad nucleotidica', 'emerald')}
+                    ${this.statsCard('SNPs', this.fmt(mutStats.total_snps_codones || 0), 'en codones comparados')}
+                    ${this.statsCard('Sinonimas', this.fmt(mutStats.mutaciones_sinonimas || 0), 'misma proteina', 'cyan')}
+                    ${this.statsCard('No-sinonimas', this.fmt(mutStats.mutaciones_no_sinonimas || 0), 'cambia proteina', 'rose')}
+                    ${this.statsCard('Ka/Ks', kaKs, kaKsLabel, 'amber')}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de Identidad entre Ortologos</h3>
+                        <canvas id="chart-mut-identidad" height="250"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Tipo de Mutaciones</h3>
+                        <canvas id="chart-mut-tipos" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Genes mas divergentes -->
+                ${(mutaciones.genes_mas_divergentes || []).length > 0 ? `
+                <div class="bg-card rounded-xl p-5 border border-rose-500/20 mb-4">
+                    <h4 class="text-sm font-semibold text-rose-500 mb-3">Genes con Mayor Divergencia</h4>
+                    <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+                        <table class="w-full text-xs"><thead class="sticky top-0 bg-card"><tr>
+                            <th class="text-left px-2 py-1 text-secondary border-b border-slate-200">Producto</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Identidad</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">SNPs</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Sinonimas</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">No-sinon.</th>
+                            <th class="text-right px-2 py-1 text-secondary border-b border-slate-200">Dif. Long.</th>
+                        </tr></thead><tbody>
+                        ${(mutaciones.genes_mas_divergentes || []).slice(0, 25).map(g => {
+                            const idColor = g.identidad_nt >= 95 ? 'emerald' : g.identidad_nt >= 80 ? 'amber' : 'red';
+                            return '<tr class="hover:bg-slate-50 dark:hover:bg-slate-800"><td class="px-2 py-1 text-primary truncate max-w-[200px]">' + g.producto + '</td><td class="px-2 py-1 text-right font-bold text-' + idColor + '-500">' + g.identidad_nt + '%</td><td class="px-2 py-1 text-right">' + g.snps_codones + '</td><td class="px-2 py-1 text-right text-emerald-500">' + g.sinonimas + '</td><td class="px-2 py-1 text-right text-rose-500">' + g.no_sinonimas + '</td><td class="px-2 py-1 text-right">' + this.fmt(g.dif_longitud) + ' pb</td></tr>';
+                        }).join('')}
+                        </tbody></table>
+                    </div>
+                </div>` : ''}
+            </div>
+
+            <!-- =============== SECCION: SINTENIA =============== -->
+            <div id="sec-sintenia" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-blue-500 rounded-full"></span> Sintenia (Orden Genico)</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('Bloques', sinStats.bloques_sintenicos || 0, 'conservados', 'blue')}
+                    ${this.statsCard('Genes en bloques', this.fmt(sinStats.genes_en_bloques || 0), (sinStats.porcentaje_sintenico || 0) + '% sintenico', 'emerald')}
+                    ${this.statsCard('Inversiones', sinStats.inversiones_detectadas || 0, 'cambios de orden', 'amber')}
+                    ${this.statsCard('Cambio hebra', sinStats.cambios_hebra || 0, 'ortologos en otra hebra', 'rose')}
+                </div>
+
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-4">
+                    <h3 class="text-sm font-semibold text-primary mb-2">Dot Plot de Sintenia</h3>
+                    <p class="text-xs text-secondary mb-3">Cada punto = un gen ortologo. Verde = misma hebra, Rojo = diferente hebra. Puntos en diagonal = orden conservado.</p>
+                    <canvas id="canvas-dotplot" height="400" style="max-height:500px;"></canvas>
                 </div>
             </div>
 
-            <!-- Graficos comparativos - fila 2 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de Tamanos de Genes</h3>
-                    <canvas id="chart-compare-sizes" height="250"></canvas>
+            <!-- =============== SECCION: ISLAS GENOMICAS =============== -->
+            <div id="sec-islas" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-amber-500 rounded-full"></span> Islas Genomicas (Transferencia Horizontal)</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('Islas ' + n1, islStats.islas_genoma_1 || 0, this.fmt(islStats.genes_en_islas_1 || 0) + ' genes', 'emerald')}
+                    ${this.statsCard('Islas ' + n2, islStats.islas_genoma_2 || 0, this.fmt(islStats.genes_en_islas_2 || 0) + ' genes', 'cyan')}
+                    ${this.statsCard('HGT ' + n1, islStats.posibles_hgt_1 || 0, 'GC anormal >3%', 'amber')}
+                    ${this.statsCard('HGT ' + n2, islStats.posibles_hgt_2 || 0, 'GC anormal >3%', 'rose')}
                 </div>
-                <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Distribucion de GC por Gen</h3>
-                    <canvas id="chart-compare-gc" height="250"></canvas>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    ${(islas.islas_genoma_1 || []).length > 0 ? `
+                    <div class="bg-card rounded-xl p-5 border border-emerald-500/20">
+                        <h4 class="text-sm font-semibold text-emerald-500 mb-3">Islas en ${n1}</h4>
+                        <div class="space-y-2 max-h-[300px] overflow-y-auto">
+                        ${(islas.islas_genoma_1 || []).slice(0, 10).map((isla, i) => `
+                            <div class="p-3 rounded-lg ${isla.posible_hgt ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-slate-50 dark:bg-slate-800'}">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="font-bold text-primary">Isla ${i+1}: ${isla.num_genes} genes</span>
+                                    <span class="text-secondary">${this.fmt(isla.longitud_pb)} pb</span>
+                                </div>
+                                <p class="text-xs text-secondary">Pos: ${this.fmt(isla.inicio)}-${this.fmt(isla.fin)} | GC: ${isla.gc_promedio}% (genoma: ${isla.gc_genoma}%, desv: ${isla.desviacion_gc > 0 ? '+' : ''}${isla.desviacion_gc}%)</p>
+                                ${isla.posible_hgt ? '<p class="text-xs text-amber-500 font-medium mt-1">Posible transferencia horizontal</p>' : ''}
+                                <p class="text-[10px] text-secondary mt-1">${(isla.genes || []).map(g => g.nombre || g.locus).join(', ')}</p>
+                            </div>
+                        `).join('')}
+                        </div>
+                    </div>` : '<div></div>'}
+
+                    ${(islas.islas_genoma_2 || []).length > 0 ? `
+                    <div class="bg-card rounded-xl p-5 border border-cyan-500/20">
+                        <h4 class="text-sm font-semibold text-cyan-500 mb-3">Islas en ${n2}</h4>
+                        <div class="space-y-2 max-h-[300px] overflow-y-auto">
+                        ${(islas.islas_genoma_2 || []).slice(0, 10).map((isla, i) => `
+                            <div class="p-3 rounded-lg ${isla.posible_hgt ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-slate-50 dark:bg-slate-800'}">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="font-bold text-primary">Isla ${i+1}: ${isla.num_genes} genes</span>
+                                    <span class="text-secondary">${this.fmt(isla.longitud_pb)} pb</span>
+                                </div>
+                                <p class="text-xs text-secondary">Pos: ${this.fmt(isla.inicio)}-${this.fmt(isla.fin)} | GC: ${isla.gc_promedio}% (genoma: ${isla.gc_genoma}%, desv: ${isla.desviacion_gc > 0 ? '+' : ''}${isla.desviacion_gc}%)</p>
+                                ${isla.posible_hgt ? '<p class="text-xs text-amber-500 font-medium mt-1">Posible transferencia horizontal</p>' : ''}
+                                <p class="text-[10px] text-secondary mt-1">${(isla.genes || []).map(g => g.nombre || g.locus).join(', ')}</p>
+                            </div>
+                        `).join('')}
+                        </div>
+                    </div>` : '<div></div>'}
                 </div>
             </div>
 
-            <!-- Uso de codones -->
-            ${usoCodones.ecoli ? `
-            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h3 class="text-sm font-semibold text-primary mb-4">Comparacion de Uso de Codones (Top 10)</h3>
-                <canvas id="chart-compare-codons" height="300"></canvas>
-            </div>` : ''}
+            <!-- =============== SECCION: PERFIL FUNCIONAL =============== -->
+            <div id="sec-funcional" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-cyan-500 rounded-full"></span> Perfil Funcional Comparativo</h2>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-4">
+                    <canvas id="chart-funcional" height="350"></canvas>
+                </div>
+            </div>
 
-            <!-- Categorias de virulencia -->
-            ${virulencia.ecoli && virulencia.salmonella ? `
-            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
-                <h3 class="text-sm font-semibold text-primary mb-4">Desglose de Genes de Virulencia por Categoria</h3>
-                <canvas id="chart-compare-vir-cats" height="250"></canvas>
-            </div>` : ''}
+            <!-- =============== SECCION: RESISTENCIA =============== -->
+            <div id="sec-resistencia" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-red-500 rounded-full"></span> Resistencia Antibiotica</h2>
 
-            <!-- Interpretacion IA -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('Genes R. ' + n1, resStats.total_genes_resistencia_1 || 0, (resStats.categorias_con_genes_1 || 0) + ' categorias', 'emerald')}
+                    ${this.statsCard('Genes R. ' + n2, resStats.total_genes_resistencia_2 || 0, (resStats.categorias_con_genes_2 || 0) + ' categorias', 'cyan')}
+                    ${this.statsCard('Virulencia ' + n1, (virulencia.ecoli || {}).total || 0, 'genes', 'amber')}
+                    ${this.statsCard('Virulencia ' + n2, (virulencia.salmonella || {}).total || 0, 'genes', 'rose')}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Resistencia por Categoria</h3>
+                        <canvas id="chart-resistencia" height="300"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Virulencia por Categoria</h3>
+                        <canvas id="chart-compare-vir-cats" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============== SECCION: tRNA/rRNA =============== -->
+            <div id="sec-arn" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span> tRNA y rRNA</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('tRNA ' + n1, rnaStats.total_trna_1 || 0, (rnaStats.tipos_trna_1 || 0) + ' tipos', 'emerald')}
+                    ${this.statsCard('tRNA ' + n2, rnaStats.total_trna_2 || 0, (rnaStats.tipos_trna_2 || 0) + ' tipos', 'cyan')}
+                    ${this.statsCard('rRNA ' + n1, rnaStats.total_rrna_1 || 0, 'operones ribosomales', 'indigo')}
+                    ${this.statsCard('rRNA ' + n2, rnaStats.total_rrna_2 || 0, 'operones ribosomales', 'violet')}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">tRNA por Aminoacido</h3>
+                        <canvas id="chart-trna" height="300"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">rRNA por Subtipo</h3>
+                        <canvas id="chart-rrna" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============== SECCION: GC REGIONAL =============== -->
+            <div id="sec-gc" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-teal-500 rounded-full"></span> GC Regional (Ventana Deslizante)</h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    ${this.statsCard('GC ' + n1, (gcStats.media_gc_1 || 0) + '%', 'std: ' + (gcStats.std_gc_1 || 0) + '%', 'emerald')}
+                    ${this.statsCard('GC ' + n2, (gcStats.media_gc_2 || 0) + '%', 'std: ' + (gcStats.std_gc_2 || 0) + '%', 'cyan')}
+                    ${this.statsCard('Anomalas ' + n1, gcStats.regiones_anomalas_1 || 0, '>2 std desviacion', 'amber')}
+                    ${this.statsCard('Anomalas ' + n2, gcStats.regiones_anomalas_2 || 0, '>2 std desviacion', 'rose')}
+                </div>
+
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-4">
+                    <h3 class="text-sm font-semibold text-primary mb-2">GC% a lo Largo del Genoma</h3>
+                    <p class="text-xs text-secondary mb-3">Ventana de ${this.fmt(gcStats.ventana_pb || 50000)} pb. Regiones con GC anormal pueden indicar transferencia horizontal.</p>
+                    <canvas id="chart-gc-regional" height="250"></canvas>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Distribucion GC por Gen</h3>
+                        <canvas id="chart-compare-gc" height="250"></canvas>
+                    </div>
+                    <div class="bg-card rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-primary mb-4">Genes de Virulencia</h3>
+                        <canvas id="chart-compare-virulence" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============== SECCION: CODONES =============== -->
+            <div id="sec-codones" class="mb-8">
+                <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-pink-500 rounded-full"></span> Uso de Codones</h2>
+                ${usoCodones.ecoli ? `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-4">
+                    <canvas id="chart-compare-codons" height="300"></canvas>
+                </div>` : ''}
+            </div>
+
+            <!-- =============== INTERPRETACION IA =============== -->
             ${interpretacionIA ? `
             <div class="bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 rounded-xl p-6 border border-violet-500/20 mb-6">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xl shadow-lg">✨</div>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xl shadow-lg">*</div>
                     <div>
-                        <h3 class="font-bold text-primary">Interpretacion IA</h3>
-                        <p class="text-xs text-secondary">Analisis biologico generado por Gemini AI</p>
+                        <h3 class="font-bold text-primary">Interpretacion IA Avanzada</h3>
+                        <p class="text-xs text-secondary">Analisis biologico de todos los datos comparativos (Gemini AI)</p>
                     </div>
                 </div>
                 <div class="text-sm text-primary leading-relaxed space-y-3">
@@ -1007,143 +1307,196 @@ const DashboardRenderer = {
             </div>` : ''}
         `;
 
+        // ===== CREAR TODOS LOS CHARTS =====
         setTimeout(() => {
-            // Metricas comparativas
+            const self = this;
+            // Metricas
             this.createChart('chart-compare-metrics', {
-                type: 'bar',
-                data: {
-                    labels: ['Longitud (Mb)', 'Genes CDS', 'GC %', 'Densidad %'],
-                    datasets: [
-                        {
-                            label: nombre1,
-                            data: [
-                                (ecoli.longitud_genoma_pb || 0) / 1e6,
-                                ecoli.total_genes_cds || 0,
-                                ecoli.contenido_gc_porcentaje || 0,
-                                ecoli.densidad_genica_porcentaje || 0
-                            ],
-                            backgroundColor: '#10b981',
-                            borderRadius: 4
-                        },
-                        {
-                            label: nombre2,
-                            data: [
-                                (salmonella.longitud_genoma_pb || 0) / 1e6,
-                                salmonella.total_genes_cds || 0,
-                                salmonella.contenido_gc_porcentaje || 0,
-                                salmonella.densidad_genica_porcentaje || 0
-                            ],
-                            backgroundColor: '#06b6d4',
-                            borderRadius: 4
-                        }
-                    ]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                type: 'bar', data: { labels: ['Longitud (Mb)', 'Genes', 'GC %', 'Densidad %'],
+                datasets: [
+                    { label: n1, data: [(ec.longitud_genoma_pb||0)/1e6, ec.total_genes_cds||0, ec.contenido_gc_porcentaje||0, ec.densidad_genica_porcentaje||0], backgroundColor: '#10b981', borderRadius: 4 },
+                    { label: n2, data: [(sal.longitud_genoma_pb||0)/1e6, sal.total_genes_cds||0, sal.contenido_gc_porcentaje||0, sal.densidad_genica_porcentaje||0], backgroundColor: '#06b6d4', borderRadius: 4 }
+                ]}, options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
             });
 
-            // Virulencia total
-            if (virulencia.ecoli && virulencia.salmonella) {
-                this.createChart('chart-compare-virulence', {
-                    type: 'bar',
-                    data: {
-                        labels: [nombre1, nombre2],
-                        datasets: [{
-                            label: 'Genes de virulencia',
-                            data: [virulencia.ecoli.total || 0, virulencia.salmonella.total || 0],
-                            backgroundColor: ['#10b981', '#06b6d4'],
-                            borderRadius: 6
-                        }]
-                    },
+            // Tamanos
+            const r1 = distTamanos.ecoli?.rangos || {}; const r2 = distTamanos.salmonella?.rangos || {};
+            if (Object.keys(r1).length > 0) {
+                const lb = Object.keys(r1);
+                this.createChart('chart-compare-sizes', { type: 'bar', data: { labels: lb.map(l => l + ' pb'),
+                    datasets: [{ label: n1, data: lb.map(l => r1[l]||0), backgroundColor: '#10b981', borderRadius: 4 },
+                               { label: n2, data: lb.map(l => r2[l]||0), backgroundColor: '#06b6d4', borderRadius: 4 }]},
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // Ortologos distribucion
+            this.createChart('chart-ortologos-dist', { type: 'doughnut', data: {
+                labels: ['Compartidos', 'Unicos ' + n1, 'Unicos ' + n2, 'Hipoteticas G1', 'Hipoteticas G2'],
+                datasets: [{ data: [ortoStats.total_ortologos||0, ortoStats.unicos_genoma_1||0, ortoStats.unicos_genoma_2||0, ortoStats.hipoteticos_genoma_1||0, ortoStats.hipoteticos_genoma_2||0],
+                    backgroundColor: ['#10b981', '#f59e0b', '#06b6d4', '#94a3b8', '#64748b'] }]},
+                options: { responsive: true, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Ortologos hebra
+            this.createChart('chart-ortologos-hebra', { type: 'doughnut', data: {
+                labels: ['Misma hebra', 'Diferente hebra'],
+                datasets: [{ data: [ortoStats.conservacion_hebra||0, ortoStats.cambio_hebra||0],
+                    backgroundColor: ['#10b981', '#ef4444'] }]},
+                options: { responsive: true, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Mutaciones - identidad
+            const distId = mutaciones.distribucion_identidad || {};
+            if (Object.keys(distId).length > 0) {
+                const idLabels = Object.keys(distId);
+                this.createChart('chart-mut-identidad', { type: 'bar', data: { labels: idLabels,
+                    datasets: [{ label: 'Genes', data: idLabels.map(l => distId[l]||0),
+                        backgroundColor: idLabels.map(l => l === '100%' ? '#10b981' : l.includes('99') ? '#34d399' : l.includes('95') ? '#fbbf24' : l.includes('90') ? '#f59e0b' : '#ef4444'),
+                        borderRadius: 4 }]},
                     options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                 });
             }
 
-            // Distribucion de tamanos
-            const rangos1 = distTamanos.ecoli?.rangos || {};
-            const rangos2 = distTamanos.salmonella?.rangos || {};
-            if (Object.keys(rangos1).length > 0) {
-                const labels = Object.keys(rangos1);
-                this.createChart('chart-compare-sizes', {
-                    type: 'bar',
-                    data: {
-                        labels: labels.map(l => l + ' pb'),
-                        datasets: [
-                            { label: nombre1, data: labels.map(l => rangos1[l] || 0), backgroundColor: '#10b981', borderRadius: 4 },
-                            { label: nombre2, data: labels.map(l => rangos2[l] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
-                        ]
-                    },
-                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+            // Mutaciones tipos
+            this.createChart('chart-mut-tipos', { type: 'doughnut', data: {
+                labels: ['Sinonimas', 'No-sinonimas', 'Transiciones', 'Transversiones'],
+                datasets: [{ data: [mutStats.mutaciones_sinonimas||0, mutStats.mutaciones_no_sinonimas||0, mutStats.transiciones||0, mutStats.transversiones||0],
+                    backgroundColor: ['#10b981', '#ef4444', '#3b82f6', '#f59e0b'] }]},
+                options: { responsive: true, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Dot plot sintenia (canvas)
+            const dotCanvas = document.getElementById('canvas-dotplot');
+            if (dotCanvas && (sintenia.puntos_dotplot || []).length > 0) {
+                const ctx = dotCanvas.getContext('2d');
+                const w = dotCanvas.width = dotCanvas.clientWidth || 600;
+                const h = dotCanvas.height = Math.min(dotCanvas.clientHeight || 400, 500);
+                const m = 50;
+                const len1 = ec.longitud_genoma_pb || 5000000;
+                const len2 = sal.longitud_genoma_pb || 5000000;
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+                // Axes
+                ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(m, m); ctx.lineTo(m, h - m); ctx.lineTo(w - m, h - m); ctx.stroke();
+                // Labels
+                ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(n1, w / 2, h - 5);
+                ctx.save(); ctx.translate(12, h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(n2, 0, 0); ctx.restore();
+                // Scale ticks
+                for (let i = 0; i <= 4; i++) {
+                    const xp = m + (i / 4) * (w - 2 * m);
+                    const yp = h - m - (i / 4) * (h - 2 * m);
+                    ctx.fillStyle = '#64748b'; ctx.fillText(((i / 4) * len1 / 1e6).toFixed(1) + 'Mb', xp, h - m + 14);
+                    ctx.textAlign = 'right'; ctx.fillText(((i / 4) * len2 / 1e6).toFixed(1), m - 5, yp + 3); ctx.textAlign = 'center';
+                }
+                // Points
+                const pts = sintenia.puntos_dotplot;
+                for (const p of pts) {
+                    const px = m + (p.x / len1) * (w - 2 * m);
+                    const py = h - m - (p.y / len2) * (h - 2 * m);
+                    ctx.fillStyle = p.misma_hebra ? '#10b981' : '#ef4444';
+                    ctx.fillRect(px - 1, py - 1, 2, 2);
+                }
+            }
+
+            // Funcional
+            const funcCats = funcional.categorias || [];
+            if (funcCats.length > 0) {
+                this.createChart('chart-funcional', { type: 'bar', data: {
+                    labels: funcCats.map(c => c.categoria),
+                    datasets: [
+                        { label: n1, data: funcCats.map(c => c.genoma_1), backgroundColor: '#10b981', borderRadius: 3 },
+                        { label: n2, data: funcCats.map(c => c.genoma_2), backgroundColor: '#06b6d4', borderRadius: 3 }
+                    ]}, options: { indexAxis: 'y', responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { beginAtZero: true } } }
                 });
             }
 
-            // Distribucion GC
-            const gcRangos1 = distGc.ecoli?.rangos || {};
-            const gcRangos2 = distGc.salmonella?.rangos || {};
-            if (Object.keys(gcRangos1).length > 0) {
-                const labels = Object.keys(gcRangos1);
-                this.createChart('chart-compare-gc', {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [
-                            { label: nombre1, data: labels.map(l => gcRangos1[l] || 0), backgroundColor: '#10b981', borderRadius: 4 },
-                            { label: nombre2, data: labels.map(l => gcRangos2[l] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
-                        ]
-                    },
-                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+            // Resistencia
+            const resCmp = (resistencia.comparacion || []).filter(c => c.genoma_1 > 0 || c.genoma_2 > 0);
+            if (resCmp.length > 0) {
+                this.createChart('chart-resistencia', { type: 'bar', data: {
+                    labels: resCmp.map(c => c.categoria),
+                    datasets: [
+                        { label: n1, data: resCmp.map(c => c.genoma_1), backgroundColor: '#10b981', borderRadius: 3 },
+                        { label: n2, data: resCmp.map(c => c.genoma_2), backgroundColor: '#06b6d4', borderRadius: 3 }
+                    ]}, options: { indexAxis: 'y', responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { beginAtZero: true } } }
                 });
             }
 
-            // Uso de codones (top 10)
-            if (usoCodones.ecoli && usoCodones.salmonella) {
-                const top1 = usoCodones.ecoli.top_10 || [];
-                const top2 = usoCodones.salmonella.top_10 || [];
-                const allCodons = [...new Set([...top1.map(c => c.codon), ...top2.map(c => c.codon)])].slice(0, 12);
-                const freq1Map = {};
-                const freq2Map = {};
-                top1.forEach(c => freq1Map[c.codon] = c.frecuencia);
-                top2.forEach(c => freq2Map[c.codon] = c.frecuencia);
-
-                this.createChart('chart-compare-codons', {
-                    type: 'bar',
-                    data: {
-                        labels: allCodons,
-                        datasets: [
-                            { label: nombre1, data: allCodons.map(c => freq1Map[c] || 0), backgroundColor: '#10b981', borderRadius: 3 },
-                            { label: nombre2, data: allCodons.map(c => freq2Map[c] || 0), backgroundColor: '#06b6d4', borderRadius: 3 }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { position: 'top' } },
-                        scales: {
-                            x: { ticks: { font: { family: 'monospace', weight: 'bold' } } },
-                            y: { beginAtZero: true, title: { display: true, text: 'Frecuencia %' } }
-                        }
-                    }
-                });
-            }
-
-            // Categorias de virulencia
+            // Virulencia categorias
             if (virulencia.ecoli?.categorias && virulencia.salmonella?.categorias) {
-                const cats1 = virulencia.ecoli.categorias || {};
-                const cats2 = virulencia.salmonella.categorias || {};
-                const allCats = [...new Set([...Object.keys(cats1), ...Object.keys(cats2)])];
-                this.createChart('chart-compare-vir-cats', {
-                    type: 'bar',
-                    data: {
-                        labels: allCats,
-                        datasets: [
-                            { label: nombre1, data: allCats.map(c => cats1[c] || 0), backgroundColor: '#10b981', borderRadius: 4 },
-                            { label: nombre2, data: allCats.map(c => cats2[c] || 0), backgroundColor: '#06b6d4', borderRadius: 4 }
-                        ]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        plugins: { legend: { position: 'top' } },
-                        scales: { x: { beginAtZero: true } }
-                    }
+                const c1 = virulencia.ecoli.categorias; const c2 = virulencia.salmonella.categorias;
+                const allC = [...new Set([...Object.keys(c1), ...Object.keys(c2)])];
+                this.createChart('chart-compare-vir-cats', { type: 'bar', data: { labels: allC,
+                    datasets: [{ label: n1, data: allC.map(c => c1[c]||0), backgroundColor: '#10b981', borderRadius: 3 },
+                               { label: n2, data: allC.map(c => c2[c]||0), backgroundColor: '#06b6d4', borderRadius: 3 }]},
+                    options: { indexAxis: 'y', responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { beginAtZero: true } } }
+                });
+            }
+
+            // Virulencia totales
+            if (virulencia.ecoli && virulencia.salmonella) {
+                this.createChart('chart-compare-virulence', { type: 'bar', data: { labels: [n1, n2],
+                    datasets: [{ label: 'Genes', data: [virulencia.ecoli.total||0, virulencia.salmonella.total||0], backgroundColor: ['#10b981','#06b6d4'], borderRadius: 6 }]},
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // tRNA
+            const trnaData = trnaRrna.trna_por_aminoacido || [];
+            if (trnaData.length > 0) {
+                this.createChart('chart-trna', { type: 'bar', data: { labels: trnaData.map(t => t.aminoacido),
+                    datasets: [{ label: n1, data: trnaData.map(t => t.genoma_1), backgroundColor: '#10b981', borderRadius: 2 },
+                               { label: n2, data: trnaData.map(t => t.genoma_2), backgroundColor: '#06b6d4', borderRadius: 2 }]},
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // rRNA
+            const rrnaData = trnaRrna.rrna_por_subtipo || [];
+            if (rrnaData.length > 0) {
+                this.createChart('chart-rrna', { type: 'bar', data: { labels: rrnaData.map(r => r.subtipo),
+                    datasets: [{ label: n1, data: rrnaData.map(r => r.genoma_1), backgroundColor: '#6366f1', borderRadius: 4 },
+                               { label: n2, data: rrnaData.map(r => r.genoma_2), backgroundColor: '#8b5cf6', borderRadius: 4 }]},
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // GC Regional line chart
+            const gc1 = gcRegional.gc_genoma_1 || []; const gc2 = gcRegional.gc_genoma_2 || [];
+            if (gc1.length > 0 || gc2.length > 0) {
+                this.createChart('chart-gc-regional', { type: 'line', data: {
+                    labels: gc1.map(p => (p.posicion / 1e6).toFixed(2) + ' Mb'),
+                    datasets: [
+                        { label: n1, data: gc1.map(p => p.gc), borderColor: '#10b981', backgroundColor: '#10b98120', fill: true, pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+                        { label: n2, data: gc2.map(p => p.gc), borderColor: '#06b6d4', backgroundColor: '#06b6d420', fill: true, pointRadius: 0, borderWidth: 1.5, tension: 0.3 }
+                    ]}, options: { responsive: true, plugins: { legend: { position: 'top' } },
+                    scales: { y: { title: { display: true, text: 'GC %' } }, x: { ticks: { maxTicksLimit: 10 } } } }
+                });
+            }
+
+            // GC por gen
+            const gR1 = distGc.ecoli?.rangos || {}; const gR2 = distGc.salmonella?.rangos || {};
+            if (Object.keys(gR1).length > 0) {
+                const lb = Object.keys(gR1);
+                this.createChart('chart-compare-gc', { type: 'bar', data: { labels: lb,
+                    datasets: [{ label: n1, data: lb.map(l => gR1[l]||0), backgroundColor: '#10b981', borderRadius: 4 },
+                               { label: n2, data: lb.map(l => gR2[l]||0), backgroundColor: '#06b6d4', borderRadius: 4 }]},
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+
+            // Codones
+            if (usoCodones.ecoli && usoCodones.salmonella) {
+                const t1 = usoCodones.ecoli.top_10 || []; const t2 = usoCodones.salmonella.top_10 || [];
+                const allC = [...new Set([...t1.map(c=>c.codon),...t2.map(c=>c.codon)])].slice(0,12);
+                const f1 = {}; const f2 = {}; t1.forEach(c => f1[c.codon]=c.frecuencia); t2.forEach(c => f2[c.codon]=c.frecuencia);
+                this.createChart('chart-compare-codons', { type: 'bar', data: { labels: allC,
+                    datasets: [{ label: n1, data: allC.map(c=>f1[c]||0), backgroundColor: '#10b981', borderRadius: 3 },
+                               { label: n2, data: allC.map(c=>f2[c]||0), backgroundColor: '#06b6d4', borderRadius: 3 }]},
+                    options: { responsive: true, plugins: { legend: { position: 'top' } },
+                    scales: { x: { ticks: { font: { family: 'monospace', weight: 'bold' } } }, y: { beginAtZero: true, title: { display: true, text: '%' } } } }
                 });
             }
         }, 100);
@@ -1247,6 +1600,7 @@ const DashboardRenderer = {
                         </div>
                     </div>
                     <div id="protein-3d-viewer" style="width:100%; height:100%; position:absolute; top:0; left:0; display:none;"></div>
+                    <button id="btn-3d-spin" onclick="DashboardRenderer._toggle3DSpin()" style="position:absolute; top:10px; right:10px; z-index:10; display:none;" class="px-3 py-1.5 bg-black/60 hover:bg-black/80 text-white text-xs rounded-lg transition backdrop-blur-sm cursor-pointer">\u25B6 Play</button>
                 </div>
                 <div id="protein-3d-info" class="hidden mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                     <p id="protein-3d-name" class="text-sm font-semibold text-primary"></p>
@@ -1577,8 +1931,12 @@ const DashboardRenderer = {
     async _load3DProtein() {
         const select = document.getElementById('protein-3d-select');
         const viewerDiv = document.getElementById('protein-3d-viewer');
+        const placeholder = document.getElementById('protein-3d-placeholder');
         const loadingDiv = document.getElementById('protein-3d-loading');
-        const infoText = document.getElementById('protein-3d-info-text');
+        const infoDiv = document.getElementById('protein-3d-info');
+        const infoName = document.getElementById('protein-3d-name');
+        const infoDetail = document.getElementById('protein-3d-detail');
+        const spinBtn = document.getElementById('btn-3d-spin');
 
         if (!select || select.value === '') return;
 
@@ -1599,7 +1957,13 @@ const DashboardRenderer = {
             const resp = await fetch(proxyUrl);
             if (!resp.ok) throw new Error('No se pudo descargar la estructura');
             const pdbData = await resp.text();
+            if (pdbData.length < 50) throw new Error('Estructura PDB vacia o invalida');
             const format = pdbData.includes('_atom_site') ? 'cif' : 'pdb';
+
+            // Mostrar visor y ocultar placeholder
+            if (placeholder) placeholder.style.display = 'none';
+            if (viewerDiv) viewerDiv.style.display = 'block';
+            if (spinBtn) spinBtn.style.display = 'block';
 
             // Crear o limpiar visor
             if (this._viewer3D) {
@@ -1617,7 +1981,6 @@ const DashboardRenderer = {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!self._viewer3D) return;
-                    // Invertido: deltaY > 0 (scroll down) = zoom IN
                     const factor = e.deltaY > 0 ? 1.08 : 0.92;
                     self._viewer3D.zoom(factor);
                     self._viewer3D.render();
@@ -1633,7 +1996,7 @@ const DashboardRenderer = {
                     }
                 });
             } else {
-                throw new Error('3Dmol.js no cargado');
+                throw new Error('3Dmol.js no esta cargado. Verifica tu conexion a internet.');
             }
 
             // Cargar estructura - SIN auto-spin (estatico por defecto)
@@ -1643,17 +2006,21 @@ const DashboardRenderer = {
             this._viewer3D.render();
             this._spinning3D = false;
             this._viewer3D.spin(false);
-            const spinBtn = document.getElementById('btn-3d-spin');
             if (spinBtn) spinBtn.textContent = '\u25B6 Play';
 
-            // Info
-            if (infoText) {
-                const fuente = proteinData.source === 'alphafold' ? 'AlphaFold (prediccion IA)' : 'RCSB PDB (experimental)';
-                infoText.innerHTML = `<strong>${proteinData.nombre_gen || proteinData.locus_tag || ''}</strong> - ${proteinData.producto || 'Proteina'}<br><span class="text-secondary">Fuente: ${fuente} | ID: ${proteinData.pdb_id || proteinData.uniprot_id || 'N/A'} | Formato: ${format.toUpperCase()}</span>`;
-            }
+            // Mostrar info de la proteina
+            const fuente = proteinData.source === 'alphafold' ? 'AlphaFold (prediccion IA)' : 'RCSB PDB (experimental)';
+            if (infoDiv) infoDiv.classList.remove('hidden');
+            if (infoName) infoName.textContent = (proteinData.nombre_gen || '') + ' - ' + (proteinData.producto || 'Proteina');
+            if (infoDetail) infoDetail.textContent = 'Fuente: ' + fuente + ' | ID: ' + (proteinData.pdb_id || 'N/A') + ' | Formato: ' + format.toUpperCase();
 
         } catch (err) {
-            viewerDiv.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm text-center px-4">${err.message || 'Error cargando estructura 3D'}</p></div>`;
+            if (placeholder) placeholder.style.display = 'none';
+            if (viewerDiv) {
+                viewerDiv.style.display = 'flex';
+                viewerDiv.innerHTML = '<div class="flex items-center justify-center h-full w-full"><p class="text-red-400 text-sm text-center px-4">' + (err.message || 'Error cargando estructura 3D') + '</p></div>';
+            }
+            if (spinBtn) spinBtn.style.display = 'none';
         }
 
         if (loadingDiv) loadingDiv.classList.add('hidden');
@@ -1980,15 +2347,22 @@ const DashboardRenderer = {
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h3 class="text-sm font-semibold text-primary mb-2">Mapa Lineal del Genoma</h3>
                 <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes en hebra 5'&rarr;3' (+) arriba, hebra 3'&rarr;5' (-) abajo. Pasa el cursor sobre un gen para ver detalles.</p>
-                <div class="flex gap-2 mb-3">
+                <div class="flex flex-wrap gap-2 mb-3 items-center">
                     <button onclick="DashboardRenderer._zoomGenomeMap(1.5)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom +</button>
                     <button onclick="DashboardRenderer._zoomGenomeMap(0.67)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom -</button>
+                    <span class="text-secondary text-xs">|</span>
+                    <button onclick="DashboardRenderer._zoomGenomeMapTo(3)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">300%</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMapTo(10)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">1000%</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMapTo(20)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">2000%</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMapTo(30)" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">3000%</button>
+                    <span class="text-secondary text-xs">|</span>
                     <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reiniciar</button>
                     <span class="text-xs text-secondary ml-2 self-center" id="genome-map-zoom-label">100%</span>
                 </div>
-                <div id="genome-map-container" class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-lg" style="min-height: 180px;">
+                <div id="genome-map-container" class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-lg" style="min-height: 180px; position:relative;">
                     <p class="text-center text-secondary text-sm py-8">Cargando mapa del genoma...</p>
                 </div>
+                <div id="genome-map-tooltip" style="display:none; position:fixed; z-index:100; pointer-events:none; max-width:320px;" class="bg-slate-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl border border-slate-700"></div>
             </div>
 
             <!-- Seccion educativa -->
@@ -2215,18 +2589,22 @@ const DashboardRenderer = {
         const trackRev = 115;
         const geneH = 28;
 
+        // Viewport culling: solo renderizar genes visibles + margen
+        const scrollLeft = container.scrollLeft || 0;
+        const viewW = container.clientWidth || 800;
+        const visibleLeft = scrollLeft - 200;
+        const visibleRight = scrollLeft + viewW + 200;
+        const usableW = width - 2 * margin;
+
         let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="min-width: ${width}px">`;
-
-        // Fondo
         svg += `<rect width="${width}" height="${height}" fill="transparent"/>`;
-
-        // Linea central del cromosoma
         svg += `<line x1="${margin}" y1="${trackCenter}" x2="${width - margin}" y2="${trackCenter}" stroke="#475569" stroke-width="2" stroke-dasharray="4,2"/>`;
 
         // Marcas de escala
         const scaleStep = Math.pow(10, Math.floor(Math.log10(genomeLength / 10)));
         for (let pos = 0; pos <= genomeLength; pos += scaleStep) {
-            const x = margin + (pos / genomeLength) * (width - 2 * margin);
+            const x = margin + (pos / genomeLength) * usableW;
+            if (x < visibleLeft || x > visibleRight) continue;
             svg += `<line x1="${x}" y1="${trackCenter - 5}" x2="${x}" y2="${trackCenter + 5}" stroke="#64748b" stroke-width="1"/>`;
             if (pos % (scaleStep * 2) === 0) {
                 const label = pos >= 1000000 ? (pos / 1000000).toFixed(1) + ' Mb' : pos >= 1000 ? (pos / 1000).toFixed(0) + ' kb' : pos;
@@ -2234,29 +2612,58 @@ const DashboardRenderer = {
             }
         }
 
-        // Genes como rectangulos
-        for (const gene of genes) {
+        // Genes como rectangulos con data-idx para tooltip
+        const fmtFn = this.fmt.bind(this);
+        for (let i = 0; i < genes.length; i++) {
+            const gene = genes[i];
             const inicio = parseInt(gene.inicio || gene.start || 0);
             const fin = parseInt(gene.fin || gene.end || 0);
             const hebra = gene.hebra || gene.strand || '+';
-            const nombre = gene.nombre_gen || gene.gene || gene.locus_tag || '';
 
-            const x = margin + (inicio / genomeLength) * (width - 2 * margin);
-            const w = Math.max(1, ((fin - inicio) / genomeLength) * (width - 2 * margin));
+            const x = margin + (inicio / genomeLength) * usableW;
+            const w = Math.max(1, ((fin - inicio) / genomeLength) * usableW);
+            // Viewport culling
+            if (x + w < visibleLeft || x > visibleRight) continue;
+
             const y = hebra === '+' || hebra === '1' ? trackFwd : trackRev;
             const color = hebra === '+' || hebra === '1' ? '#10b981' : '#06b6d4';
 
-            svg += `<rect x="${x}" y="${y}" width="${w}" height="${geneH}" fill="${color}" opacity="0.6" rx="1">`;
-            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra === '+' ? "5'\u21923'" : "3'\u21925'"})\n${this.fmt(fin - inicio)} pb</title>`;
-            svg += `</rect>`;
+            svg += `<rect class="gm-gene" data-idx="${i}" x="${x}" y="${y}" width="${w}" height="${geneH}" fill="${color}" opacity="0.6" rx="1" style="cursor:pointer"/>`;
         }
 
         // Labels de hebras
-        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Hebra 5\u2019\u21923\u2019 (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
-        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Hebra 3\u2019\u21925\u2019 (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
+        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Hebra 5'\u21923' (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
+        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Hebra 3'\u21925' (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
 
         svg += '</svg>';
         container.innerHTML = svg;
+
+        // Custom tooltip via event delegation
+        const tooltip = document.getElementById('genome-map-tooltip');
+        if (!tooltip) return;
+        const self = this;
+        container.addEventListener('mousemove', function(e) {
+            const target = e.target.closest('.gm-gene');
+            if (target && target.dataset.idx != null) {
+                const g = self._lastGenomeMapGenes[parseInt(target.dataset.idx)];
+                if (!g) return;
+                const nombre = g.nombre_gen || g.gene || g.locus_tag || 'Sin nombre';
+                const producto = g.producto || 'Sin anotacion';
+                const inicio = parseInt(g.inicio || g.start || 0);
+                const fin = parseInt(g.fin || g.end || 0);
+                const hebra = g.hebra || g.strand || '+';
+                const hebraLabel = (hebra === '+' || hebra === '1') ? "5'\u21923' (+)" : "3'\u21925' (-)";
+                tooltip.innerHTML = '<strong>' + nombre + '</strong><br>' + producto + '<br><span style="opacity:0.7">Pos: ' + fmtFn(inicio) + ' - ' + fmtFn(fin) + ' | ' + fmtFn(fin - inicio) + ' pb</span><br><span style="opacity:0.7">Hebra: ' + hebraLabel + '</span>';
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 12) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+        container.addEventListener('mouseleave', function() {
+            tooltip.style.display = 'none';
+        });
     },
 
     _zoomGenomeMap(factor) {
@@ -2267,12 +2674,25 @@ const DashboardRenderer = {
         if (factor === 0) {
             this._genomeMapZoom = 1;
         } else {
-            this._genomeMapZoom = Math.max(0.5, Math.min(10, this._genomeMapZoom * factor));
+            this._genomeMapZoom = Math.max(0.5, Math.min(30, this._genomeMapZoom * factor));
         }
 
         if (label) label.textContent = Math.round(this._genomeMapZoom * 100) + '%';
 
-        // Re-render usando los datos almacenados para que todo se recalule con el nuevo zoom
+        if (this._lastGenomeMapGenes && this._lastGenomeMapLength) {
+            if (this._genomeMapRenderTimer) cancelAnimationFrame(this._genomeMapRenderTimer);
+            this._genomeMapRenderTimer = requestAnimationFrame(() => {
+                this._renderGenomeMapSVG(this._lastGenomeMapGenes, this._lastGenomeMapLength, container);
+            });
+        }
+    },
+
+    _zoomGenomeMapTo(level) {
+        const container = document.getElementById('genome-map-container');
+        const label = document.getElementById('genome-map-zoom-label');
+        if (!container) return;
+        this._genomeMapZoom = Math.max(0.5, Math.min(30, level));
+        if (label) label.textContent = Math.round(this._genomeMapZoom * 100) + '%';
         if (this._lastGenomeMapGenes && this._lastGenomeMapLength) {
             this._renderGenomeMapSVG(this._lastGenomeMapGenes, this._lastGenomeMapLength, container);
         }
@@ -2283,9 +2703,42 @@ const DashboardRenderer = {
     // =========================================================================
 
     renderBusquedaSecuencia(genome, container) {
-        container.innerHTML = `
+        // Obtener total de genes para el input
+        this.fetchResultData(genome, `analisis_genes_${genome}.json`).then(genesData => {
+            const totalGenes = genesData?.estadisticas_generales?.total_genes || '?';
+            container.innerHTML = `
             <div class="max-w-4xl mx-auto">
-                <!-- Input de busqueda -->
+                <!-- BUSCAR POR NUMERO DE GEN -->
+                <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                    <h3 class="text-lg font-bold text-primary mb-2">Buscar Gen por Numero</h3>
+                    <p class="text-sm text-secondary mb-4">Ingresa el numero del gen (1 a ${totalGenes}) para ver su informacion completa: nombre, producto, posicion, hebra y secuencia.</p>
+
+                    <div class="flex gap-3 items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-secondary mb-1">Numero de Gen</label>
+                            <input
+                                type="number"
+                                id="buscar-gen-numero-input"
+                                min="1" max="${totalGenes}" value="1"
+                                placeholder="Ej: 5"
+                                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm text-primary"
+                                onkeydown="if(event.key==='Enter') DashboardRenderer._buscarGenPorNumero('${genome}')"
+                            >
+                        </div>
+                        <button
+                            onclick="DashboardRenderer._buscarGenPorNumero('${genome}')"
+                            class="px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white rounded-xl font-medium text-sm transition shadow-lg"
+                        >
+                            Buscar Gen
+                        </button>
+                    </div>
+                    <p class="text-xs text-secondary mt-2">Total de genes en el genoma: <strong class="text-primary">${totalGenes}</strong>. Genes ordenados por posicion genomica.</p>
+                </div>
+
+                <!-- Resultado del gen -->
+                <div id="buscar-gen-numero-resultado"></div>
+
+                <!-- BUSCAR POR SECUENCIA -->
                 <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
                     <h3 class="text-lg font-bold text-primary mb-2">Localizar Secuencia en el Genoma</h3>
                     <p class="text-sm text-secondary mb-4">Busca una secuencia de nucleotidos y encuentra su posicion exacta, en que gen cae y en que hebra se encuentra.</p>
@@ -2311,7 +2764,8 @@ const DashboardRenderer = {
                 <!-- Resultados -->
                 <div id="buscar-secuencia-resultados"></div>
             </div>
-        `;
+            `;
+        });
     },
 
     async _buscarSecuencia(genome) {
@@ -2409,6 +2863,201 @@ const DashboardRenderer = {
         } catch (e) {
             resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
         }
+    },
+
+    async _buscarGenPorNumero(genome) {
+        const input = document.getElementById('buscar-gen-numero-input');
+        const resultContainer = document.getElementById('buscar-gen-numero-resultado');
+        const numGen = parseInt(input?.value);
+
+        if (!numGen || numGen < 1) {
+            resultContainer.innerHTML = '<p class="text-amber-500 text-sm text-center py-4">Ingresa un numero de gen valido (>= 1)</p>';
+            return;
+        }
+
+        resultContainer.innerHTML = `
+            <div class="text-center py-6">
+                <div class="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p class="text-secondary text-sm">Buscando gen #${numGen}...</p>
+            </div>
+        `;
+
+        try {
+            // Cargar lista de genes del CSV
+            const csvFile = 'lista_genes_' + genome + '.csv';
+            const resp = await fetch('/api/result_data?genome=' + genome + '&file=' + csvFile);
+            const result = await resp.json();
+
+            if (!result.success || !result.data || result.data.length === 0) {
+                resultContainer.innerHTML = '<p class="text-red-500 text-sm text-center py-4">No hay datos de genes. Ejecuta el analisis de genes primero.</p>';
+                return;
+            }
+
+            const genes = result.data;
+            if (numGen > genes.length) {
+                resultContainer.innerHTML = '<p class="text-amber-500 text-sm text-center py-4">El gen #' + numGen + ' no existe. El genoma tiene ' + genes.length + ' genes (1-' + genes.length + ').</p>';
+                return;
+            }
+
+            const g = genes[numGen - 1];
+            const nombre = g.nombre_gen || g.gene || '-';
+            const locus = g.locus_tag || '-';
+            const producto = g.producto || 'Sin anotacion';
+            const inicio = parseInt(g.inicio || g.start || 0);
+            const fin = parseInt(g.fin || g.end || 0);
+            const hebra = g.hebra || g.strand || '+';
+            const longitud = fin - inicio;
+            const gc = g.contenido_gc || g.gc || '-';
+            const hebraLabel = (hebra === '+' || hebra === '1') ? "5'\u21923' (+)" : "3'\u21925' (-)";
+            const hebraColor = (hebra === '+' || hebra === '1') ? 'emerald' : 'cyan';
+
+            // Calcular posicion relativa en el genoma
+            const genomeLen = this._lastGenomeMapLength || 4641652;
+            const posRelativa = ((inicio / genomeLen) * 100).toFixed(2);
+
+            // Mini mapa lineal mostrando posicion del gen
+            const mapW = 600;
+            const mapH = 40;
+            const gx = (inicio / genomeLen) * mapW;
+            const gw = Math.max(3, (longitud / genomeLen) * mapW);
+
+            let html = `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-sm font-semibold text-primary">Gen #${numGen} de ${genes.length}</h4>
+                        <span class="px-3 py-1 bg-${hebraColor}-500/10 text-${hebraColor}-500 rounded-full text-xs font-medium">Hebra ${hebraLabel}</span>
+                    </div>
+
+                    <!-- Info cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        ${this.statsCard('Gen', nombre, locus)}
+                        ${this.statsCard('Longitud', this.fmt(longitud) + ' pb', 'Pos: ' + this.fmt(inicio) + '-' + this.fmt(fin), 'cyan')}
+                        ${this.statsCard('GC%', gc !== '-' ? (parseFloat(gc) * 100).toFixed(1) + '%' : gc, 'Contenido GC', 'amber')}
+                        ${this.statsCard('Posicion', posRelativa + '%', 'del genoma total', 'violet')}
+                    </div>
+
+                    <!-- Producto -->
+                    <div class="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <p class="text-xs font-medium text-secondary mb-1">Producto / Funcion</p>
+                        <p class="text-sm text-primary">${producto}</p>
+                    </div>
+
+                    <!-- Mini mapa de posicion -->
+                    <div class="mb-4">
+                        <p class="text-xs font-medium text-secondary mb-2">Ubicacion en el genoma</p>
+                        <svg width="100%" height="${mapH}" viewBox="0 0 ${mapW} ${mapH}" style="max-width:${mapW}px">
+                            <rect width="${mapW}" height="${mapH}" fill="#1e293b" rx="4"/>
+                            <line x1="0" y1="20" x2="${mapW}" y2="20" stroke="#475569" stroke-width="1"/>
+                            <rect x="${gx}" y="4" width="${gw}" height="32" fill="${hebraColor === 'emerald' ? '#10b981' : '#06b6d4'}" rx="2" opacity="0.9"/>
+                            <text x="${Math.min(gx + gw + 5, mapW - 60)}" y="25" fill="#e2e8f0" font-size="10">${nombre !== '-' ? nombre : locus}</text>
+                        </svg>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="flex gap-2">
+                        <button onclick="DashboardRenderer._extraerGenIndividual('${genome}', ${numGen})"
+                            class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white text-xs rounded-lg transition shadow-lg">
+                            Extraer Secuencia de ADN
+                        </button>
+                        <button onclick="DashboardRenderer._verGenEnMapa('${genome}', ${inicio}, ${fin})"
+                            class="px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-500 text-xs font-medium rounded-lg transition">
+                            Ver en Mapa del Genoma
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Genes vecinos (anterior y siguiente)
+            const vecinos = [];
+            if (numGen > 1) {
+                const prev = genes[numGen - 2];
+                vecinos.push({label: 'Gen anterior (#' + (numGen - 1) + ')', gen: prev});
+            }
+            if (numGen < genes.length) {
+                const next = genes[numGen];
+                vecinos.push({label: 'Gen siguiente (#' + (numGen + 1) + ')', gen: next});
+            }
+            if (vecinos.length > 0) {
+                html += '<div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">';
+                html += '<h4 class="text-sm font-semibold text-primary mb-3">Genes Vecinos</h4>';
+                html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
+                for (const v of vecinos) {
+                    const vn = v.gen.nombre_gen || v.gen.gene || v.gen.locus_tag || '-';
+                    const vp = v.gen.producto || 'Sin anotacion';
+                    const vh = v.gen.hebra || v.gen.strand || '+';
+                    const vhColor = (vh === '+' || vh === '1') ? 'text-emerald-500' : 'text-cyan-500';
+                    html += '<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">';
+                    html += '<p class="text-xs text-secondary">' + v.label + '</p>';
+                    html += '<p class="text-sm font-medium text-primary">' + vn + ' <span class="font-bold ' + vhColor + '">' + ((vh === '+' || vh === '1') ? "5'\u21923'" : "3'\u21925'") + '</span></p>';
+                    html += '<p class="text-xs text-secondary truncate">' + vp + '</p>';
+                    html += '</div>';
+                }
+                html += '</div></div>';
+            }
+
+            resultContainer.innerHTML = html;
+        } catch (e) {
+            resultContainer.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error: ' + e.message + '</p>';
+        }
+    },
+
+    async _extraerGenIndividual(genome, numGen) {
+        const resultContainer = document.getElementById('buscar-gen-numero-resultado');
+        try {
+            const resp = await fetch('/api/extraer_secuencia?genome=' + genome + '&gene_start=' + numGen + '&gene_end=' + numGen + '&mode=cds');
+            const data = await resp.json();
+            if (!data.success) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            const seq = data.secuencia_total || '';
+            // Copiar al portapapeles
+            const fastaHeader = '>' + genome + '_gen_' + numGen + ' | ' + (data.genes_info?.[0]?.nombre_gen || '') + ' | ' + (data.genes_info?.[0]?.producto || '');
+            let fasta = fastaHeader + '\n';
+            for (let i = 0; i < seq.length; i += 60) {
+                fasta += seq.substring(i, i + 60) + '\n';
+            }
+            await navigator.clipboard.writeText(fasta);
+
+            // Mostrar secuencia en resultado
+            const prev = resultContainer.innerHTML;
+            const seqCard = `
+                <div class="bg-card rounded-xl p-5 border border-emerald-200 mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-emerald-500">Secuencia Extraida (copiada al portapapeles)</h4>
+                        <span class="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs rounded-full">${this.fmt(seq.length)} pb</span>
+                    </div>
+                    <pre class="text-[10px] font-mono text-secondary bg-slate-50 dark:bg-slate-900 rounded-lg p-3 max-h-[200px] overflow-auto whitespace-pre-wrap break-all">${fasta}</pre>
+                </div>
+            `;
+            resultContainer.innerHTML = prev + seqCard;
+        } catch (e) {
+            alert('Error extrayendo secuencia: ' + e.message);
+        }
+    },
+
+    _verGenEnMapa(genome, inicio, fin) {
+        // Navegar a la seccion de estructura del gen y hacer scroll al mapa
+        const mapContainer = document.getElementById('genome-map-container');
+        if (!mapContainer) {
+            alert('Primero ve a la seccion "Estructura del Gen" y ejecuta el analisis para ver el mapa del genoma.');
+            return;
+        }
+        // Calcular zoom necesario para ver el gen
+        const genomeLen = this._lastGenomeMapLength || 4641652;
+        const genLen = fin - inicio;
+        const targetZoom = Math.max(1, Math.min(30, (genomeLen / genLen) * 0.05));
+        this._genomeMapZoom = targetZoom;
+        const label = document.getElementById('genome-map-zoom-label');
+        if (label) label.textContent = Math.round(targetZoom * 100) + '%';
+        if (this._lastGenomeMapGenes && this._lastGenomeMapLength) {
+            this._renderGenomeMapSVG(this._lastGenomeMapGenes, this._lastGenomeMapLength, mapContainer);
+        }
+        // Scroll to gene position
+        const width = Math.max(mapContainer.clientWidth - 20, 800) * targetZoom;
+        const scrollTo = (inicio / genomeLen) * width - mapContainer.clientWidth / 2;
+        mapContainer.scrollLeft = Math.max(0, scrollTo);
+        mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
 
     // =========================================================================

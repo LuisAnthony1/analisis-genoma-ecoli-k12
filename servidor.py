@@ -315,7 +315,7 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "analisis_genes": {"file": "analisis_genes.py", "timeout": 120},
         "analisis_codones": {"file": "analisis_codones.py", "timeout": 60},
         "analisis_distancias_intergenicas": {"file": "analisis_distancias_intergenicas.py", "timeout": 60},
-        "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 120},
+        "comparar_genomas": {"file": "comparar_genomas.py", "timeout": 300},
         "visualizaciones": {"file": "visualizaciones.py", "timeout": 180},
         "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
         "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 180},
