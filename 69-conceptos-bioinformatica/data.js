@@ -782,3 +782,93 @@ window.BIOINFO_GRAPH = {
   links: LINKS
 };
 
+// Analogías: explicaciones simples "en cristiano" para cada concepto
+window.BIOINFO_ANALOGIAS = {
+  // Bloque 1: Fundamentos Celulares
+  celula: "Es como un ladrillo de LEGO: todo ser vivo esta hecho de celulas, asi como toda construccion esta hecha de piezas. Cada pieza tiene su funcion.",
+  teoria_celular: "Es la regla basica: todo lo vivo esta hecho de celulas y cada celula nace de otra celula. Como decir que todo edificio esta hecho de ladrillos y cada ladrillo viene de una fabrica de ladrillos.",
+  ciclo_vida_celular: "Es la rutina diaria de una celula: crece, copia su informacion, y se divide en dos. Como una panaderia que abre, hornea pan, y al final del dia se convierte en dos panaderias.",
+  via_metabolica: "Es una linea de ensamblaje en una fabrica: cada trabajador (enzima) hace un paso, y el producto pasa al siguiente. Al final sale el producto terminado.",
+
+  // Bloque 2: Macromoléculas Informacionales
+  adn: "Es el libro de instrucciones completo de tu cuerpo. Cada celula tiene una copia. Esta escrito con solo 4 letras: A, T, G, C.",
+  arn: "Es la fotocopia temporal que se saca del libro (ADN) para llevar las instrucciones a la fabrica (ribosoma) donde se construyen las proteinas.",
+  proteina: "Son las maquinas y herramientas de la celula. Hacen TODO el trabajo: desde digerir comida hasta mover musculos. Se construyen siguiendo las instrucciones del ADN.",
+  nucleotido: "Es una letra del alfabeto genetico. Juntando muchas letras se escriben los genes. Cada letra tiene una base (A, T, G o C), un azucar y un fosfato.",
+  bases_nitrogenadas: "Son las 4 letras del alfabeto del ADN: A, T, G, C. Siempre se emparejan igual: A con T, y G con C. Como piezas de puzzle que solo encajan de una forma.",
+  regla_chargaff: "Si cuentas las letras del ADN, siempre hay la misma cantidad de A que de T, y de G que de C. Es como decir que en un baile siempre hay el mismo numero de hombres que de mujeres.",
+  doble_helice: "El ADN tiene forma de escalera retorcida (como un espiral). Los pasamanos son azucar-fosfato y los peldanos son las parejas de bases A-T y G-C.",
+  complementariedad_bases: "A siempre va con T, y G siempre va con C. Son como llaves y cerraduras: cada base solo encaja con su pareja. Esto permite copiar el ADN sin errores.",
+  replicacion_adn: "Es como fotocopiar el libro de instrucciones completo antes de que la celula se divida, para que cada celula hija tenga su propia copia identica.",
+
+  // Bloque 3: Organización Genómica
+  cromosoma: "Es un tomo del libro de instrucciones. Los humanos tenemos 46 tomos (cromosomas). E. coli tiene uno solo, circular, como un anillo.",
+  gen: "Es un parrafo especifico dentro del libro que tiene las instrucciones para construir una proteina en particular. Los humanos tenemos unos 20,000 parrafos.",
+  herencia_mendeliana: "Las leyes de Mendel explican por que te pareces a tus padres. Recibes una copia de cada gen de mama y otra de papa, como recibir una carta de cada uno.",
+  mutacion: "Es una errata en el libro. A veces al copiar el ADN se cambia una letra. Puede no pasar nada, puede causar problemas, o raramente puede ser beneficioso.",
+  ligamiento_genetico: "Genes que estan en el mismo cromosoma tienden a heredarse juntos, como paginas del mismo capitulo que siempre van juntas cuando arrancas hojas.",
+  mapa_genetico: "Es un plano que muestra donde esta cada gen en los cromosomas, como un indice de un libro que dice en que pagina esta cada tema.",
+  un_gen_una_proteina: "La idea original era simple: cada gen tiene las instrucciones para una sola proteina. Como cada receta del libro de cocina hace un solo platillo.",
+
+  // Bloque 4: Células y Organización
+  celula_eucariota: "Celula con nucleo (como una oficina con un despacho del director donde se guarda la informacion importante). Animales, plantas y hongos las tienen.",
+  celula_procariota: "Celula sin nucleo (como una oficina abierta sin despachos). Las bacterias son asi: mas simples y pequenas, pero muy eficientes.",
+  exon: "Son las partes utiles del gen, las que realmente contienen instrucciones para la proteina. Como los parrafos de un libro que cuentan la historia.",
+  intron: "Son las partes del gen que se cortan y se tiran antes de fabricar la proteina. Como los anuncios en medio de una pelicula: estan ahi pero no son parte de la trama.",
+
+  // Bloque 5: Flujo de Información Genética
+  transcripcion: "Es el proceso de sacar una fotocopia (ARN) de un parrafo del libro (gen del ADN). Solo se copia lo que se necesita en ese momento.",
+  arn_polimerasa: "Es la fotocopiadora: la maquina que lee el ADN y crea una copia en ARN. Lee una hebra y construye la copia letra por letra.",
+  arn_mensajero: "Es el mensajero que lleva la fotocopia de las instrucciones desde el nucleo hasta la fabrica (ribosoma). Como un delivery que lleva el pedido.",
+  splicing: "Es el proceso de edicion: se cortan los intrones (las partes inservibles) y se pegan los exones (las partes utiles). Como editar un video quitando las tomas malas.",
+  traduccion: "Es leer las instrucciones del ARN mensajero y construir la proteina aminoacido por aminoacido. Como un albañil leyendo un plano y poniendo ladrillo por ladrillo.",
+  ribosoma: "Es la fabrica donde se construyen las proteinas. Lee el ARN mensajero y ensambla los aminoacidos en el orden correcto. Como una impresora 3D biologica.",
+  aminoacido: "Son las piezas de LEGO con las que se construyen las proteinas. Hay 20 tipos diferentes y segun el orden en que los pongas, sale una proteina distinta.",
+  polipeptido: "Es una cadena de aminoacidos unidos. Cuando se pliega en su forma final, se convierte en una proteina funcional. Como una cadena de clips que al doblarse forma una figura.",
+  codon: "Es una palabra de 3 letras en el ARN que significa un aminoacido especifico. Por ejemplo, AUG siempre significa 'metionina'. El diccionario tiene 64 palabras.",
+  codigo_genetico: "Es el diccionario que traduce las palabras de 3 letras del ARN a aminoacidos. Es universal: casi todos los seres vivos usan el mismo diccionario.",
+  degeneracion_codigo: "Varios codones pueden significar el mismo aminoacido. Es como tener sinonimos: 'carro', 'auto' y 'coche' significan lo mismo. Hay 64 codones para solo 20 aminoacidos.",
+  codon_inicio: "Es la señal de 'ARRANCAR' (AUG). Le dice al ribosoma donde empezar a leer y construir la proteina. Como la primera mayuscula de una oracion.",
+  codon_terminacion: "Es la señal de 'PARAR' (UAA, UAG, UGA). Le dice al ribosoma que la proteina ya esta completa. Como el punto final de una oracion.",
+  arn_transferencia: "Es el repartidor que trae el aminoacido correcto al ribosoma. Cada ARNt carga un aminoacido especifico y lo entrega cuando lee el codon correspondiente.",
+  anticodon: "Es la etiqueta del ARNt que encaja con el codon del ARNm. Como un codigo de barras que verifica que el aminoacido correcto se entregue en el lugar correcto.",
+  dogma_central: "Es la regla de oro de la biologia: ADN → ARN → Proteina. La informacion fluye del libro (ADN) a la fotocopia (ARN) a la maquina (proteina). Nunca al reves.",
+
+  // Bloque 6: Tecnologías ADN Recombinante
+  pcr: "Es una fotocopiadora turbo para ADN. Tomas un fragmento diminuto y en pocas horas tienes millones de copias. Es como hacer zoom a una parte especifica del libro.",
+  cebador: "Es un marcador que le dice a la PCR DONDE empezar a copiar. Sin cebadores, la maquina no sabe que parte del ADN fotocopiar. Como poner un post-it en la pagina correcta.",
+  desnaturalizacion: "Es calentar el ADN a 95°C para separar las dos hebras. Como abrir un cierre: las dos mitades se separan por el calor para poder copiar cada una.",
+  alineamiento_priming: "Se baja la temperatura para que los cebadores se peguen al ADN en el lugar correcto. Como cuando el post-it se pega a la pagina que marcaste.",
+  extension_pcr: "La polimerasa construye la nueva copia de ADN a partir del cebador. Como una impresora que empieza a imprimir desde donde pusiste el cursor.",
+  clonacion_molecular: "Es copiar un gen metiendolo dentro de una bacteria para que esta lo multiplique. Como darle una receta a una panaderia para que haga mil copias del mismo pan.",
+  vector_clonacion: "Es el vehiculo que transporta tu gen dentro de la bacteria. Generalmente un plasmido circular. Como un pendrive donde guardas un archivo para pasarlo a otra computadora.",
+  biblioteca_clones: "Es una coleccion de bacterias donde cada una lleva un fragmento diferente del genoma. Como una biblioteca donde cada libro tiene un capitulo diferente.",
+  enzima_restriccion: "Son tijeras moleculares que cortan el ADN en secuencias especificas. Cada enzima reconoce y corta una 'palabra' diferente. Como un Ctrl+F que busca y corta.",
+  sitio_reconocimiento: "Es la secuencia exacta de letras donde la enzima de restriccion corta. Generalmente son 4-8 letras palindromicas. Como la contraseña que activa las tijeras.",
+  extremos_romos: "Cuando la enzima corta el ADN dejando ambas hebras al mismo nivel. Como cortar una cuerda con un corte limpio y recto.",
+  extremos_pegajosos: "Cuando la enzima corta dejando un extremo mas largo que otro. Estos extremos sobresalientes pueden pegarse a otros compatibles. Como piezas de velcro que se enganchan.",
+  hibridacion: "Es cuando dos hebras de ADN/ARN complementarias se juntan formando doble hebra. Como dos mitades de un cierre que se cierran porque sus dientes encajan perfectamente.",
+  ligacion: "Es pegar dos fragmentos de ADN con una enzima llamada ligasa. Como usar pegamento para unir dos piezas de madera. La ligasa es el pegamento molecular.",
+
+  // Bloque 7: Técnicas de Análisis
+  electroforesis_gel: "Es como una carrera de obstaculos para moleculas. Las mas pequeñas corren mas rapido por el gel. Al final, puedes ver las moleculas separadas por tamaño como bandas.",
+  sonda: "Es un fragmento de ADN marcado con color o fluorescencia que se pega a una secuencia especifica. Como un detector de metales: solo pita cuando encuentra exactamente lo que busca.",
+  microarreglo: "Es un chip con miles de sondas que mide la actividad de miles de genes a la vez. Como un panel de control con miles de lucecitas: las que brillan son los genes activos.",
+
+  // Bloque 8: Variación y Evolución
+  variacion_genetica: "Las diferencias en el ADN entre individuos de la misma especie. Como que todos tenemos cara, pero cada cara es diferente. Estas diferencias estan en nuestro ADN.",
+  genoma_referencia: "Es el genoma 'modelo' de una especie contra el cual se comparan todos los demas. Como tener un plano oficial del edificio para comparar con cada apartamento.",
+  conservacion_genetica: "Genes que son casi identicos en especies diferentes porque son tan importantes que la evolucion no los cambio. Como el volante en todos los autos: es esencial y no cambia.",
+  evolucion: "El cambio gradual de las especies a lo largo del tiempo por mutaciones y seleccion. Como actualizar un software: cada version es un poco diferente a la anterior.",
+  seleccion_natural: "Los individuos mejor adaptados sobreviven y tienen mas hijos. Como un filtro: solo pasan los que funcionan bien en su ambiente. Darwin lo descubrio.",
+  adaptacion: "Una caracteristica que ayuda a sobrevivir en un ambiente. Como tener abrigo en el frio: los que lo tenian sobrevivieron y pasaron esa ventaja a sus hijos.",
+  especiacion: "Cuando una poblacion se divide y con el tiempo se vuelven tan diferentes que ya no pueden cruzarse. Como un idioma que se divide en dos lenguas distintas.",
+
+  // Bloque 9: Bioinformática
+  alfabeto_molecular: "Las moleculas biologicas usan alfabetos simples: 4 letras para ADN (ATGC), 4 para ARN (AUGC) y 20 letras (aminoacidos) para proteinas. Todo lo vivo se escribe con estas letras.",
+  genomica_comparativa: "Es comparar los genomas de diferentes especies para encontrar similitudes y diferencias. Como comparar dos recetas para ver que ingredientes comparten.",
+  alineamiento_secuencias: "Es poner dos secuencias de ADN una al lado de la otra para ver donde coinciden y donde difieren. Como comparar dos textos palabra por palabra buscando las diferencias.",
+  blast: "Es el Google del ADN: le das una secuencia y te busca las mas parecidas en todas las bases de datos del mundo. Te dice a que gen o especie se parece mas.",
+  bioinformatica: "Es usar computadoras para analizar datos biologicos (genomas, proteinas, etc). Como usar Excel pero para datos de ADN. Sin ella, seria imposible manejar la cantidad de datos que genera la genomica."
+};
+

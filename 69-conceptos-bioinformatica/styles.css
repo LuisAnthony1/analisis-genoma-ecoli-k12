@@ -369,8 +369,9 @@ body::after {
   bottom: 16px;
   right: -420px;
   z-index: 2;
-  width: 360px;
+  width: 380px;
   max-width: 40vw;
+  max-height: calc(100vh - 32px);
   margin: 0 16px 16px 0;
   padding: 0;
   border-radius: var(--radius-lg);
@@ -382,6 +383,7 @@ body::after {
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   overflow: hidden;
   transition: opacity 0.3s ease, right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -451,10 +453,86 @@ body::after {
   line-height: 1.65;
   color: var(--text-secondary);
   white-space: pre-line;
-  padding: 12px 20px 20px;
-  max-height: 300px;
+  padding: 12px 20px 16px;
+  max-height: 200px;
   overflow-y: auto;
 }
+
+/* --- Info sections: Conexiones y Analogía --- */
+.info-section {
+  border-top: 1px solid rgba(148, 163, 230, 0.08);
+  padding: 12px 20px 16px;
+}
+
+.info-section-title {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.info-connections {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.info-connections::-webkit-scrollbar { width: 3px; }
+.info-connections::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+
+.conn-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  line-height: 1.4;
+}
+
+.conn-arrow {
+  color: var(--accent);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.conn-target {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.conn-relation {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+.info-analogy {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #ffd86b;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.info-analogy::-webkit-scrollbar { width: 3px; }
+.info-analogy::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
 
 .info-description::-webkit-scrollbar {
   width: 3px;

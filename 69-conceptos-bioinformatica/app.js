@@ -42,6 +42,19 @@
   // Map to track concept list item DOM elements by node id
   const conceptItemByNodeId = new Map();
 
+  // Importancia por conexiones (para escalar texto)
+  const connectionCount = new Map();
+  nodes.forEach((n) => connectionCount.set(n.id, 0));
+  links.forEach((l) => {
+    const s = typeof l.source === "object" ? l.source.id : l.source;
+    const t = typeof l.target === "object" ? l.target.id : l.target;
+    connectionCount.set(s, (connectionCount.get(s) || 0) + 1);
+    connectionCount.set(t, (connectionCount.get(t) || 0) + 1);
+  });
+  const maxConns = Math.max(1, ...connectionCount.values());
+  // Tracking de sprites para zoom dinámico
+  const labelDataByNodeId = new Map();
+
   // Helper: extraer ID de source/target (puede ser string o objeto)
   function getId(nodeOrId) {
     return typeof nodeOrId === "object" && nodeOrId !== null ? nodeOrId.id : nodeOrId;
@@ -232,7 +245,7 @@
     Graph.cameraPosition(
       { x: graphNode.x + xOffset, y: graphNode.y, z: graphNode.z + distance },
       { x: graphNode.x + xOffset, y: graphNode.y, z: graphNode.z },
-      1000
+      2500
     );
   }
 
@@ -302,6 +315,9 @@
   }
 
   // Mostrar detalles del nodo en el panel lateral
+  const infoConnections = document.getElementById("info-connections");
+  const infoAnalogy = document.getElementById("info-analogy");
+
   function mostrarNodoEnPanel(node) {
     if (!node || !infoPanel) return;
 
@@ -310,6 +326,36 @@
     infoBlock.textContent = bloqueNombre ? `Bloque: ${bloqueNombre}` : "";
     if (infoDesc) {
       infoDesc.textContent = node.descripcion || "";
+    }
+
+    // Conexiones: buscar links donde este nodo es source o target
+    if (infoConnections) {
+      const conns = [];
+      links.forEach((l) => {
+        const srcId = getId(l.source);
+        const tgtId = getId(l.target);
+        if (srcId === node.id) {
+          const tgt = nodeById.get(tgtId);
+          if (tgt) conns.push({ dir: "→", name: tgt.nombre, rel: l.relacion || "" });
+        } else if (tgtId === node.id) {
+          const src = nodeById.get(srcId);
+          if (src) conns.push({ dir: "←", name: src.nombre, rel: l.relacion || "" });
+        }
+      });
+      if (conns.length) {
+        infoConnections.innerHTML = conns.map((c) =>
+          `<div class="conn-item"><span class="conn-arrow">${c.dir}</span><span class="conn-target">${c.name}</span><span class="conn-relation">${c.rel}</span></div>`
+        ).join("");
+      } else {
+        infoConnections.textContent = "Sin conexiones";
+      }
+    }
+
+    // Analogía
+    if (infoAnalogy) {
+      const analogias = window.BIOINFO_ANALOGIAS;
+      const txt = analogias && analogias[node.id] ? analogias[node.id] : "Analogia no disponible";
+      infoAnalogy.textContent = txt;
     }
 
     infoPanel.classList.remove("hidden");
@@ -325,12 +371,25 @@
 
   function buildNodeObject(node) {
     const group = new THREE.Group();
+    const conns = connectionCount.get(node.id) || 0;
+    const importance = 0.7 + (conns / maxConns) * 0.6; // 0.7 a 1.3
+    const isActive = node.id === currentActiveNodeId;
+    const baseHeight = (isActive ? 3 : 2) * importance;
+
     const label = new SpriteText(node.nombre || "");
     label.color = "#ffd86b";
-    label.textHeight = node.id === currentActiveNodeId ? 3 : 2;
+    label.textHeight = baseHeight;
     label.position.y = 7;
     group.add(label);
-    if (node.id === currentActiveNodeId) {
+
+    // Guardar referencia para zoom dinámico
+    labelDataByNodeId.set(node.id, {
+      sprite: label,
+      baseScaleX: label.scale.x,
+      baseScaleY: label.scale.y
+    });
+
+    if (isActive) {
       const color = bloqueColorById.get(node.bloque) || "#ffffff";
       const geom = new THREE.SphereGeometry(6, 16, 16);
       const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.25 });
@@ -340,6 +399,29 @@
   }
 
   Graph.nodeThreeObject(buildNodeObject).nodeThreeObjectExtend(true);
+
+  // Escalar texto dinámicamente según zoom de la cámara
+  let _zoomTimer = null;
+  function adjustLabelsForZoom() {
+    if (_zoomTimer) return;
+    _zoomTimer = setTimeout(() => {
+      _zoomTimer = null;
+      const cam = Graph.camera();
+      const dist = cam.position.length();
+      // Lejos (~500+) → texto grande, Cerca (~120 flyTo) → texto chico
+      const factor = Math.max(0.3, Math.min(1.8, dist / 450));
+      labelDataByNodeId.forEach(({ sprite, baseScaleX, baseScaleY }) => {
+        sprite.scale.set(baseScaleX * factor, baseScaleY * factor, 1);
+      });
+    }, 60);
+  }
+
+  // Conectar al control de cámara después de inicializar
+  setTimeout(() => {
+    try {
+      Graph.controls().addEventListener("change", adjustLabelsForZoom);
+    } catch (e) { /* controls no disponibles aún */ }
+  }, 500);
 
   function refreshObjects() {
     try {
