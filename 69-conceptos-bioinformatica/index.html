@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa Mental 3D de Bioinformática</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Three.js + SpriteText + 3d-force-graph (usa THREE global) -->
+  <script src="https://unpkg.com/three@0.139.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three-spritetext@1.6.5/dist/three-spritetext.min.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.73.0/dist/3d-force-graph.min.js"></script>
+</head>
+<body>
+  <div id="app-root">
+    <div id="glass-panel">
+      <h1>Mapa Mental 3D · Bioinformática</h1>
+      <p class="subtitle">Explora los bloques, relaciones y flujo de información genética.</p>
+
+      <div class="controls-row">
+        <div class="control-group">
+          <h2>Bloques conceptuales</h2>
+          <div id="filters-container"></div>
+        </div>
+
+        <div class="control-group">
+          <h2>Buscar concepto</h2>
+          <input id="concept-search" class="search-input" type="search" placeholder="Escribe nombre..." list="concepts-datalist" />
+          <datalist id="concepts-datalist"></datalist>
+        </div>
+      </div>
+    </div>
+
+    <div id="graph-container">
+      <div id="3d-graph"></div>
+    </div>
+
+    <div id="nav-panel" class="nav-panel">
+      <div id="nav-block-name" class="nav-block-name"></div>
+      <div id="nav-concept-name" class="nav-concept-name"></div>
+      <div class="nav-controls">
+        <button id="nav-prev" class="nav-btn">Atrás</button>
+        <span id="nav-counter" class="nav-counter">0 / 0</span>
+        <button id="nav-next" class="nav-btn">Siguiente</button>
+      </div>
+    </div>
+
+    <aside id="info-panel" class="info-panel hidden">
+      <div class="info-panel-header">
+        <h2 id="info-title">Selecciona un concepto</h2>
+        <button id="info-close" class="info-close-btn" aria-label="Cerrar panel">×</button>
+      </div>
+      <p id="info-block" class="info-block-label"></p>
+      <p id="info-desc" class="info-description">
+        Haz clic en un nodo para ver aquí la definición completa y usarlo como punto de explicación durante la exposición.
+      </p>
+    </aside>
+  </div>
+
+  <!-- Datos y lógica -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
