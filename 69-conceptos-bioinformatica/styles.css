@@ -179,9 +179,9 @@ body::after {
 /* === Block Filter Pills === */
 #filters-container {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 280px;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 320px;
   overflow-y: auto;
   padding-right: 4px;
   padding-bottom: 4px;
@@ -260,7 +260,6 @@ body::after {
 
 .filter-pill span.label {
   display: inline-block;
-  max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
