@@ -193,7 +193,7 @@ const NODOS = [
   },
   {
     id: "un_gen_una_proteina",
-    nombre: ""Un gen–una proteína"",
+    nombre: "Un gen - una proteina",
     bloque: "bloque3",
     descripcion:
       "Hipotesis formulada originalmente como 'un gen–una enzima' por Beadle y Tatum en 1941, basandose en mutantes de Neurospora crassa. Propone que cada gen codifica una sola enzima.\n\nFue refinada a 'un gen–una proteina' al descubrirse proteinas no enzimaticas, y luego a 'un gen–un polipeptido' al reconocer que proteinas pueden tener multiples subunidades.\n\nHoy sabemos que esta hipotesis es una simplificacion:\n- El splicing alternativo permite que un gen produzca multiples proteinas.\n- Un gen puede codificar ARN no codificante funcional.\n- Las modificaciones post-traduccionales diversifican aun mas los productos.\n\nEn humanos, ~20,000 genes producen >100,000 proteinas distintas gracias al splicing alternativo. Sin embargo, en bacterias como E. coli, la correspondencia un gen–una proteina se mantiene bastante bien, ya que carecen de intrones."
