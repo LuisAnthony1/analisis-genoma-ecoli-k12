@@ -180,15 +180,16 @@
   }
 
   // Animar cámara hacia un nodo del grafo 3D
+  // Vuelo 3D pero al llegar queda de frente (vista 2D centrada)
   function flyToNode(nodeId) {
     const graphNode = Graph.graphData().nodes.find((n) => n.id === nodeId);
     if (!graphNode || graphNode.x === undefined) return;
-    const distance = 180;
-    const distRatio = 1 + distance / Math.hypot(graphNode.x || 1, graphNode.y || 1, graphNode.z || 1);
+    const distance = 120;
+    // Cámara queda directamente enfrente del nodo en el eje Z → vista 2D al llegar
     Graph.cameraPosition(
-      { x: graphNode.x * distRatio, y: graphNode.y * distRatio, z: graphNode.z * distRatio },
-      graphNode,
-      1200
+      { x: graphNode.x, y: graphNode.y, z: graphNode.z + distance },
+      { x: graphNode.x, y: graphNode.y, z: graphNode.z },
+      1000
     );
   }
 
@@ -222,16 +223,19 @@
     .nodeLabel((node) => node.nombre || "")
     .nodeColor((node) => bloqueColorById.get(node.bloque) || "#ffffff")
     .nodeOpacity(0.95)
-    .nodeRelSize(6)
+    .nodeRelSize(3)
     .linkColor(() => "rgba(200,220,255,0.45)")
     .linkOpacity(0.6)
-    .linkWidth(0.5)
-    .linkDirectionalArrowLength(3)
+    .linkWidth(0.4)
+    .linkDirectionalArrowLength(2.5)
     .linkDirectionalArrowRelPos(1)
     .linkDirectionalParticles(0)
     .linkDirectionalParticleWidth(1.5)
     .linkDirectionalParticleColor(() => "#ffffff")
-    .linkLabel((link) => link.relacion || "");
+    .linkLabel((link) => link.relacion || "")
+    // Estirar links y forzar distribución 3D real
+    .d3Force("link", Graph.d3Force("link").distance(120))
+    .d3Force("charge", Graph.d3Force("charge").strength(-200));
 
   // Configuración de verbos permanentes en aristas usando SpriteText
   if (typeof SpriteText !== "undefined") {
@@ -239,7 +243,7 @@
     Graph.linkThreeObject((link) => {
       const sprite = new SpriteText(link.relacion || "");
       sprite.color = "#f5f5ff"; // visible sobre fondo negro
-      sprite.textHeight = 2.8;
+      sprite.textHeight = 1.8;
       return sprite;
     }).linkThreeObjectExtend(true);
 
@@ -280,12 +284,12 @@
     const group = new THREE.Group();
     const label = new SpriteText(node.nombre || "");
     label.color = "#ffd86b";
-    label.textHeight = node.id === currentActiveNodeId ? 4.5 : 3.2;
-    label.position.y = 10;
+    label.textHeight = node.id === currentActiveNodeId ? 3 : 2;
+    label.position.y = 7;
     group.add(label);
     if (node.id === currentActiveNodeId) {
       const color = bloqueColorById.get(node.bloque) || "#ffffff";
-      const geom = new THREE.SphereGeometry(9, 16, 16);
+      const geom = new THREE.SphereGeometry(6, 16, 16);
       const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.25 });
       group.add(new THREE.Mesh(geom, mat));
     }
