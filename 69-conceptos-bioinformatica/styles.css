@@ -556,18 +556,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 50vh;
-  overflow-y: auto;
-  padding-right: 4px;
   padding-bottom: 60px;
-}
-
-#concepts-list::-webkit-scrollbar {
-  width: 3px;
-}
-#concepts-list::-webkit-scrollbar-thumb {
-  background: rgba(129, 140, 248, 0.3);
-  border-radius: 3px;
 }
 
 .concept-block-group {
@@ -588,9 +577,6 @@ body::after {
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   background: rgba(15, 23, 42, 0.5);
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 
 .concept-block-header .dot {
