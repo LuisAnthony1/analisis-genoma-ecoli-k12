@@ -1400,6 +1400,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.nav-item').forEach(item => {
         const link = item.querySelector('.nav-link');
         if (link) {
+            // Si el link tiene href real (externo), dejar que el navegador lo abra
+            if (link.hasAttribute('href') && link.getAttribute('href') !== '#') return;
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 navigateToItem(item);
