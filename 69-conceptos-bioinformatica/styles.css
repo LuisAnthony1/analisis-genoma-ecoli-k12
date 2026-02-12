@@ -539,6 +539,110 @@ body::after {
 }
 
 /* ============================================================
+   Concepts List (All 69 concepts by block)
+   ============================================================ */
+#concepts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+#concepts-list::-webkit-scrollbar {
+  width: 3px;
+}
+#concepts-list::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.3);
+  border-radius: 3px;
+}
+
+.concept-block-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.concept-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.concept-block-header .dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.concept-block-header .count {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.concept-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.concept-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(129, 140, 248, 0.2);
+  color: var(--text-primary);
+}
+
+.concept-item.active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: var(--border-active);
+  color: #fff;
+  font-weight: 600;
+}
+
+.concept-item .concept-num {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.concept-item.active .concept-num {
+  color: var(--accent);
+}
+
+.concept-item .concept-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
    Hint text
    ============================================================ */
 .hint {

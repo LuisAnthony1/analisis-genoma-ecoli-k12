@@ -32,11 +32,14 @@
   // Mapa de nodos por ID para acceso rápido
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const checkboxByBlock = new Map();
+  const conceptsListContainer = document.getElementById("concepts-list");
   let selectedNavBlockId = null;
   let conceptList = [];
   let currentIndex = 0;
   let currentActiveNodeId = null;
   let _blockFocusTimer = null;
+  // Map to track concept list item DOM elements by node id
+  const conceptItemByNodeId = new Map();
 
   // Helper: extraer ID de source/target (puede ser string o objeto)
   function getId(nodeOrId) {
@@ -89,6 +92,104 @@
         updateFilteredGraphData();
       });
     });
+  }
+
+  // Construir lista de todos los conceptos organizada por bloques
+  function buildConceptsList() {
+    if (!conceptsListContainer) return;
+    conceptsListContainer.innerHTML = "";
+    conceptItemByNodeId.clear();
+    let globalNum = 0;
+
+    bloques.forEach((bloque) => {
+      const bloqueNodes = nodes.filter((n) => n.bloque === bloque.id);
+      if (!bloqueNodes.length) return;
+
+      const group = document.createElement("div");
+      group.className = "concept-block-group";
+
+      // Header del bloque
+      const header = document.createElement("div");
+      header.className = "concept-block-header";
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.backgroundColor = bloque.color;
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = bloque.nombre;
+      const countSpan = document.createElement("span");
+      countSpan.className = "count";
+      countSpan.textContent = `(${bloqueNodes.length})`;
+      header.appendChild(dot);
+      header.appendChild(nameSpan);
+      header.appendChild(countSpan);
+      group.appendChild(header);
+
+      // Items de conceptos
+      bloqueNodes.forEach((node) => {
+        globalNum++;
+        const item = document.createElement("div");
+        item.className = "concept-item";
+        item.dataset.nodeId = node.id;
+        item.dataset.blockId = bloque.id;
+
+        const numSpan = document.createElement("span");
+        numSpan.className = "concept-num";
+        numSpan.textContent = globalNum + ".";
+
+        const nameEl = document.createElement("span");
+        nameEl.className = "concept-name";
+        nameEl.textContent = node.nombre;
+        nameEl.title = node.nombre;
+
+        item.appendChild(numSpan);
+        item.appendChild(nameEl);
+        group.appendChild(item);
+
+        conceptItemByNodeId.set(node.id, item);
+
+        item.addEventListener("click", () => {
+          // Activar bloque si no está activo
+          if (!activeBlocks.has(bloque.id)) {
+            activeBlocks.add(bloque.id);
+            const cb = checkboxByBlock.get(bloque.id);
+            if (cb) { cb.checked = true; cb.closest(".filter-pill").classList.add("active"); }
+            updateFilteredGraphData();
+          }
+          selectedNavBlockId = bloque.id;
+          conceptList = nodes.filter((n) => n.bloque === bloque.id);
+          currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === node.id));
+          // Esperar a que el grafo tenga los nodos posicionados si recién se activó
+          setTimeout(() => focusConcept(node.id), 200);
+        });
+      });
+
+      conceptsListContainer.appendChild(group);
+    });
+  }
+
+  // Actualizar highlight del item activo en la lista
+  function updateActiveListItem(nodeId) {
+    conceptItemByNodeId.forEach((el, id) => {
+      el.classList.toggle("active", id === nodeId);
+    });
+    // Scroll el item activo a la vista
+    const activeEl = conceptItemByNodeId.get(nodeId);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  // Animar cámara hacia un nodo del grafo 3D
+  function flyToNode(nodeId) {
+    const graphNode = Graph.graphData().nodes.find((n) => n.id === nodeId);
+    if (!graphNode || graphNode.x === undefined) return;
+    const distance = 180;
+    const distRatio = 1 + distance / Math.hypot(graphNode.x || 1, graphNode.y || 1, graphNode.z || 1);
+    Graph.cameraPosition(
+      { x: graphNode.x * distRatio, y: graphNode.y * distRatio, z: graphNode.z * distRatio },
+      graphNode,
+      1200
+    );
   }
 
   // Construir datos filtrados según bloques activos
@@ -241,7 +342,9 @@
     currentActiveNodeId = conceptId;
     mostrarNodoEnPanel(node);
     updateNavUI();
+    updateActiveListItem(conceptId);
     refreshObjects();
+    flyToNode(conceptId);
   }
 
   function navigate(delta) {
@@ -258,15 +361,12 @@
     navNextBtn.addEventListener("click", () => navigate(1));
   }
 
-  // Click en nodo sin mover la cámara
+  // Click en nodo del grafo 3D: centrar cámara y actualizar todo
   Graph.onNodeClick((node) => {
-    mostrarNodoEnPanel(node);
     selectedNavBlockId = node.bloque;
     conceptList = nodes.filter((n) => n.bloque === node.bloque).slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
     currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === node.id));
-    currentActiveNodeId = node.id;
-    updateNavUI();
-    refreshObjects();
+    focusConcept(node.id);
   });
 
   // Alternar flujo (resalta rutas "dogma central" y similares con partículas)
@@ -353,6 +453,7 @@
 
   // Inicializar
   buildBlockFilters();
+  buildConceptsList();
   updateFilteredGraphData();
   populateConceptsDatalist();
   // Sin selección inicial de bloque para no mostrar grafo hasta que el usuario elija
