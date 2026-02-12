@@ -263,8 +263,46 @@ def listar_genomas():
                 info["organism"] = basename.replace("_", " ").title()
                 info["accession_id"] = "N/A"
         else:
+            # Sin metadata: leer la primera linea DEFINITION del GenBank
             info["organism"] = basename.replace("_", " ").title()
             info["accession_id"] = "N/A"
+            info["description"] = ""
+            try:
+                with open(ruta_gb, "r", encoding="utf-8", errors="ignore") as gbf:
+                    for linea in gbf:
+                        if linea.startswith("DEFINITION"):
+                            info["description"] = linea[12:].strip().rstrip(".")
+                        elif linea.startswith("ACCESSION"):
+                            acc_val = linea[12:].strip().split()[0]
+                            if acc_val:
+                                info["accession_id"] = acc_val
+                        elif linea.startswith("  ORGANISM"):
+                            info["organism"] = linea[12:].strip()
+                        elif linea.startswith("FEATURES"):
+                            break  # Ya pasamos el header
+            except Exception:
+                pass
+
+        # Construir etiqueta descriptiva para distinguir cepas
+        desc = info.get("description", "")
+        acc = info.get("accession_id", "N/A")
+        length = info.get("length", 0) or info.get("size_mb", 0) * 1e6
+        # Usar descripcion completa como label principal
+        if desc:
+            label = desc[:70]
+        else:
+            label = basename.replace("_", " ").title()[:70]
+        # Agregar accession y tamano para mas contexto
+        extras = []
+        if acc and acc != "N/A":
+            extras.append(acc)
+        if length:
+            mb = length / 1e6
+            if mb >= 0.01:
+                extras.append(f"{mb:.2f} Mb")
+        if extras:
+            label = f"{label} [{', '.join(extras)}]"
+        info["display_label"] = label
 
         genomas.append(info)
 
@@ -282,6 +320,8 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         "consultar_literatura_ia": {"file": "consultar_literatura_ia.py", "timeout": 60},
         "analisis_estructura_gen": {"file": "analisis_estructura_gen.py", "timeout": 180},
         "generar_informe": {"file": "generar_informe.py", "timeout": 600},
+        "analisis_proteinas": {"file": "analisis_proteinas.py", "timeout": 300},
+        "analisis_evolucion": {"file": "analisis_evolucion.py", "timeout": 300},
     }
 
     if script_name not in scripts_permitidos:
@@ -295,10 +335,15 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
 
     # Construir comando - todos los scripts reciben genome_basename como argumento
     cmd = [sys.executable, script_path]
-    if genome_basename:
-        cmd.append(genome_basename)
-    if genome_basename_2:
-        cmd.append(genome_basename_2)
+    if script_name == "analisis_evolucion":
+        # Evolucion recibe lista de genomas separada por coma (o "all")
+        genomes_list = genome_basename or "all"
+        cmd.append(genomes_list)
+    else:
+        if genome_basename:
+            cmd.append(genome_basename)
+        if genome_basename_2:
+            cmd.append(genome_basename_2)
 
     # Registrar archivos existentes ANTES del análisis
     archivos_antes_tablas = set()
@@ -319,8 +364,8 @@ def ejecutar_analisis(script_name, organism=None, genome_basename=None, genome_b
         )
         elapsed = round(time.time() - start, 2)
 
-        # Mover archivos nuevos a carpeta del genoma
-        if genome_basename:
+        # Mover archivos nuevos a carpeta del genoma (no aplica a evolucion)
+        if genome_basename and script_name != "analisis_evolucion":
             mover_resultados_a_genoma(
                 genome_basename, archivos_antes_tablas, archivos_antes_figuras
             )
@@ -368,6 +413,51 @@ def mover_resultados_a_genoma(genome_basename, antes_tablas, antes_figuras):
 
     if movidos > 0:
         print(f"[RESULTADOS] {movidos} archivos movidos a {genome_basename}/")
+
+
+# =============================================================================
+# PROXY PDB/ALPHAFOLD (para visor 3D - evita CORS)
+# =============================================================================
+
+def proxy_pdb_structure(pdb_id="", source="rcsb", af_url=""):
+    """Descarga estructura PDB/mmCIF desde RCSB PDB o AlphaFold y la retorna."""
+    import urllib.request
+
+    try:
+        if af_url:
+            # URL directa de AlphaFold
+            url = af_url
+        elif source == "alphafold" and pdb_id:
+            # AlphaFold por UniProt ID
+            url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
+        else:
+            # RCSB PDB - intentar PDB format primero
+            url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+
+        req = urllib.request.Request(url, headers={"User-Agent": "GenomeHub/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read().decode("utf-8", errors="replace")
+
+        if len(data) < 50:
+            return {"success": False, "error": "Archivo PDB vacio o invalido"}
+
+        return {"success": True, "data": data, "source": source, "pdb_id": pdb_id}
+
+    except urllib.error.HTTPError as e:
+        # Si PDB falla, intentar mmCIF
+        if source == "rcsb" and not af_url:
+            try:
+                url_cif = f"https://files.rcsb.org/download/{pdb_id}.cif"
+                req2 = urllib.request.Request(url_cif, headers={"User-Agent": "GenomeHub/1.0"})
+                with urllib.request.urlopen(req2, timeout=15) as resp2:
+                    data2 = resp2.read().decode("utf-8", errors="replace")
+                if len(data2) > 50:
+                    return {"success": True, "data": data2, "source": "rcsb_cif", "pdb_id": pdb_id}
+            except Exception:
+                pass
+        return {"success": False, "error": f"No se pudo descargar: HTTP {e.code}"}
+    except Exception as e:
+        return {"success": False, "error": f"Error de conexion: {str(e)}"}
 
 
 # =============================================================================
@@ -441,6 +531,24 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({"success": False, "error": resultado.get("error", "Error al generar informe"), "output": resultado.get("output", "")})
             return
 
+        if path == "/api/proxy_pdb":
+            pdb_id = query.get("pdb_id", [""])[0].strip().upper()
+            source = query.get("source", ["rcsb"])[0]  # rcsb o alphafold
+            af_url = query.get("url", [""])[0]  # URL directa para AlphaFold
+            if not pdb_id and not af_url:
+                self._json_response({"success": False, "error": "Falta pdb_id o url"}, 400)
+                return
+            resultado = proxy_pdb_structure(pdb_id, source, af_url)
+            if resultado.get("success"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(resultado["data"].encode("utf-8"))
+            else:
+                self._json_response(resultado, 404)
+            return
+
         if path == "/api/buscar_secuencia":
             genome = query.get("genome", [""])[0]
             secuencia = query.get("secuencia", [""])[0].upper().strip()
@@ -452,6 +560,40 @@ class GenomeHubHandler(http.server.SimpleHTTPRequestHandler):
                 return
             resultado = buscar_secuencia_en_genoma(genome, secuencia)
             self._json_response(resultado)
+            return
+
+        if path == "/api/extraer_secuencia":
+            genome = query.get("genome", [""])[0]
+            gene_start = query.get("gene_start", ["1"])[0]
+            gene_end = query.get("gene_end", ["1"])[0]
+            mode = query.get("mode", ["cds"])[0]
+            try:
+                gene_start = int(gene_start)
+                gene_end = int(gene_end)
+            except ValueError:
+                self._json_response({"success": False, "error": "gene_start y gene_end deben ser numeros enteros"}, 400)
+                return
+            if not genome:
+                self._json_response({"success": False, "error": "Falta el genoma"}, 400)
+                return
+            if gene_start < 1 or gene_end < gene_start:
+                self._json_response({"success": False, "error": "Rango invalido: gene_start >= 1 y gene_end >= gene_start"}, 400)
+                return
+            resultado = extraer_secuencia_genes(genome, gene_start, gene_end, mode)
+            self._json_response(resultado)
+            return
+
+        if path == "/api/evolucion_resultado":
+            ruta_evo = os.path.join(RUTA_RESULTADOS, "evolucion", "analisis_evolucion.json")
+            if not os.path.exists(ruta_evo):
+                self._json_response({"success": False, "error": "No hay resultado de evolucion. Ejecuta el analisis primero."})
+                return
+            try:
+                with open(ruta_evo, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self._json_response({"success": True, "data": data})
+            except Exception as e:
+                self._json_response({"success": False, "error": str(e)})
             return
 
         if path == "/api/result_data":
@@ -714,8 +856,8 @@ def listar_genomas_con_resultados():
 
     for nombre in sorted(os.listdir(RUTA_RESULTADOS)):
         ruta = os.path.join(RUTA_RESULTADOS, nombre)
-        # Solo carpetas que NO sean 'tablas' o 'figuras' (legacy)
-        if os.path.isdir(ruta) and nombre not in ("tablas", "figuras"):
+        # Solo carpetas que NO sean 'tablas', 'figuras' (legacy) ni 'evolucion'
+        if os.path.isdir(ruta) and nombre not in ("tablas", "figuras", "evolucion"):
             # Contar archivos
             num_tablas = 0
             num_figuras = 0
@@ -727,9 +869,24 @@ def listar_genomas_con_resultados():
                 num_figuras = len([f for f in os.listdir(ruta_f) if os.path.isfile(os.path.join(ruta_f, f))])
 
             if num_tablas > 0 or num_figuras > 0:
+                # Intentar obtener mejor label desde metadata
+                display = nombre.replace("_", " ").title()
+                meta_path = os.path.join(RUTA_DATOS_CRUDO, f"metadata_{nombre}.json")
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, "r", encoding="utf-8") as fm:
+                            m = json.load(fm)
+                        desc = m.get("genoma", {}).get("descripcion", "")
+                        acc = m.get("id_acceso", "")
+                        if desc:
+                            display = desc[:55]
+                        if acc:
+                            display = f"{display} ({acc})"
+                    except Exception:
+                        pass
                 genomas.append({
                     "basename": nombre,
-                    "label": nombre.replace("_", " ").title(),
+                    "label": display,
                     "tablas": num_tablas,
                     "figuras": num_figuras
                 })
@@ -875,6 +1032,91 @@ def buscar_secuencia_en_genoma(genome_basename, secuencia):
             "longitud_genoma": len(seq_str),
             "total_matches": len(matches),
             "matches": matches[:200]
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def extraer_secuencia_genes(genome_basename, gene_start, gene_end, mode="cds"):
+    """
+    Extrae secuencias de genes por rango (1-based).
+    mode='cds': concatena secuencias codificantes de cada gen.
+    mode='todo': extrae region genomica completa desde inicio del primer gen hasta fin del ultimo.
+    """
+    archivo_gb = os.path.join(RUTA_DATOS_CRUDO, f"{genome_basename}.gb")
+    if not os.path.exists(archivo_gb):
+        return {"success": False, "error": "Genoma no encontrado"}
+
+    try:
+        from Bio.Seq import Seq
+        registro = SeqIO.read(archivo_gb, "genbank")
+        seq_completa = str(registro.seq)
+
+        # Extraer todos los CDS ordenados por posicion
+        genes_cds = []
+        for feature in registro.features:
+            if feature.type == "CDS":
+                genes_cds.append({
+                    "inicio": int(feature.location.start),
+                    "fin": int(feature.location.end),
+                    "hebra": "+" if feature.location.strand == 1 else "-",
+                    "nombre_gen": feature.qualifiers.get("gene", [""])[0],
+                    "locus_tag": feature.qualifiers.get("locus_tag", [""])[0],
+                    "producto": feature.qualifiers.get("product", [""])[0],
+                    "proteina_id": feature.qualifiers.get("protein_id", [""])[0],
+                    "feature": feature
+                })
+
+        genes_cds.sort(key=lambda g: g["inicio"])
+        total_genes = len(genes_cds)
+
+        if gene_start > total_genes:
+            return {"success": False, "error": f"gene_start ({gene_start}) excede el total de genes ({total_genes})"}
+
+        gene_end = min(gene_end, total_genes)
+        seleccion = genes_cds[gene_start - 1 : gene_end]
+
+        genes_info = []
+        secuencias_cds = []
+
+        for idx, g in enumerate(seleccion):
+            # Extraer secuencia CDS
+            seq_cds = str(g["feature"].location.extract(registro.seq))
+            secuencias_cds.append(seq_cds)
+
+            genes_info.append({
+                "index": gene_start + idx,
+                "locus_tag": g["locus_tag"],
+                "nombre_gen": g["nombre_gen"],
+                "producto": g["producto"],
+                "proteina_id": g["proteina_id"],
+                "inicio": g["inicio"],
+                "fin": g["fin"],
+                "hebra": g["hebra"],
+                "longitud_pb": g["fin"] - g["inicio"],
+                "longitud_cds": len(seq_cds)
+            })
+
+        if mode == "todo":
+            # Region genomica completa desde inicio primer gen a fin ultimo gen
+            region_inicio = seleccion[0]["inicio"]
+            region_fin = seleccion[-1]["fin"]
+            secuencia_total = seq_completa[region_inicio:region_fin]
+        else:
+            # Solo CDS concatenados
+            secuencia_total = "".join(secuencias_cds)
+
+        return {
+            "success": True,
+            "genome": genome_basename,
+            "gene_start": gene_start,
+            "gene_end": gene_end,
+            "mode": mode,
+            "num_genes": len(seleccion),
+            "total_genes_genome": total_genes,
+            "longitud_secuencia": len(secuencia_total),
+            "genes_info": genes_info,
+            "secuencia_total": secuencia_total
         }
     except Exception as e:
         return {"success": False, "error": str(e)}

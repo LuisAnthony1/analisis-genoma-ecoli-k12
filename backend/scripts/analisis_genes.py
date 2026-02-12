@@ -858,6 +858,204 @@ def comparar_con_literatura(estadisticas):
     return comparaciones
 
 
+# FUNCIONES DE ANALISIS AVANZADO
+# =============================================================================
+
+def analizar_gc_por_posicion_codon(genes):
+    """
+    Calcula el contenido GC en cada posicion del codon (GC1, GC2, GC3).
+    GC3 es especialmente informativo: refleja sesgo codonico y presion mutacional.
+    """
+    print("\n" + "=" * 70)
+    print("CONTENIDO GC POR POSICION DE CODON (GC1, GC2, GC3)")
+    print("=" * 70)
+
+    gc1_total, gc2_total, gc3_total = 0, 0, 0
+    n1_total, n2_total, n3_total = 0, 0, 0
+
+    for g in genes:
+        seq = g["secuencia"]
+        # Recorrer en tripletes (codones)
+        for i in range(0, len(seq) - 2, 3):
+            codon = seq[i:i+3].upper()
+            if len(codon) == 3:
+                if codon[0] in 'GC': gc1_total += 1
+                if codon[1] in 'GC': gc2_total += 1
+                if codon[2] in 'GC': gc3_total += 1
+                n1_total += 1
+                n2_total += 1
+                n3_total += 1
+
+    gc1_pct = (gc1_total / n1_total * 100) if n1_total > 0 else 0
+    gc2_pct = (gc2_total / n2_total * 100) if n2_total > 0 else 0
+    gc3_pct = (gc3_total / n3_total * 100) if n3_total > 0 else 0
+
+    print(f"  GC1 (1ra posicion codon): {gc1_pct:.2f}% - Mas conservada, afecta aminoacido")
+    print(f"  GC2 (2da posicion codon): {gc2_pct:.2f}% - Mas conservada, siempre afecta aminoacido")
+    print(f"  GC3 (3ra posicion codon): {gc3_pct:.2f}% - Mas variable, refleja sesgo codonico")
+    print(f"\n  [INFO] GC3 alto indica fuerte sesgo codonico (codones preferidos terminan en G/C)")
+
+    return {
+        "gc1_porcentaje": round(gc1_pct, 2),
+        "gc2_porcentaje": round(gc2_pct, 2),
+        "gc3_porcentaje": round(gc3_pct, 2),
+        "interpretacion": "GC3 refleja presion mutacional y sesgo codonico; GC1/GC2 estan mas restringidas por la funcion proteica"
+    }
+
+
+def detectar_genes_esenciales(genes):
+    """
+    Identifica genes esenciales conocidos en bacterias basado en anotaciones.
+    Genes esenciales = necesarios para supervivencia en condiciones de laboratorio.
+    """
+    print("\n" + "=" * 70)
+    print("DETECCION DE GENES ESENCIALES")
+    print("=" * 70)
+
+    # Genes esenciales conocidos en E. coli (Keio collection, Baba et al. 2006)
+    genes_esenciales_ecoli = {
+        # Replicacion del ADN
+        "dnaA", "dnaB", "dnaC", "dnaE", "dnaG", "dnaI", "dnaK", "dnaN", "dnaX",
+        "gyrA", "gyrB", "ligA", "polA", "ssb",
+        # Transcripcion
+        "rpoA", "rpoB", "rpoC", "rpoD", "rpoH", "nusA", "nusB", "nusG",
+        # Traduccion
+        "infA", "infB", "infC", "fusA", "tsf", "tufA", "prfA", "prfB",
+        # Ribosomas
+        "rpsA", "rpsB", "rpsC", "rpsD", "rpsE", "rpsF", "rpsG", "rpsH", "rpsI",
+        "rpsJ", "rpsK", "rpsL", "rpsM", "rpsN", "rpsO", "rpsP", "rpsQ", "rpsR",
+        "rpsS", "rpsT", "rpsU",
+        "rplA", "rplB", "rplC", "rplD", "rplE", "rplF", "rplI", "rplJ", "rplK",
+        "rplL", "rplM", "rplN", "rplO", "rplP", "rplQ", "rplR", "rplS", "rplT",
+        "rplU", "rplV", "rplW", "rplX",
+        # Pared celular / Division
+        "murA", "murB", "murC", "murD", "murE", "murF", "murG",
+        "mraY", "ftsA", "ftsB", "ftsI", "ftsK", "ftsL", "ftsN", "ftsQ", "ftsW", "ftsZ",
+        # Metabolismo central
+        "accA", "accB", "accC", "accD", "fabB", "fabD", "fabG", "fabH", "fabI", "fabZ",
+        "folA", "folC", "folD", "folE", "folK", "folP",
+        "glyA", "serA", "serB", "serC", "thrS", "alaS", "argS", "asnS",
+        # Membrana / Transporte
+        "secA", "secD", "secE", "secF", "secG", "secY", "ffh", "ftsY",
+        "lptA", "lptB", "lptC", "lptD", "lptE", "lptF", "lptG",
+        # Otros esenciales
+        "groEL", "groES", "dnaJ", "grpE", "tig",
+        "era", "obgE", "yihA", "engA",
+        "coaA", "coaD", "coaE",
+        "hemA", "hemB", "hemC", "hemD", "hemE", "hemG", "hemH",
+    }
+
+    encontrados = []
+    no_encontrados = []
+    genes_nombres = {g["nombre_gen"].lower(): g for g in genes if g["nombre_gen"]}
+
+    for gen_esencial in sorted(genes_esenciales_ecoli):
+        gen = genes_nombres.get(gen_esencial.lower())
+        if gen:
+            encontrados.append({
+                "nombre_gen": gen["nombre_gen"],
+                "locus_tag": gen["locus_tag"],
+                "producto": gen["producto"],
+                "longitud_pb": gen["longitud_pb"],
+                "contenido_gc": gen["contenido_gc"]
+            })
+        else:
+            no_encontrados.append(gen_esencial)
+
+    total_ref = len(genes_esenciales_ecoli)
+    total_encontrados = len(encontrados)
+    porcentaje = (total_encontrados / total_ref * 100) if total_ref > 0 else 0
+
+    print(f"  Genes esenciales de referencia (Keio collection): {total_ref}")
+    print(f"  Encontrados en este genoma: {total_encontrados} ({porcentaje:.1f}%)")
+    print(f"  No encontrados: {len(no_encontrados)}")
+
+    # Estadisticas de los esenciales vs no esenciales
+    gc_esenciales = [g["contenido_gc"] for g in encontrados]
+    long_esenciales = [g["longitud_pb"] for g in encontrados]
+
+    stats_esenciales = {}
+    if gc_esenciales:
+        stats_esenciales = {
+            "gc_promedio_esenciales": round(statistics.mean(gc_esenciales), 2),
+            "longitud_promedio_esenciales": round(statistics.mean(long_esenciales), 0),
+        }
+        print(f"\n  GC promedio genes esenciales: {stats_esenciales['gc_promedio_esenciales']}%")
+        print(f"  Longitud promedio esenciales: {stats_esenciales['longitud_promedio_esenciales']:.0f} pb")
+
+    # Categorizar por funcion
+    categorias = Counter()
+    for g in encontrados:
+        prod = g["producto"].lower()
+        if "ribosom" in prod: categorias["Ribosoma"] += 1
+        elif "dna" in prod or "replica" in prod: categorias["Replicacion ADN"] += 1
+        elif "rna polymerase" in prod or "transcript" in prod: categorias["Transcripcion"] += 1
+        elif "transfer" in prod or "aminoacyl" in prod or "tRNA" in prod: categorias["Traduccion"] += 1
+        elif "mur" in g["nombre_gen"] or "fts" in g["nombre_gen"]: categorias["Pared celular / Division"] += 1
+        elif "fab" in g["nombre_gen"] or "acc" in g["nombre_gen"]: categorias["Metabolismo lipidos"] += 1
+        elif "sec" in g["nombre_gen"] or "lpt" in g["nombre_gen"]: categorias["Transporte / Secrecion"] += 1
+        elif "fold" in prod or "chaperone" in prod: categorias["Chaperones / Folding"] += 1
+        else: categorias["Otros esenciales"] += 1
+
+    return {
+        "total_referencia": total_ref,
+        "total_encontrados": total_encontrados,
+        "porcentaje_encontrados": round(porcentaje, 1),
+        "genes_encontrados": encontrados[:50],
+        "genes_no_encontrados": no_encontrados[:20],
+        "estadisticas": stats_esenciales,
+        "categorias_esenciales": dict(categorias),
+        "fuente": "Keio collection (Baba et al., 2006, Mol Syst Biol)"
+    }
+
+
+def analizar_densidad_por_ventana(genes, longitud_genoma, ventana=50000):
+    """
+    Calcula densidad genica usando ventanas deslizantes a lo largo del genoma.
+    Permite detectar regiones con alta/baja densidad de genes.
+    """
+    print("\n" + "=" * 70)
+    print(f"DENSIDAD GENICA POR VENTANA ({ventana//1000} kb)")
+    print("=" * 70)
+
+    ventanas = []
+    num_ventanas = (longitud_genoma // ventana) + 1
+
+    for i in range(num_ventanas):
+        inicio = i * ventana
+        fin = min(inicio + ventana, longitud_genoma)
+
+        genes_en_ventana = sum(1 for g in genes if g["inicio"] >= inicio and g["fin"] <= fin)
+        pb_codificante = sum(g["longitud_pb"] for g in genes if g["inicio"] >= inicio and g["fin"] <= fin)
+        densidad = (pb_codificante / (fin - inicio) * 100) if (fin - inicio) > 0 else 0
+
+        ventanas.append({
+            "inicio": inicio,
+            "fin": fin,
+            "num_genes": genes_en_ventana,
+            "pb_codificante": pb_codificante,
+            "densidad_porcentaje": round(densidad, 1)
+        })
+
+    densidades = [v["densidad_porcentaje"] for v in ventanas if v["densidad_porcentaje"] > 0]
+
+    if densidades:
+        max_dens = max(ventanas, key=lambda v: v["densidad_porcentaje"])
+        min_dens = min((v for v in ventanas if v["densidad_porcentaje"] > 0), key=lambda v: v["densidad_porcentaje"])
+        print(f"  Total ventanas: {len(ventanas)}")
+        print(f"  Densidad maxima: {max_dens['densidad_porcentaje']}% en posicion {max_dens['inicio']:,}-{max_dens['fin']:,}")
+        print(f"  Densidad minima: {min_dens['densidad_porcentaje']}% en posicion {min_dens['inicio']:,}-{min_dens['fin']:,}")
+
+    return {
+        "ventana_pb": ventana,
+        "total_ventanas": len(ventanas),
+        "ventanas": ventanas,
+        "promedio_densidad": round(statistics.mean(densidades), 1) if densidades else 0,
+        "max_densidad": max(densidades) if densidades else 0,
+        "min_densidad": min(densidades) if densidades else 0
+    }
+
+
 # FUNCIONES DE EXPORTACION
 # =============================================================================
 
@@ -1033,6 +1231,15 @@ def main():
     # Comparar con literatura
     comparaciones = comparar_con_literatura(estadisticas)
 
+    # Analisis avanzado: GC por posicion de codon
+    gc_posicion = analizar_gc_por_posicion_codon(genes)
+
+    # Deteccion de genes esenciales
+    genes_esenciales = detectar_genes_esenciales(genes)
+
+    # Densidad por ventana
+    densidad_ventana = analizar_densidad_por_ventana(genes, longitud_genoma)
+
     # Compilar todos los resultados (sin incluir secuencias completas para reducir tamano)
     todos_resultados = {
         "fecha_analisis": datetime.now().isoformat(),
@@ -1047,6 +1254,9 @@ def main():
         "referencias_bibliograficas": REFERENCIAS,
         "analisis_genes_vs_cds": analisis_genes_cds,
         "genes_extremos": genes_extremos,
+        "gc_por_posicion_codon": gc_posicion,
+        "genes_esenciales": genes_esenciales,
+        "densidad_por_ventana": densidad_ventana,
         "nota": "Las secuencias completas de genes no se incluyen para reducir el tamano del archivo"
     }
 

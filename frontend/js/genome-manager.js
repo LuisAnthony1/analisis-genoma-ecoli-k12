@@ -81,7 +81,7 @@ function renderLibrary(genomes) {
             <div class="space-y-1 text-sm text-secondary mb-4">
                 <p><span class="font-medium">ID:</span> ${genome.accession_id}</p>
                 <p><span class="font-medium">Longitud:</span> ${formatNumber(genome.length || 0)} pb</p>
-                ${genome.num_features ? `<p><span class="font-medium">Features:</span> ${formatNumber(genome.num_features)}</p>` : ''}
+                ${genome.num_features ? `<p><span class="font-medium">Anotaciones:</span> ${formatNumber(genome.num_features)}</p>` : ''}
                 <p class="text-xs">Descargado: ${formatDate(genome.download_date || genome.modified)}</p>
             </div>
 
@@ -156,19 +156,19 @@ function viewGenomeDetails(basename) {
                     <h3 class="text-sm font-semibold text-secondary mb-2">Información General</h3>
                     <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2 text-sm">
                         <p><span class="font-medium">Organismo:</span> ${genomaInfo.organismo || genome.organism || 'N/A'}</p>
-                        <p><span class="font-medium">Accession ID:</span> ${metadata.id_acceso || genome.accession_id}</p>
+                        <p><span class="font-medium">ID de acceso:</span> ${metadata.id_acceso || genome.accession_id}</p>
                         <p><span class="font-medium">Descripción:</span> ${genomaInfo.descripcion || genome.description || 'N/A'}</p>
                         <p><span class="font-medium">Longitud:</span> ${formatNumber(genomaInfo.longitud || genome.length || 0)} pares de bases</p>
-                        <p><span class="font-medium">Features:</span> ${formatNumber(genomaInfo.num_features || genome.num_features || 0)} anotaciones</p>
+                        <p><span class="font-medium">Anotaciones:</span> ${formatNumber(genomaInfo.num_features || genome.num_features || 0)} anotaciones</p>
                     </div>
                 </div>
 
                 <div>
                     <h3 class="text-sm font-semibold text-secondary mb-2">Archivos</h3>
                     <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2 text-sm">
-                        <p><span class="font-medium">GenBank:</span> ${genome.filename} (${genome.size_mb} MB)</p>
-                        ${genome.has_fasta ? `<p><span class="font-medium">FASTA:</span> ${genome.basename}.fasta</p>` : ''}
-                        ${genome.has_metadata ? `<p><span class="font-medium">Metadata:</span> metadata_${genome.basename}.json</p>` : ''}
+                        <p><span class="font-medium">Archivo GenBank:</span> ${genome.filename} (${genome.size_mb} MB)</p>
+                        ${genome.has_fasta ? `<p><span class="font-medium">Archivo FASTA:</span> ${genome.basename}.fasta</p>` : ''}
+                        ${genome.has_metadata ? `<p><span class="font-medium">Metadatos:</span> metadata_${genome.basename}.json</p>` : ''}
                     </div>
                 </div>
 

@@ -24,6 +24,7 @@ import os
 import sys
 import json
 import csv
+import statistics
 from datetime import datetime
 from collections import Counter
 
@@ -324,6 +325,247 @@ def calcular_contenido_gc(secuencia):
 
 
 # =============================================================================
+# FUNCIONES DE ANALISIS AVANZADO
+# =============================================================================
+
+# Codones sinonimos agrupados por aminoacido (codigo genetico estandar)
+CODONES_POR_AMINOACIDO = {
+    "Phe": ["TTT", "TTC"],
+    "Leu": ["TTA", "TTG", "CTT", "CTC", "CTA", "CTG"],
+    "Ile": ["ATT", "ATC", "ATA"],
+    "Met": ["ATG"],
+    "Val": ["GTT", "GTC", "GTA", "GTG"],
+    "Ser": ["TCT", "TCC", "TCA", "TCG", "AGT", "AGC"],
+    "Pro": ["CCT", "CCC", "CCA", "CCG"],
+    "Thr": ["ACT", "ACC", "ACA", "ACG"],
+    "Ala": ["GCT", "GCC", "GCA", "GCG"],
+    "Tyr": ["TAT", "TAC"],
+    "His": ["CAT", "CAC"],
+    "Gln": ["CAA", "CAG"],
+    "Asn": ["AAT", "AAC"],
+    "Lys": ["AAA", "AAG"],
+    "Asp": ["GAT", "GAC"],
+    "Glu": ["GAA", "GAG"],
+    "Cys": ["TGT", "TGC"],
+    "Trp": ["TGG"],
+    "Arg": ["CGT", "CGC", "CGA", "CGG", "AGA", "AGG"],
+    "Gly": ["GGT", "GGC", "GGA", "GGG"],
+    "Stop": ["TAA", "TAG", "TGA"],
+}
+
+
+def calcular_rscu(conteo_64):
+    """
+    Calcula el RSCU (Relative Synonymous Codon Usage) para cada codon.
+
+    RSCU = (frecuencia observada del codon) / (frecuencia esperada si no hay sesgo)
+    RSCU = 1.0 → sin sesgo (uso equitativo)
+    RSCU > 1.0 → codon preferido (sobreusado)
+    RSCU < 1.0 → codon evitado (infrausado)
+
+    Returns:
+        dict: RSCU por codon + codones preferidos/evitados por aminoacido
+    """
+    print("\n" + "=" * 60)
+    print("RSCU - USO RELATIVO DE CODONES SINONIMOS")
+    print("=" * 60)
+    print("  (RSCU > 1.0 = codon preferido, RSCU < 1.0 = codon evitado)")
+
+    codones_detalle = conteo_64["codones_detalle"]
+    rscu = {}
+    preferidos = {}
+    evitados = {}
+
+    print(f"\n  {'AA':<5} {'Codon':<8} {'Conteo':>10} {'RSCU':>8} {'Estado':<15}")
+    print("  " + "-" * 50)
+
+    for aa, codones in CODONES_POR_AMINOACIDO.items():
+        if aa == "Stop" or len(codones) <= 1:
+            for c in codones:
+                rscu[c] = 1.0
+            continue
+
+        # Total para este aminoacido
+        total_aa = sum(codones_detalle.get(c, {}).get("conteo", 0) for c in codones)
+        n_sinonimos = len(codones)
+        esperado = total_aa / n_sinonimos if n_sinonimos > 0 else 0
+
+        mejor_codon = None
+        mejor_rscu = 0
+
+        for c in codones:
+            observado = codones_detalle.get(c, {}).get("conteo", 0)
+            valor_rscu = (observado / esperado) if esperado > 0 else 0
+            rscu[c] = round(valor_rscu, 3)
+
+            estado = "PREFERIDO" if valor_rscu > 1.3 else ("evitado" if valor_rscu < 0.7 else "neutral")
+            print(f"  {aa:<5} {c:<8} {observado:>10,} {valor_rscu:>8.3f} {estado}")
+
+            if valor_rscu > mejor_rscu:
+                mejor_rscu = valor_rscu
+                mejor_codon = c
+
+        if mejor_codon:
+            preferidos[aa] = {"codon": mejor_codon, "rscu": mejor_rscu}
+
+        # Codon mas evitado
+        peor = min(codones, key=lambda c: rscu.get(c, 0))
+        if rscu.get(peor, 0) < 0.7:
+            evitados[aa] = {"codon": peor, "rscu": rscu.get(peor, 0)}
+
+    # Codones raros (RSCU < 0.5) - problemáticos para expresión heteróloga
+    codones_raros = {c: v for c, v in rscu.items() if v < 0.5 and c not in ["TAA", "TAG", "TGA"]}
+
+    print(f"\n  Codones preferidos (RSCU > 1.3): {sum(1 for v in rscu.values() if v > 1.3)}")
+    print(f"  Codones evitados (RSCU < 0.7): {sum(1 for v in rscu.values() if v < 0.7)}")
+    print(f"  Codones raros (RSCU < 0.5): {len(codones_raros)} - problematicos para expresion heterologa")
+
+    if codones_raros:
+        print(f"\n  Codones raros detectados:")
+        for c, v in sorted(codones_raros.items(), key=lambda x: x[1]):
+            print(f"    {c} ({TABLA_CODONES.get(c, '?')}): RSCU = {v:.3f}")
+
+    return {
+        "rscu_por_codon": rscu,
+        "codones_preferidos": preferidos,
+        "codones_evitados": evitados,
+        "codones_raros": codones_raros,
+        "total_preferidos": sum(1 for v in rscu.values() if v > 1.3),
+        "total_evitados": sum(1 for v in rscu.values() if v < 0.7),
+        "total_raros": len(codones_raros),
+        "interpretacion": "RSCU mide el sesgo en el uso de codones sinonimos. Valores altos indican codones optimizados para la maquinaria traduccional del organismo."
+    }
+
+
+def calcular_numero_efectivo_codones(conteo_64):
+    """
+    Calcula el Numero Efectivo de Codones (Nc) del genoma.
+    Nc varia de 20 (sesgo maximo, 1 codon por AA) a 61 (sin sesgo, uso equitativo).
+    Nc bajo → fuerte sesgo codonico → genes altamente expresados.
+    """
+    print("\n" + "=" * 60)
+    print("NUMERO EFECTIVO DE CODONES (Nc)")
+    print("=" * 60)
+
+    codones_detalle = conteo_64["codones_detalle"]
+
+    # Calcular F para cada familia de sinonimos
+    # F = sum(pi^2) donde pi = frecuencia relativa del codon i en su familia
+    F_valores = []
+
+    for aa, codones in CODONES_POR_AMINOACIDO.items():
+        if aa == "Stop" or len(codones) <= 1:
+            continue
+
+        total = sum(codones_detalle.get(c, {}).get("conteo", 0) for c in codones)
+        if total == 0:
+            continue
+
+        pi_squared_sum = 0
+        for c in codones:
+            n = codones_detalle.get(c, {}).get("conteo", 0)
+            pi = n / total
+            pi_squared_sum += pi ** 2
+
+        # F homogeneidad para esta familia
+        k = len(codones)
+        F = (total * pi_squared_sum - 1) / (total - 1) if total > 1 else 1.0 / k
+        F_valores.append((aa, k, F))
+
+    # Agrupar por degeneracion
+    f_by_deg = {}
+    for aa, k, f in F_valores:
+        if k not in f_by_deg:
+            f_by_deg[k] = []
+        f_by_deg[k].append(f)
+
+    # Calcular Nc segun Wright (1990)
+    # Nc = 2 + 9/F2 + 1/F3 + 5/F4 + 3/F6 (para familias de 2,3,4,6 codones)
+    nc = 2.0  # Met + Trp (1 codon cada uno)
+
+    for deg in [2, 3, 4, 6]:
+        if deg in f_by_deg and f_by_deg[deg]:
+            f_promedio = statistics.mean(f_by_deg[deg])
+            n_familias = {2: 9, 3: 1, 4: 5, 6: 3}.get(deg, 0)
+            nc += n_familias / f_promedio if f_promedio > 0 else n_familias
+
+    nc = min(nc, 61)  # Maximo teorico
+
+    interpretacion = ""
+    if nc < 35:
+        interpretacion = "Sesgo codonico FUERTE - organismo con codones muy optimizados para alta expresion"
+    elif nc < 45:
+        interpretacion = "Sesgo codonico MODERADO - optimizacion parcial de codones"
+    else:
+        interpretacion = "Sesgo codonico DEBIL - uso relativamente uniforme de codones sinonimos"
+
+    print(f"\n  Nc = {nc:.1f} (rango: 20 = maximo sesgo, 61 = sin sesgo)")
+    print(f"  {interpretacion}")
+
+    return {
+        "nc": round(nc, 1),
+        "rango": "20 (maximo sesgo) - 61 (sin sesgo)",
+        "interpretacion": interpretacion,
+        "referencia": "Wright F (1990) Gene 87:23-29"
+    }
+
+
+def analizar_sesgo_por_aminoacido(conteo_64):
+    """
+    Para cada aminoacido con codones sinonimos, muestra cual es el preferido
+    y la relacion con el contenido GC del organismo.
+    """
+    print("\n" + "=" * 60)
+    print("SESGO CODONICO POR AMINOACIDO")
+    print("=" * 60)
+
+    codones_detalle = conteo_64["codones_detalle"]
+    sesgo = {}
+
+    for aa, codones in CODONES_POR_AMINOACIDO.items():
+        if aa == "Stop" or len(codones) <= 1:
+            continue
+
+        total = sum(codones_detalle.get(c, {}).get("conteo", 0) for c in codones)
+        if total == 0:
+            continue
+
+        detalles = []
+        for c in codones:
+            n = codones_detalle.get(c, {}).get("conteo", 0)
+            pct = (n / total * 100) if total > 0 else 0
+            # GC en 3ra posicion
+            gc3 = "GC" if c[2] in "GC" else "AT"
+            detalles.append({
+                "codon": c,
+                "conteo": n,
+                "porcentaje": round(pct, 1),
+                "termina_gc": gc3 == "GC"
+            })
+
+        detalles.sort(key=lambda x: x["conteo"], reverse=True)
+        preferido = detalles[0]
+        evitado = detalles[-1]
+
+        sesgo[aa] = {
+            "codones": detalles,
+            "preferido": preferido["codon"],
+            "preferido_porcentaje": preferido["porcentaje"],
+            "evitado": evitado["codon"],
+            "evitado_porcentaje": evitado["porcentaje"],
+            "sesgo_gc3": sum(1 for d in detalles if d["termina_gc"] and d["porcentaje"] > 100/len(codones))
+        }
+
+    print(f"\n  {'AA':<5} {'Preferido':<12} {'%':>6} {'Evitado':<12} {'%':>6}")
+    print("  " + "-" * 45)
+    for aa in sorted(sesgo.keys()):
+        s = sesgo[aa]
+        print(f"  {aa:<5} {s['preferido']:<12} {s['preferido_porcentaje']:>5.1f}% {s['evitado']:<12} {s['evitado_porcentaje']:>5.1f}%")
+
+    return sesgo
+
+
+# =============================================================================
 # FUNCIONES DE EXPORTACION
 # =============================================================================
 
@@ -402,6 +644,15 @@ def main():
     resultados_parada = analizar_codones_parada(secuencia)
     resultados_gc = calcular_contenido_gc(secuencia)
 
+    # Analisis avanzado: RSCU
+    rscu = calcular_rscu(conteo_64)
+
+    # Numero efectivo de codones
+    nc = calcular_numero_efectivo_codones(conteo_64)
+
+    # Sesgo por aminoacido
+    sesgo = analizar_sesgo_por_aminoacido(conteo_64)
+
     # Compilar todos los resultados
     todos_resultados = {
         "fecha_analisis": datetime.now().isoformat(),
@@ -411,6 +662,9 @@ def main():
         "codones_inicio": resultados_inicio,
         "codones_parada": resultados_parada,
         "contenido_gc": resultados_gc,
+        "rscu": rscu,
+        "numero_efectivo_codones": nc,
+        "sesgo_por_aminoacido": sesgo,
     }
     if VALORES_LITERATURA:
         todos_resultados["valores_literatura"] = VALORES_LITERATURA

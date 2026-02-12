@@ -5,6 +5,28 @@
  * Cada análisis tiene su propio dashboard con stats cards, gráficos y tablas.
  */
 
+// Mapeo global: abreviatura de aminoácido → nombre completo en español
+const AA_NOMBRE_COMPLETO = {
+    'Ala': 'Alanina', 'Arg': 'Arginina', 'Asn': 'Asparagina', 'Asp': 'Aspartato',
+    'Cys': 'Cisteina', 'Glu': 'Glutamato', 'Gln': 'Glutamina', 'Gly': 'Glicina',
+    'His': 'Histidina', 'Ile': 'Isoleucina', 'Leu': 'Leucina', 'Lys': 'Lisina',
+    'Met': 'Metionina', 'Phe': 'Fenilalanina', 'Pro': 'Prolina', 'Ser': 'Serina',
+    'Thr': 'Treonina', 'Trp': 'Triptofano', 'Tyr': 'Tirosina', 'Val': 'Valina',
+    'Stop': 'Codon de parada',
+    // Con letra entre parentesis (formato del backend)
+    'Ala (A)': 'Alanina', 'Arg (R)': 'Arginina', 'Asn (N)': 'Asparagina', 'Asp (D)': 'Aspartato',
+    'Cys (C)': 'Cisteina', 'Glu (E)': 'Glutamato', 'Gln (Q)': 'Glutamina', 'Gly (G)': 'Glicina',
+    'His (H)': 'Histidina', 'Ile (I)': 'Isoleucina', 'Leu (L)': 'Leucina', 'Lys (K)': 'Lisina',
+    'Met (M)': 'Metionina', 'Phe (F)': 'Fenilalanina', 'Pro (P)': 'Prolina', 'Ser (S)': 'Serina',
+    'Thr (T)': 'Treonina', 'Trp (W)': 'Triptofano', 'Tyr (Y)': 'Tirosina', 'Val (V)': 'Valina',
+    // Por letra sola
+    'A': 'Alanina', 'R': 'Arginina', 'N': 'Asparagina', 'D': 'Aspartato',
+    'C': 'Cisteina', 'E': 'Glutamato', 'Q': 'Glutamina', 'G': 'Glicina',
+    'H': 'Histidina', 'I': 'Isoleucina', 'L': 'Leucina', 'K': 'Lisina',
+    'M': 'Metionina', 'F': 'Fenilalanina', 'P': 'Prolina', 'S': 'Serina',
+    'T': 'Treonina', 'W': 'Triptofano', 'Y': 'Tirosina', 'V': 'Valina',
+};
+
 const DashboardRenderer = {
 
     // Charts activos para destruir al cambiar de vista
@@ -40,6 +62,16 @@ const DashboardRenderer = {
         const chart = new Chart(canvas.getContext('2d'), config);
         this.activeCharts.push(chart);
         return chart;
+    },
+
+    /**
+     * Etiqueta de hebra biologica
+     */
+    hebraLabel(hebra, format = 'short') {
+        if (hebra === '+' || hebra === '1' || hebra === 1) {
+            return format === 'full' ? "Hebra 5'\u21923' (+)" : "5'\u21923'";
+        }
+        return format === 'full' ? "Hebra 3'\u21925' (-)" : "3'\u21925'";
     },
 
     /**
@@ -81,7 +113,8 @@ const DashboardRenderer = {
 
                 <!-- Distribución por hebra -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Distribución por Hebra</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-1">Distribucion por Hebra</h3>
+                    <p class="text-[10px] text-secondary mb-3"><span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background:#10b981"></span>5'&rarr;3' = hebra directa (+) &nbsp; <span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background:#06b6d4"></span>3'&rarr;5' = hebra complementaria (-)</p>
                     <canvas id="chart-genes-strands" height="250"></canvas>
                 </div>
             </div>
@@ -140,7 +173,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(g.longitud_pb)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
-                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="gene-largo-${i}" class="hidden">
                                     <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -184,7 +217,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 text-secondary">${g.producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-amber-500">${this.fmt(g.longitud_pb)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(g.num_aminoacidos)}</td>
-                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra}</td>
+                                    <td class="px-3 py-2 text-center ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'} font-bold">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="gene-corto-${i}" class="hidden">
                                     <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -211,6 +244,93 @@ const DashboardRenderer = {
                     ${Object.entries(refs).map(([k, v]) => `<p><span class="font-medium">${k}:</span> ${v}</p>`).join('')}
                 </div>
             </div>` : ''}
+
+            <!-- GC por Posicion de Codon -->
+            ${data.gc_por_posicion_codon ? (() => {
+                const gcp = data.gc_por_posicion_codon;
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Contenido GC por Posicion del Codon</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('GC1 (1ra pos.)', gcp.gc1_porcentaje + '%', 'Mas conservada', 'emerald')}
+                        ${this.statsCard('GC2 (2da pos.)', gcp.gc2_porcentaje + '%', 'Afecta aminoacido', 'cyan')}
+                        ${this.statsCard('GC3 (3ra pos.)', gcp.gc3_porcentaje + '%', 'Refleja sesgo codonico', 'amber')}
+                    </div>
+                    <canvas id="chart-genes-gc-pos" height="200"></canvas>
+                    <p class="text-xs text-secondary mt-3">${gcp.interpretacion || ''}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Genes Esenciales (Keio Collection) -->
+            ${data.genes_esenciales ? (() => {
+                const esc = data.genes_esenciales;
+                const cats = esc.categorias_esenciales || {};
+                const encontrados = esc.genes_encontrados || [];
+                const noEncontrados = esc.genes_no_encontrados || [];
+                const statsEsc = esc.estadisticas || {};
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Genes Esenciales (Keio Collection)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        ${this.statsCard('Encontrados', esc.total_encontrados + '/' + esc.total_referencia, 'genes esenciales', 'emerald')}
+                        ${this.statsCard('Cobertura', esc.porcentaje_encontrados + '%', 'del set de referencia', 'cyan')}
+                        ${this.statsCard('GC Promedio', (statsEsc.gc_promedio_esenciales || 'N/A') + '%', 'en genes esenciales', 'amber')}
+                        ${this.statsCard('Long. Promedio', this.fmt(Math.round(statsEsc.longitud_promedio_esenciales || 0)) + ' pb', 'genes esenciales', 'violet')}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <h4 class="text-xs font-semibold text-secondary mb-2">Categorias Funcionales</h4>
+                            <canvas id="chart-genes-esenciales-cat" height="250"></canvas>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-secondary mb-2">Genes Encontrados (${encontrados.length})</h4>
+                            <div class="max-h-64 overflow-y-auto">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                        <tr>
+                                            <th class="px-2 py-1 text-left text-secondary">Gen</th>
+                                            <th class="px-2 py-1 text-left text-secondary">Producto</th>
+                                            <th class="px-2 py-1 text-right text-secondary">pb</th>
+                                            <th class="px-2 py-1 text-right text-secondary">GC%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${encontrados.slice(0, 40).map(g => `
+                                            <tr class="border-t border-slate-100">
+                                                <td class="px-2 py-1 font-mono text-primary">${g.nombre_gen}</td>
+                                                <td class="px-2 py-1 text-secondary line-clamp-1">${(g.producto || '').substring(0, 40)}</td>
+                                                <td class="px-2 py-1 text-right text-primary">${this.fmt(g.longitud_pb)}</td>
+                                                <td class="px-2 py-1 text-right text-primary">${g.contenido_gc}%</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    ${noEncontrados.length > 0 ? `
+                    <div class="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+                        <p class="text-xs text-secondary"><strong class="text-amber-600">No encontrados (${noEncontrados.length}):</strong>
+                        <span class="font-mono">${noEncontrados.slice(0, 15).join(', ')}${noEncontrados.length > 15 ? '...' : ''}</span></p>
+                    </div>` : ''}
+                    <p class="text-xs text-secondary mt-2">Fuente: ${esc.fuente || 'Keio collection'}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Densidad Genica por Ventana -->
+            ${data.densidad_por_ventana ? (() => {
+                const dens = data.densidad_por_ventana;
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Densidad Genica a lo Largo del Genoma (ventana ${Math.round(dens.ventana_pb / 1000)} kb)</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('Promedio', dens.promedio_densidad + '%', 'densidad genica', 'emerald')}
+                        ${this.statsCard('Maxima', dens.max_densidad + '%', 'region mas densa', 'cyan')}
+                        ${this.statsCard('Minima', dens.min_densidad + '%', 'region menos densa', 'amber')}
+                    </div>
+                    <canvas id="chart-genes-densidad" height="200"></canvas>
+                </div>`;
+            })() : ''}
 
             <!-- Descargar datos -->
             <div class="flex gap-2">
@@ -244,7 +364,7 @@ const DashboardRenderer = {
                 this.createChart('chart-genes-strands', {
                     type: 'doughnut',
                     data: {
-                        labels: ['Forward (+)', 'Reverse (-)'],
+                        labels: ["Hebra 5'\u21923' (+)", "Hebra 3'\u21925' (-)"],
                         datasets: [{
                             data: [stats.distribucion_hebras.forward, stats.distribucion_hebras.reverse],
                             backgroundColor: ['#10b981', '#06b6d4']
@@ -289,6 +409,80 @@ const DashboardRenderer = {
                     },
                     options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
                 });
+            }
+
+            // GC por posicion de codon
+            if (data.gc_por_posicion_codon) {
+                const gcp = data.gc_por_posicion_codon;
+                this.createChart('chart-genes-gc-pos', {
+                    type: 'bar',
+                    data: {
+                        labels: ['GC1 (1ra posicion)', 'GC2 (2da posicion)', 'GC3 (3ra posicion)'],
+                        datasets: [{
+                            label: 'Contenido GC (%)',
+                            data: [gcp.gc1_porcentaje, gcp.gc2_porcentaje, gcp.gc3_porcentaje],
+                            backgroundColor: ['#10b981', '#06b6d4', '#f59e0b'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'GC (%)' } } }
+                    }
+                });
+            }
+
+            // Genes esenciales - categorias funcionales
+            if (data.genes_esenciales) {
+                const cats = data.genes_esenciales.categorias_esenciales || {};
+                const catEntries = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+                if (catEntries.length > 0) {
+                    const paleta = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#a855f7'];
+                    this.createChart('chart-genes-esenciales-cat', {
+                        type: 'doughnut',
+                        data: {
+                            labels: catEntries.map(([k]) => k),
+                            datasets: [{
+                                data: catEntries.map(([, v]) => v),
+                                backgroundColor: catEntries.map((_, i) => paleta[i % paleta.length])
+                            }]
+                        },
+                        options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } } }
+                    });
+                }
+            }
+
+            // Densidad genica por ventana (line/area chart)
+            if (data.densidad_por_ventana) {
+                const dens = data.densidad_por_ventana;
+                const ventanas = dens.ventanas || [];
+                if (ventanas.length > 0) {
+                    this.createChart('chart-genes-densidad', {
+                        type: 'line',
+                        data: {
+                            labels: ventanas.map(v => Math.round(v.inicio_pb / 1000) + ' kb'),
+                            datasets: [{
+                                label: 'Densidad genica (%)',
+                                data: ventanas.map(v => v.densidad_porcentaje),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 0,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { title: { display: true, text: 'Posicion en el genoma' }, ticks: { maxTicksLimit: 15, font: { size: 9 } } },
+                                y: { beginAtZero: true, title: { display: true, text: 'Densidad (%)' } }
+                            }
+                        }
+                    });
+                }
             }
         }, 100);
     },
@@ -354,7 +548,7 @@ const DashboardRenderer = {
                             ${Object.entries(codones64.codones_detalle).sort((a, b) => b[1].conteo - a[1].conteo).map(([codon, info]) => `
                                 <tr class="border-t border-slate-100 dark:border-slate-800">
                                     <td class="px-3 py-2 font-mono font-bold text-primary">${codon}</td>
-                                    <td class="px-3 py-2 text-secondary">${info.aminoacido}</td>
+                                    <td class="px-3 py-2 text-secondary"><span title="${AA_NOMBRE_COMPLETO[info.aminoacido] || info.aminoacido}" class="cursor-help border-b border-dotted border-slate-400">${info.aminoacido}</span></td>
                                     <td class="px-3 py-2 text-right text-primary">${this.fmt(info.conteo)}</td>
                                     <td class="px-3 py-2 text-right text-primary">${info.frecuencia_porcentaje}%</td>
                                     <td class="px-3 py-2 text-right text-secondary">${info.densidad_por_kb}</td>
@@ -364,6 +558,104 @@ const DashboardRenderer = {
                     </table>
                 </div>
             </div>` : ''}
+
+            <!-- RSCU (Uso Relativo de Codones Sinonimos) -->
+            ${data.rscu ? (() => {
+                const rscu = data.rscu;
+                const preferidos = rscu.codones_preferidos || {};
+                const evitados = rscu.codones_evitados || {};
+                const raros = rscu.codones_raros || {};
+                const rscuPorCodon = rscu.rscu_por_codon || {};
+                const topRscu = Object.entries(rscuPorCodon).sort((a, b) => b[1] - a[1]).slice(0, 25);
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">RSCU - Uso Relativo de Codones Sinonimos</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        ${this.statsCard('Preferidos', rscu.total_preferidos || Object.keys(preferidos).length, 'RSCU > 1.3', 'emerald')}
+                        ${this.statsCard('Evitados', rscu.total_evitados || Object.keys(evitados).length, 'RSCU < 0.7', 'amber')}
+                        ${this.statsCard('Raros', rscu.total_raros || Object.keys(raros).length, 'RSCU < 0.5', 'red')}
+                    </div>
+                    <div class="mb-4" style="height: 400px;">
+                        <canvas id="chart-codones-rscu" height="380"></canvas>
+                    </div>
+                    ${Object.keys(raros).length > 0 ? `
+                    <div class="p-3 bg-red-50 dark:bg-red-900/10 rounded-lg mb-3">
+                        <h4 class="text-xs font-semibold text-red-600 mb-2">Codones Raros (RSCU < 0.5)</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${Object.entries(raros).map(([codon, val]) => `
+                                <span class="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-xs font-mono text-red-700">${codon}: ${typeof val === 'number' ? val.toFixed(2) : val}</span>
+                            `).join('')}
+                        </div>
+                    </div>` : ''}
+                    <p class="text-xs text-secondary">RSCU = 1.0 indica uso sin sesgo. Valores > 1.3 indican preferencia, < 0.7 indican evitamiento. El sesgo codonico refleja presion selectiva por eficiencia traduccional.</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Numero Efectivo de Codones (Nc) -->
+            ${data.numero_efectivo_codones ? (() => {
+                const nc = data.numero_efectivo_codones;
+                const ncVal = nc.nc || nc.valor || 0;
+                const ncColor = ncVal < 35 ? 'amber' : ncVal < 45 ? 'cyan' : 'emerald';
+                return `
+                <div class="bg-gradient-to-br from-${ncColor}-500/5 to-${ncColor}-500/10 rounded-xl p-6 border border-${ncColor}-500/20 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Numero Efectivo de Codones (Nc)</h3>
+                    <div class="flex items-center gap-6">
+                        <div class="text-center">
+                            <p class="text-5xl font-bold text-${ncColor}-500">${typeof ncVal === 'number' ? ncVal.toFixed(1) : ncVal}</p>
+                            <p class="text-xs text-secondary mt-1">Nc</p>
+                        </div>
+                        <div class="flex-1">
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 mb-2">
+                                <div class="h-3 rounded-full bg-gradient-to-r from-amber-500 via-cyan-500 to-emerald-500" style="width: ${Math.min(100, ((ncVal - 20) / 41) * 100)}%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-secondary">
+                                <span>20 (sesgo maximo)</span>
+                                <span>40</span>
+                                <span>61 (sin sesgo)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-primary mt-4">${nc.interpretacion || (ncVal < 35 ? 'Sesgo codonico fuerte: el organismo usa un subconjunto restringido de codones sinonimos.' : ncVal < 45 ? 'Sesgo codonico moderado: preferencia parcial por ciertos codones.' : 'Sesgo codonico bajo: uso relativamente uniforme de codones sinonimos.')}</p>
+                    <p class="text-xs text-secondary mt-2">Referencia: ${nc.referencia || 'Wright F. (1990) Gene 87:23-29'}</p>
+                </div>`;
+            })() : ''}
+
+            <!-- Sesgo Codonico por Aminoacido -->
+            ${data.sesgo_por_aminoacido ? (() => {
+                const sesgo = data.sesgo_por_aminoacido;
+                const aaEntries = Object.entries(sesgo).filter(([, v]) => v.codones && v.codones.length > 1);
+                return `
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Sesgo Codonico por Aminoacido</h3>
+                    <p class="text-xs text-secondary mb-3">Para cada aminoacido con codones sinonimos: codon preferido (verde) vs evitado (rojo).</p>
+                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-secondary font-medium">Aminoacido</th>
+                                    <th class="px-3 py-2 text-center text-secondary font-medium">Codon Preferido</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">% Uso</th>
+                                    <th class="px-3 py-2 text-center text-secondary font-medium">Codon Evitado</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">% Uso</th>
+                                    <th class="px-3 py-2 text-right text-secondary font-medium">Num. Codones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${aaEntries.map(([aa, info]) => `
+                                    <tr class="border-t border-slate-100 dark:border-slate-800">
+                                        <td class="px-3 py-2 font-medium text-primary"><span title="${AA_NOMBRE_COMPLETO[aa] || aa}" class="cursor-help border-b border-dotted border-slate-400">${aa}</span></td>
+                                        <td class="px-3 py-2 text-center font-mono font-bold text-emerald-500">${info.preferido || '-'}</td>
+                                        <td class="px-3 py-2 text-right text-emerald-600 font-medium">${info.preferido_porcentaje ? info.preferido_porcentaje + '%' : '-'}</td>
+                                        <td class="px-3 py-2 text-center font-mono font-bold text-red-500">${info.evitado || '-'}</td>
+                                        <td class="px-3 py-2 text-right text-red-600 font-medium">${info.evitado_porcentaje ? info.evitado_porcentaje + '%' : '-'}</td>
+                                        <td class="px-3 py-2 text-right text-secondary">${info.codones ? info.codones.length : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            })() : ''}
 
             <div class="flex gap-2">
                 <button onclick="DashboardRenderer.downloadJSON('codones')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm rounded-lg transition">Descargar JSON</button>
@@ -409,6 +701,7 @@ const DashboardRenderer = {
                 const sorted = Object.entries(codones64.codones_detalle).sort((a, b) => b[1].conteo - a[1].conteo);
                 const labels = sorted.map(([c]) => c);
                 const values = sorted.map(([, i]) => i.conteo);
+                const aaInfo = sorted.map(([, i]) => i.aminoacido);
                 const colors = sorted.map(([, i]) => {
                     if (i.aminoacido === 'Stop') return '#ef4444';
                     if (i.aminoacido === 'Met (M)') return '#f59e0b';
@@ -429,13 +722,54 @@ const DashboardRenderer = {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: (ctx) => {
+                                        const aa = aaInfo[ctx.dataIndex];
+                                        const nombre = AA_NOMBRE_COMPLETO[aa] || aa;
+                                        return aa + (nombre !== aa ? ' - ' + nombre : '');
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             x: { ticks: { font: { size: 9, family: 'monospace' }, maxRotation: 90 } },
                             y: { beginAtZero: true }
                         }
                     }
                 });
+            }
+
+            // RSCU horizontal bar chart
+            if (data.rscu) {
+                const rscuPorCodon = data.rscu.rscu_por_codon || {};
+                const topRscu = Object.entries(rscuPorCodon).sort((a, b) => b[1] - a[1]).slice(0, 25);
+                if (topRscu.length > 0) {
+                    this.createChart('chart-codones-rscu', {
+                        type: 'bar',
+                        data: {
+                            labels: topRscu.map(([c]) => c),
+                            datasets: [{
+                                label: 'RSCU',
+                                data: topRscu.map(([, v]) => v),
+                                backgroundColor: topRscu.map(([, v]) => v > 1.3 ? '#10b981' : v < 0.7 ? '#ef4444' : '#94a3b8'),
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { beginAtZero: true, title: { display: true, text: 'RSCU' } },
+                                y: { ticks: { font: { size: 10, family: 'monospace' } } }
+                            }
+                        }
+                    });
+                }
             }
         }, 100);
     },
@@ -469,7 +803,8 @@ const DashboardRenderer = {
 
                 <!-- Por hebra -->
                 <div class="bg-card rounded-xl p-5 border border-slate-200">
-                    <h3 class="text-sm font-semibold text-primary mb-4">Análisis por Hebra</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-1">Analisis por Hebra</h3>
+                    <p class="text-[10px] text-secondary mb-3">Misma hebra = ambos genes en 5'&rarr;3' o ambos en 3'&rarr;5'. Diferente hebra = uno en cada direccion.</p>
                     <canvas id="chart-dist-strand" height="250"></canvas>
                 </div>
             </div>
@@ -501,7 +836,7 @@ const DashboardRenderer = {
                                     <td class="px-3 py-2 font-mono font-bold text-primary">${r.gen2}</td>
                                     <td class="px-3 py-2 text-secondary text-xs">${r.gen2_producto || 'Sin anotacion'}</td>
                                     <td class="px-3 py-2 text-right font-bold text-emerald-500">${this.fmt(r.distancia_pb)}</td>
-                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1} -> ${r.hebra_gen2}</td>
+                                    <td class="px-3 py-2 text-center text-secondary">${r.hebra_gen1 === '+' ? "5'\u21923'" : "3'\u21925'"} &rarr; ${r.hebra_gen2 === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                 </tr>
                                 <tr id="dist-detail-${i}" class="hidden">
                                     <td colspan="7" class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
@@ -509,12 +844,12 @@ const DashboardRenderer = {
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-emerald-500 mb-1">Gen 1: ${r.gen1}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen1_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen1 === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"}</p>
                                             </div>
                                             <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200">
                                                 <p class="font-bold text-cyan-500 mb-1">Gen 2: ${r.gen2}</p>
                                                 <p><span class="text-secondary">Proteina:</span> <span class="text-primary font-medium">${r.gen2_producto || 'No anotado'}</span></p>
-                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? 'Forward (+)' : 'Reverse (-)'}</p>
+                                                <p><span class="text-secondary">Hebra:</span> ${r.hebra_gen2 === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"}</p>
                                             </div>
                                         </div>
                                         <p class="text-xs text-secondary mt-2">Distancia intergenica: <strong class="text-amber-500">${this.fmt(r.distancia_pb)} pb</strong> - Region grande que podria contener elementos regulatorios, islas genomicas o genes no anotados.</p>
@@ -555,7 +890,7 @@ const DashboardRenderer = {
                     labels: ['Misma hebra', 'Diferente hebra'],
                     datasets: [
                         {
-                            label: 'Total pares',
+                            label: 'Total de pares',
                             data: [hebra.misma_hebra_total || 0, hebra.diferente_hebra_total || 0],
                             backgroundColor: ['#10b981', '#06b6d4'],
                             borderRadius: 6
@@ -815,6 +1150,585 @@ const DashboardRenderer = {
     },
 
     // =========================================================================
+    // DASHBOARD DE PROTEINAS (con visor 3D)
+    // =========================================================================
+
+    renderProteinasDashboard(data, container) {
+        const meta = data.metadata || {};
+        const primaria = data.estructura_primaria || {};
+        const stats = primaria.estadisticas_generales || {};
+        const comp = primaria.composicion_aminoacidos || {};
+        const categorias = primaria.categorias_funcionales || {};
+        const peptidos = primaria.peptidos_senal || {};
+        const mutaciones = primaria.mutaciones_patogenicas || [];
+        const secundaria = data.estructura_secundaria || {};
+        const terciaria = data.estructura_terciaria || {};
+        const cuaternaria = data.estructura_cuaternaria || {};
+        const pdbList = terciaria.proteinas_con_pdb || [];
+        const afList = terciaria.proteinas_alphafold || [];
+        const cisteinas = terciaria.analisis_cisteinas || {};
+        const eduInfo = terciaria.info_educativa || {};
+        const topGrandes = primaria.top_10_mas_grandes || [];
+        const topPequenas = primaria.top_10_mas_pequenas || [];
+        const promSec = secundaria.promedio_proteoma || {};
+
+        // Unir proteinas con estructura disponible para el visor 3D
+        const proteinasConEstructura = [];
+        pdbList.forEach(p => {
+            if (p.encontrado && p.pdb_ids && p.pdb_ids.length > 0) {
+                proteinasConEstructura.push({
+                    label: `${p.nombre_gen || p.locus_tag} - ${(p.producto || '').substring(0, 50)}`,
+                    pdb_id: p.pdb_ids[0],
+                    source: 'rcsb',
+                    nombre_gen: p.nombre_gen,
+                    producto: p.producto
+                });
+            }
+        });
+        afList.forEach(p => {
+            if (p.encontrado && p.alphafold_url) {
+                proteinasConEstructura.push({
+                    label: `${p.nombre_gen || p.locus_tag} - ${(p.producto || '').substring(0, 50)} (AlphaFold)`,
+                    pdb_id: p.uniprot_id,
+                    source: 'alphafold',
+                    url: p.alphafold_url,
+                    nombre_gen: p.nombre_gen,
+                    producto: p.producto
+                });
+            }
+        });
+
+        // Generar opciones del selector 3D
+        const viewer3dOptions = proteinasConEstructura.length > 0
+            ? proteinasConEstructura.map((p, i) => `<option value="${i}">${p.label}</option>`).join('')
+            : '<option value="">No hay estructuras disponibles</option>';
+
+        container.innerHTML = `
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('Total Proteinas', this.fmt(stats.total_analizadas || meta.total_proteinas), 'Proteoma completo')}
+                ${this.statsCard('Longitud Promedio', (stats.longitud_promedio_aa || 0) + ' aa', 'Mediana: ' + (stats.longitud_mediana_aa || 0) + ' aa', 'cyan')}
+                ${this.statsCard('Peso Molecular', this.fmt(Math.round((stats.peso_molecular_promedio_da || 0) / 1000)) + ' kDa', 'Promedio', 'amber')}
+                ${this.statsCard('pI Promedio', stats.pi_promedio || 0, 'Acidas: ' + this.fmt(stats.proteinas_acidas || 0) + ' / Basicas: ' + this.fmt(stats.proteinas_basicas || 0), 'violet')}
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${this.statsCard('GRAVY', stats.gravy_promedio || 0, (stats.proteinas_hidrofobicas || 0) + ' hidrofobicas / ' + (stats.proteinas_hidrofilicas || 0) + ' hidrofilicas', 'emerald')}
+                ${this.statsCard('Estabilidad', this.fmt(stats.proteinas_estables || 0) + ' estables', (stats.proteinas_inestables || 0) + ' inestables (indice>40)', 'cyan')}
+                ${this.statsCard('Peptidos Senal', this.fmt(peptidos.total_detectados || 0), (peptidos.porcentaje || 0) + '% del proteoma', 'amber')}
+                ${this.statsCard('Complejos', this.fmt(cuaternaria.total_complejos || 0), (cuaternaria.total_subunidades || 0) + ' subunidades totales', 'violet')}
+            </div>
+
+            <!-- VISOR 3D DE PROTEINAS -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Visor 3D de Estructura Proteica</h3>
+                <p class="text-xs text-secondary mb-3">Selecciona una proteina con estructura conocida (base de datos PDB o prediccion AlphaFold) para visualizarla en 3D. Arrastra para rotar, rueda del mouse para acercar/alejar.</p>
+
+                <div class="flex flex-col md:flex-row gap-3 mb-3">
+                    <select id="protein-3d-select" class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary" onchange="DashboardRenderer._load3DProtein()">
+                        <option value="">-- Seleccionar proteina --</option>
+                        ${viewer3dOptions}
+                    </select>
+                    <div class="flex gap-2">
+                        <button onclick="DashboardRenderer._setStyle3D('cartoon')" class="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-medium rounded-lg transition" title="Cintas (helices y laminas)">Cintas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('stick')" class="px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 text-xs font-medium rounded-lg transition" title="Varillas (enlaces atomicos)">Varillas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('sphere')" class="px-3 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-500 text-xs font-medium rounded-lg transition" title="Esferas (radio de van der Waals)">Esferas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('line')" class="px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-medium rounded-lg transition" title="Lineas (esqueleto de la proteina)">Lineas</button>
+                        <button onclick="DashboardRenderer._setStyle3D('surface')" class="px-3 py-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 text-xs font-medium rounded-lg transition" title="Superficie molecular">Superficie</button>
+                    </div>
+                </div>
+
+                <div id="protein-3d-container" style="width:100%; height:450px; position:relative; border-radius:12px; overflow:hidden; background: #1a1a2e;">
+                    <div id="protein-3d-placeholder" class="flex items-center justify-center h-full">
+                        <div class="text-center">
+                            <div class="text-5xl mb-3 opacity-50">🧬</div>
+                            <p class="text-slate-400 text-sm">${proteinasConEstructura.length > 0 ? 'Selecciona una proteina de la lista para ver su estructura en 3D' : 'Ejecuta el analisis con conexion a internet para obtener estructuras de PDB y AlphaFold'}</p>
+                            ${proteinasConEstructura.length > 0 ? `<p class="text-slate-500 text-xs mt-1">${proteinasConEstructura.length} estructuras disponibles para visualizar</p>` : ''}
+                        </div>
+                    </div>
+                    <div id="protein-3d-viewer" style="width:100%; height:100%; position:absolute; top:0; left:0; display:none;"></div>
+                </div>
+                <div id="protein-3d-info" class="hidden mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <p id="protein-3d-name" class="text-sm font-semibold text-primary"></p>
+                    <p id="protein-3d-detail" class="text-xs text-secondary mt-1"></p>
+                </div>
+                <div id="protein-3d-loading" class="hidden mt-2 text-center">
+                    <div class="inline-block w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs text-secondary ml-2">Descargando y renderizando estructura 3D...</span>
+                </div>
+            </div>
+
+            <!-- Graficos principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Composicion de aminoacidos -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Composicion de Aminoacidos del Proteoma</h3>
+                    <canvas id="chart-prot-aminoacidos" height="280"></canvas>
+                </div>
+
+                <!-- Categorias funcionales -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Categorias Funcionales</h3>
+                    <canvas id="chart-prot-categorias" height="280"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Estructura secundaria -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Estructura Secundaria Promedio</h3>
+                    <canvas id="chart-prot-secundaria" height="280"></canvas>
+                </div>
+
+                <!-- Distribucion de pI -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h3 class="text-sm font-semibold text-primary mb-4">Acidas vs Basicas (pI)</h3>
+                    <canvas id="chart-prot-pi" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- Top 10 proteinas mas grandes -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-4">Top 10 Proteinas mas Grandes</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">#</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Producto</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Longitud (aa)</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">MW (kDa)</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">pI</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">GRAVY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${topGrandes.map((p, i) => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${i+1}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono font-medium text-primary">${p.nombre_gen || p.locus_tag}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary max-w-[250px] truncate">${p.producto || ''}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right font-bold text-emerald-500">${this.fmt(p.longitud_aa)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${(p.peso_molecular_da / 1000).toFixed(1)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${p.punto_isoelectrico || '-'}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${p.gravy || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mutaciones Patogenicas -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Genes Criticos - Resistencia a Antibioticos</h3>
+                <p class="text-xs text-secondary mb-4">Genes involucrados en resistencia a antibioticos. Se analiza su presencia y posiciones clave de mutacion.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Gen</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Descripcion</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Estado</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Longitud (aa)</th>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Posiciones Clave</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${mutaciones.map(m => {
+                                const estado = m.encontrado
+                                    ? (m.diferencia_longitud !== null && Math.abs(m.diferencia_longitud) < 20
+                                        ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px]">Normal</span>'
+                                        : '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded-full text-[10px]">Longitud atipica</span>')
+                                    : '<span class="px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full text-[10px]">No encontrado</span>';
+                                const posiciones = (m.posiciones_clave || []).map(pos =>
+                                    `<span class="inline-block px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] mr-1 mb-1" title="${pos.descripcion_mutacion}">pos${pos.posicion}: ${pos.aminoacido_actual}</span>`
+                                ).join('');
+                                return `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono font-bold text-primary">${m.gen}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary text-[11px] max-w-[250px]">${m.descripcion || ''}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${estado}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${m.encontrado ? (m.longitud_observada_aa + ' / ' + m.longitud_esperada_aa) : '-'}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${posiciones || '-'}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Complejos Cuaternarios -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Complejos Proteicos (Estructura Cuaternaria)</h3>
+                <p class="text-xs text-secondary mb-4">${cuaternaria.total_complejos || 0} complejos multi-subunidad detectados. Click para expandir.</p>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 bg-card">
+                            <tr>
+                                <th class="text-left px-2 py-2 border-b border-slate-200 text-secondary">Complejo</th>
+                                <th class="text-center px-2 py-2 border-b border-slate-200 text-secondary">Subunidades</th>
+                                <th class="text-right px-2 py-2 border-b border-slate-200 text-secondary">Peso Total (aa)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(cuaternaria.complejos_detectados || []).slice(0, 25).map((c, i) => `
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition" onclick="DashboardRenderer._toggleExpandRow('complejo-detail-${i}')">
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${(c.nombre_complejo || '').substring(0, 60)}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-violet-500">${c.num_subunidades}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(c.peso_total_estimado_aa || 0)}</td>
+                                </tr>
+                                <tr id="complejo-detail-${i}" class="hidden">
+                                    <td colspan="3" class="px-3 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200">
+                                        <p class="text-xs font-semibold text-primary mb-2">Subunidades:</p>
+                                        <div class="space-y-1">
+                                            ${(c.subunidades || []).map(s => `
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-mono text-emerald-500 text-[10px]">${s.nombre_gen || s.locus_tag}</span>
+                                                    <span class="text-secondary text-[10px]">${s.producto || ''}</span>
+                                                    <span class="text-slate-400 text-[10px]">(${s.longitud_aa} aa)</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Info Educativa - Estructura Terciaria -->
+            <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                <h3 class="text-lg font-bold text-primary mb-3">${eduInfo.titulo || 'Estructura Terciaria'}</h3>
+                <p class="text-sm text-secondary mb-4">${eduInfo.descripcion || ''}</p>
+
+                ${eduInfo.fuerzas_estabilizadoras ? `
+                <h4 class="text-sm font-semibold text-primary mb-2">Fuerzas Estabilizadoras</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    ${(eduInfo.fuerzas_estabilizadoras || []).map(f => `
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <p class="text-xs font-semibold text-emerald-500">${f.nombre}</p>
+                            <p class="text-xs text-secondary mt-1">${f.descripcion}</p>
+                        </div>
+                    `).join('')}
+                </div>` : ''}
+
+                ${eduInfo.metodos_experimentales ? `
+                <h4 class="text-sm font-semibold text-primary mb-2">Metodos de Determinacion Estructural</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    ${(eduInfo.metodos_experimentales || []).map(m => `
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <p class="text-xs font-semibold text-cyan-500">${m.nombre}</p>
+                            <p class="text-xs text-secondary mt-1">${m.descripcion}</p>
+                        </div>
+                    `).join('')}
+                </div>` : ''}
+
+                ${eduInfo.nota_bacterias ? `
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p class="text-xs text-amber-700 dark:text-amber-400">${eduInfo.nota_bacterias}</p>
+                </div>` : ''}
+            </div>
+
+            <!-- Cisteinas y Puentes Disulfuro -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h3 class="text-sm font-semibold text-primary mb-2">Analisis de Cisteinas (Potenciales Puentes Disulfuro)</h3>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    ${this.statsCard('Con 2+ Cys', this.fmt(cisteinas.total_con_multiples_cys || 0), 'proteinas', 'amber')}
+                    ${this.statsCard('Puentes Potenciales', this.fmt(cisteinas.potenciales_puentes_disulfuro || 0), 'Cys/2 estimados', 'violet')}
+                    ${this.statsCard('Top Cisteinas', (cisteinas.proteinas && cisteinas.proteinas[0]) ? cisteinas.proteinas[0].num_cisteinas + ' Cys' : '-', (cisteinas.proteinas && cisteinas.proteinas[0]) ? (cisteinas.proteinas[0].nombre_gen || cisteinas.proteinas[0].locus_tag) : '', 'cyan')}
+                </div>
+            </div>
+        `;
+
+        // Guardar datos de proteinas 3D para el visor
+        this._proteinas3DData = proteinasConEstructura;
+        this._viewer3D = null;
+        this._current3DStyle = 'cartoon';
+
+        // Renderizar charts
+        setTimeout(() => {
+            this._renderProteinCharts(comp, categorias, promSec, stats);
+        }, 100);
+    },
+
+    // --- Charts de Proteinas ---
+    _renderProteinCharts(comp, categorias, promSec, stats) {
+        // 1. Composicion de aminoacidos (barras)
+        const compData = comp.composicion_porcentaje || comp;
+        if (compData && typeof compData === 'object') {
+            const aas = Object.keys(compData).filter(k => k.length === 1).sort();
+            const aaNames = {'A':'Ala','R':'Arg','N':'Asn','D':'Asp','C':'Cys','E':'Glu','Q':'Gln','G':'Gly','H':'His','I':'Ile','L':'Leu','K':'Lys','M':'Met','F':'Phe','P':'Pro','S':'Ser','T':'Thr','W':'Trp','Y':'Tyr','V':'Val'};
+            const valores = aas.map(aa => compData[aa] || 0);
+
+            this.createChart('chart-prot-aminoacidos', {
+                type: 'bar',
+                data: {
+                    labels: aas.map(aa => aa + ' (' + (aaNames[aa] || '') + ')'),
+                    datasets: [{
+                        label: 'Porcentaje (%)',
+                        data: valores,
+                        backgroundColor: valores.map(v => v > 7 ? '#10b981' : v > 4 ? '#3b82f6' : '#94a3b8'),
+                        borderRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const aa = aas[items[0].dataIndex];
+                                    const abr = aaNames[aa] || '';
+                                    return abr + ' - ' + (AA_NOMBRE_COMPLETO[aa] || '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: '%' } },
+                        x: { ticks: { font: { size: 9, family: 'monospace' } } }
+                    }
+                }
+            });
+        }
+
+        // 2. Categorias funcionales (doughnut)
+        if (categorias && typeof categorias === 'object') {
+            const catNames = Object.keys(categorias).filter(k => categorias[k].total > 0);
+            const catValues = catNames.map(k => categorias[k].total);
+            const catColors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#22c55e', '#64748b', '#ec4899'];
+
+            this.createChart('chart-prot-categorias', {
+                type: 'doughnut',
+                data: {
+                    labels: catNames.map((n, i) => n + ' (' + catValues[i] + ')'),
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: catColors.slice(0, catNames.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
+                }
+            });
+        }
+
+        // 3. Estructura secundaria (pie)
+        if (promSec && promSec.helix !== undefined) {
+            this.createChart('chart-prot-secundaria', {
+                type: 'pie',
+                data: {
+                    labels: [
+                        'Helice alfa (' + promSec.helix + '%)',
+                        'Lamina beta (' + promSec.sheet + '%)',
+                        'Giros/Coil (' + promSec.turn + '%)'
+                    ],
+                    datasets: [{
+                        data: [promSec.helix, promSec.sheet, promSec.turn],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+
+        // 4. Distribucion acidas vs basicas
+        if (stats.proteinas_acidas !== undefined) {
+            this.createChart('chart-prot-pi', {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        'Acidas pI<7 (' + this.fmt(stats.proteinas_acidas) + ')',
+                        'Basicas pI>7 (' + this.fmt(stats.proteinas_basicas) + ')'
+                    ],
+                    datasets: [{
+                        data: [stats.proteinas_acidas, stats.proteinas_basicas],
+                        backgroundColor: ['#ef4444', '#3b82f6'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+    },
+
+    // --- Visor 3D con 3Dmol.js ---
+    _proteinas3DData: [],
+    _viewer3D: null,
+    _current3DStyle: 'cartoon',
+    _spinning3D: false,
+
+    async _load3DProtein() {
+        const select = document.getElementById('protein-3d-select');
+        const viewerDiv = document.getElementById('protein-3d-viewer');
+        const loadingDiv = document.getElementById('protein-3d-loading');
+        const infoText = document.getElementById('protein-3d-info-text');
+
+        if (!select || select.value === '') return;
+
+        const idx = parseInt(select.value);
+        const proteinData = this._proteinas3DData[idx];
+        if (!proteinData) return;
+
+        if (loadingDiv) loadingDiv.classList.remove('hidden');
+
+        try {
+            let proxyUrl;
+            if (proteinData.source === 'alphafold' && proteinData.url) {
+                proxyUrl = `/api/proxy_pdb?pdb_id=${proteinData.pdb_id}&source=alphafold&url=${encodeURIComponent(proteinData.url)}`;
+            } else {
+                proxyUrl = `/api/proxy_pdb?pdb_id=${proteinData.pdb_id}&source=rcsb`;
+            }
+
+            const resp = await fetch(proxyUrl);
+            if (!resp.ok) throw new Error('No se pudo descargar la estructura');
+            const pdbData = await resp.text();
+            const format = pdbData.includes('_atom_site') ? 'cif' : 'pdb';
+
+            // Crear o limpiar visor
+            if (this._viewer3D) {
+                this._viewer3D.clear();
+            } else if (typeof $3Dmol !== 'undefined') {
+                viewerDiv.innerHTML = '';
+                this._viewer3D = $3Dmol.createViewer(viewerDiv, {
+                    backgroundColor: '#1a1a2e',
+                    antialias: true
+                });
+
+                // Invertir scroll wheel para zoom
+                const self = this;
+                viewerDiv.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!self._viewer3D) return;
+                    // Invertido: deltaY > 0 (scroll down) = zoom IN
+                    const factor = e.deltaY > 0 ? 1.08 : 0.92;
+                    self._viewer3D.zoom(factor);
+                    self._viewer3D.render();
+                }, { passive: false, capture: true });
+
+                // Auto-pausar spin al hacer click
+                viewerDiv.addEventListener('mousedown', () => {
+                    if (self._spinning3D) {
+                        self._spinning3D = false;
+                        self._viewer3D.spin(false);
+                        const btn = document.getElementById('btn-3d-spin');
+                        if (btn) btn.textContent = '\u25B6 Play';
+                    }
+                });
+            } else {
+                throw new Error('3Dmol.js no cargado');
+            }
+
+            // Cargar estructura - SIN auto-spin (estatico por defecto)
+            this._viewer3D.addModel(pdbData, format);
+            this._applyStyle3D(this._current3DStyle);
+            this._viewer3D.zoomTo();
+            this._viewer3D.render();
+            this._spinning3D = false;
+            this._viewer3D.spin(false);
+            const spinBtn = document.getElementById('btn-3d-spin');
+            if (spinBtn) spinBtn.textContent = '\u25B6 Play';
+
+            // Info
+            if (infoText) {
+                const fuente = proteinData.source === 'alphafold' ? 'AlphaFold (prediccion IA)' : 'RCSB PDB (experimental)';
+                infoText.innerHTML = `<strong>${proteinData.nombre_gen || proteinData.locus_tag || ''}</strong> - ${proteinData.producto || 'Proteina'}<br><span class="text-secondary">Fuente: ${fuente} | ID: ${proteinData.pdb_id || proteinData.uniprot_id || 'N/A'} | Formato: ${format.toUpperCase()}</span>`;
+            }
+
+        } catch (err) {
+            viewerDiv.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-400 text-sm text-center px-4">${err.message || 'Error cargando estructura 3D'}</p></div>`;
+        }
+
+        if (loadingDiv) loadingDiv.classList.add('hidden');
+    },
+
+    _toggle3DSpin() {
+        if (!this._viewer3D) return;
+        this._spinning3D = !this._spinning3D;
+        if (this._spinning3D) {
+            this._viewer3D.spin('y', 0.8);
+        } else {
+            this._viewer3D.spin(false);
+        }
+        const btn = document.getElementById('btn-3d-spin');
+        if (btn) btn.textContent = this._spinning3D ? '\u23F8 Pause' : '\u25B6 Play';
+    },
+
+    _setStyle3D(style) {
+        this._current3DStyle = style;
+        if (this._viewer3D) {
+            this._applyStyle3D(style);
+            this._viewer3D.render();
+        }
+        // Update button active states
+        ['cartoon', 'stick', 'sphere', 'line', 'surface'].forEach(s => {
+            const btn = document.getElementById(`btn-style-${s}`);
+            if (btn) {
+                if (s === style) {
+                    btn.className = 'px-3 py-1.5 bg-emerald-500 text-white text-xs rounded-lg transition';
+                } else {
+                    btn.className = 'px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs rounded-lg hover:bg-slate-300 transition';
+                }
+            }
+        });
+    },
+
+    _applyStyle3D(style) {
+        if (!this._viewer3D) return;
+        this._viewer3D.setStyle({}, {});
+
+        switch (style) {
+            case 'cartoon':
+                this._viewer3D.setStyle({}, { cartoon: { color: 'spectrum' } });
+                break;
+            case 'stick':
+                this._viewer3D.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.15 } });
+                break;
+            case 'sphere':
+                this._viewer3D.setStyle({}, { sphere: { colorscheme: 'Jmol', scale: 0.3 } });
+                break;
+            case 'line':
+                this._viewer3D.setStyle({}, { line: { colorscheme: 'Jmol' } });
+                break;
+            case 'surface':
+                this._viewer3D.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.5 } });
+                this._viewer3D.addSurface($3Dmol.SurfaceType.VDW, {
+                    opacity: 0.7,
+                    color: 'white',
+                    colorscheme: { prop: 'b', gradient: new $3Dmol.Gradient.RWB(0, 100) }
+                });
+                break;
+            case 'ss':
+                // Color by secondary structure type
+                this._viewer3D.setStyle({}, { cartoon: {
+                    colorfunc: function(atom) {
+                        if (atom.ss === 'h') return '#10b981'; // helix = verde
+                        if (atom.ss === 's') return '#3b82f6'; // sheet = azul
+                        return '#f59e0b'; // coil = amarillo
+                    }
+                }});
+                break;
+        }
+    },
+
+    // =========================================================================
     // VISTA DE ARCHIVOS (lista simple con descargar/eliminar)
     // =========================================================================
 
@@ -868,7 +1782,7 @@ const DashboardRenderer = {
                             <!-- Preview area -->
                             <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mb-3 max-h-48 overflow-y-auto">
                                 <div id="preview-${file.filename.replace(/\./g, '-')}" class="text-xs font-mono text-secondary">
-                                    <p class="text-center text-slate-400">Cargando preview...</p>
+                                    <p class="text-center text-slate-400">Cargando vista previa...</p>
                                 </div>
                             </div>
 
@@ -1065,11 +1979,11 @@ const DashboardRenderer = {
             <!-- Mapa del genoma -->
             <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
                 <h3 class="text-sm font-semibold text-primary mb-2">Mapa Lineal del Genoma</h3>
-                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes forward (+) arriba, reverse (-) abajo. Pase el cursor para ver detalles.</p>
+                <p class="text-xs text-secondary mb-3">Vista lineal del cromosoma. Genes en hebra 5'&rarr;3' (+) arriba, hebra 3'&rarr;5' (-) abajo. Pasa el cursor sobre un gen para ver detalles.</p>
                 <div class="flex gap-2 mb-3">
                     <button onclick="DashboardRenderer._zoomGenomeMap(1.5)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom +</button>
                     <button onclick="DashboardRenderer._zoomGenomeMap(0.67)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Zoom -</button>
-                    <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reset</button>
+                    <button onclick="DashboardRenderer._zoomGenomeMap(0)" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 transition">Reiniciar</button>
                     <span class="text-xs text-secondary ml-2 self-center" id="genome-map-zoom-label">100%</span>
                 </div>
                 <div id="genome-map-container" class="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-lg" style="min-height: 180px;">
@@ -1157,7 +2071,7 @@ const DashboardRenderer = {
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${op.numero}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-primary">${op.genes.slice(0, 6).join(', ')}${op.genes.length > 6 ? ' ...' : ''}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-emerald-500">${op.num_genes}</td>
-                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${op.hebra}</td>
+                                    <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center">${op.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.inicio)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.fin)}</td>
                                     <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-right">${this.fmt(op.longitud_total)} pb</td>
@@ -1168,7 +2082,7 @@ const DashboardRenderer = {
                                         <div class="flex flex-wrap gap-1">
                                             ${op.genes.map(g => `<span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded font-mono text-[10px]">${g}</span>`).join('')}
                                         </div>
-                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? 'Forward' : 'Reverse'} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
+                                        <p class="text-xs text-secondary mt-2">Posicion: ${this.fmt(op.inicio)} - ${this.fmt(op.fin)} | Hebra: ${op.hebra === '+' ? "5'\u21923' (+)" : "3'\u21925' (-)"} | ${op.num_genes} genes en ${this.fmt(op.longitud_total)} pb</p>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1333,13 +2247,13 @@ const DashboardRenderer = {
             const color = hebra === '+' || hebra === '1' ? '#10b981' : '#06b6d4';
 
             svg += `<rect x="${x}" y="${y}" width="${w}" height="${geneH}" fill="${color}" opacity="0.6" rx="1">`;
-            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra})\n${this.fmt(fin - inicio)} pb</title>`;
+            svg += `<title>${nombre}\n${gene.producto || ''}\nPos: ${this.fmt(inicio)}-${this.fmt(fin)} (${hebra === '+' ? "5'\u21923'" : "3'\u21925'"})\n${this.fmt(fin - inicio)} pb</title>`;
             svg += `</rect>`;
         }
 
         // Labels de hebras
-        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Forward (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
-        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Reverse (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
+        svg += `<text x="${margin}" y="25" fill="#10b981" font-size="11" font-weight="bold">Hebra 5\u2019\u21923\u2019 (+) - ${genes.filter(g => (g.hebra || g.strand) === '+' || (g.hebra || g.strand) === '1').length} genes</text>`;
+        svg += `<text x="${margin}" y="${height - 15}" fill="#06b6d4" font-size="11" font-weight="bold">Hebra 3\u2019\u21925\u2019 (-) - ${genes.filter(g => (g.hebra || g.strand) === '-' || (g.hebra || g.strand) === '-1').length} genes</text>`;
 
         svg += '</svg>';
         container.innerHTML = svg;
@@ -1391,7 +2305,7 @@ const DashboardRenderer = {
                             Buscar
                         </button>
                     </div>
-                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras (forward y reverse complement). Maximo 200 resultados.</p>
+                    <p class="text-xs text-secondary mt-2">Se busca en ambas hebras: 5'&rarr;3' (+) y 3'&rarr;5' (-). Maximo 200 resultados.</p>
                 </div>
 
                 <!-- Resultados -->
@@ -1482,7 +2396,7 @@ const DashboardRenderer = {
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700">${i + 1}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono">${this.fmt(m.posicion)}-${this.fmt(m.fin)}</td>
-                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold ${hebraColor}">${m.hebra}</td>
+                        <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-center font-bold ${hebraColor}">${m.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-medium text-primary">${genNombre}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 text-secondary max-w-[200px] truncate">${genProducto}</td>
                         <td class="px-2 py-2 border-b border-slate-100 dark:border-slate-700 font-mono text-[10px]">${contexto}</td>
@@ -1495,6 +2409,201 @@ const DashboardRenderer = {
         } catch (e) {
             resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
         }
+    },
+
+    // =========================================================================
+    // EXTRACTOR DE SECUENCIAS
+    // =========================================================================
+
+    renderExtractorSecuencia(genome, container) {
+        // Obtener total de genes del JSON de genes
+        this.fetchResultData(genome, `analisis_genes_${genome}.json`).then(genesData => {
+            const totalGenes = genesData?.estadisticas_generales?.total_genes || '?';
+            container.innerHTML = `
+                <div class="max-w-5xl mx-auto">
+                    <div class="bg-card rounded-xl p-6 border border-slate-200 mb-6">
+                        <h3 class="text-lg font-bold text-primary mb-2">Extractor de Secuencias Genicas</h3>
+                        <p class="text-sm text-secondary mb-4">Extrae secuencias de ADN de un rango de genes. Los genes estan ordenados por posicion en el genoma.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Gen Inicio (1-based)</label>
+                                <input type="number" id="extractor-start" min="1" max="${totalGenes}" value="1"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Gen Fin (1-based)</label>
+                                <input type="number" id="extractor-end" min="1" max="${totalGenes}" value="5"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-secondary mb-1">Modo</label>
+                                <select id="extractor-mode"
+                                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-primary focus:border-emerald-500 outline-none">
+                                    <option value="cds">Solo CDS (secuencias codificantes)</option>
+                                    <option value="todo">Region completa (con ADN intergenico)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="DashboardRenderer._ejecutarExtraccion('${genome}')"
+                                    class="w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white rounded-lg font-medium text-sm transition shadow-lg">
+                                    Extraer
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-secondary">Total de genes en el genoma: <strong class="text-primary">${totalGenes}</strong>. E. coli no tiene intrones: "Solo CDS" = secuencias codificantes concatenadas, "Region completa" = incluye ADN intergenico.</p>
+                    </div>
+
+                    <div id="extractor-resultados"></div>
+                </div>
+            `;
+        });
+    },
+
+    async _ejecutarExtraccion(genome) {
+        const startInput = document.getElementById('extractor-start');
+        const endInput = document.getElementById('extractor-end');
+        const modeSelect = document.getElementById('extractor-mode');
+        const resultContainer = document.getElementById('extractor-resultados');
+
+        const geneStart = parseInt(startInput?.value) || 1;
+        const geneEnd = parseInt(endInput?.value) || 5;
+        const mode = modeSelect?.value || 'cds';
+
+        if (geneStart < 1 || geneEnd < geneStart) {
+            resultContainer.innerHTML = '<p class="text-amber-500 text-sm text-center py-4">Rango invalido: Gen inicio debe ser >= 1 y Gen fin >= Gen inicio</p>';
+            return;
+        }
+
+        resultContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p class="text-secondary text-sm">Extrayendo genes ${geneStart} a ${geneEnd} (modo: ${mode})...</p>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch(`/api/extraer_secuencia?genome=${genome}&gene_start=${geneStart}&gene_end=${geneEnd}&mode=${mode}`);
+            const data = await resp.json();
+
+            if (!data.success) {
+                resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${data.error}</p>`;
+                return;
+            }
+
+            const modoTexto = mode === 'cds' ? 'Solo CDS (codificantes)' : 'Region completa (con intergenico)';
+
+            // Formatear secuencia en formato FASTA (60 chars por linea con numeros de posicion)
+            const seq = data.secuencia_total || '';
+            let fastaLines = `>${genome}_genes_${geneStart}-${geneEnd}_${mode} | ${data.num_genes} genes | ${this.fmt(data.longitud_secuencia)} pb\n`;
+            for (let i = 0; i < seq.length; i += 60) {
+                fastaLines += seq.substring(i, i + 60) + '\n';
+            }
+
+            let html = `
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    ${this.statsCard('Genes Extraidos', data.num_genes, 'de ' + data.total_genes_genome + ' totales')}
+                    ${this.statsCard('Longitud', this.fmt(data.longitud_secuencia) + ' pb', modoTexto, 'cyan')}
+                    ${this.statsCard('Rango', geneStart + ' - ' + geneEnd, 'posicion en genoma', 'amber')}
+                    ${this.statsCard('Modo', mode === 'cds' ? 'CDS' : 'Completo', mode === 'cds' ? 'Solo codificante' : 'Con intergenico', 'violet')}
+                </div>
+
+                <!-- Tabla de genes -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <h4 class="text-sm font-semibold text-primary mb-3">Genes en el Rango</h4>
+                    <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-2 text-left text-secondary">#</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Gen</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Locus</th>
+                                    <th class="px-2 py-2 text-left text-secondary">Producto</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Inicio</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Fin</th>
+                                    <th class="px-2 py-2 text-center text-secondary">Hebra</th>
+                                    <th class="px-2 py-2 text-right text-secondary">Longitud</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            for (const g of data.genes_info) {
+                html += `
+                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="px-2 py-2 text-secondary">${g.index}</td>
+                        <td class="px-2 py-2 font-mono font-bold text-primary">${g.nombre_gen || '-'}</td>
+                        <td class="px-2 py-2 font-mono text-secondary">${g.locus_tag}</td>
+                        <td class="px-2 py-2 text-secondary max-w-[250px] truncate">${g.producto || 'Sin anotacion'}</td>
+                        <td class="px-2 py-2 text-right text-primary">${this.fmt(g.inicio)}</td>
+                        <td class="px-2 py-2 text-right text-primary">${this.fmt(g.fin)}</td>
+                        <td class="px-2 py-2 text-center font-bold ${g.hebra === '+' ? 'text-emerald-500' : 'text-cyan-500'}">${g.hebra === '+' ? "5'\u21923'" : "3'\u21925'"}</td>
+                        <td class="px-2 py-2 text-right font-medium text-primary">${this.fmt(g.longitud_pb)} pb</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Secuencia FASTA -->
+                <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-primary">Secuencia (formato FASTA)</h4>
+                        <div class="flex gap-2">
+                            <button onclick="DashboardRenderer._copiarSecuencia()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs rounded-lg transition">
+                                Copiar al Portapapeles
+                            </button>
+                            <button onclick="DashboardRenderer._descargarFASTA('${genome}', ${geneStart}, ${geneEnd}, '${mode}')" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white text-xs rounded-lg transition">
+                                Descargar FASTA
+                            </button>
+                        </div>
+                    </div>
+                    <pre id="extractor-secuencia-pre" class="bg-slate-900 text-emerald-400 p-4 rounded-lg text-xs font-mono overflow-x-auto max-h-[400px] overflow-y-auto leading-relaxed select-all">${fastaLines}</pre>
+                    <p class="text-xs text-secondary mt-2">${this.fmt(data.longitud_secuencia)} pares de bases | ${data.num_genes} genes | Modo: ${modoTexto}</p>
+                </div>
+            `;
+
+            resultContainer.innerHTML = html;
+
+            // Guardar secuencia para copiar
+            DashboardRenderer._extractedFasta = fastaLines;
+
+        } catch (e) {
+            resultContainer.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error de conexion: ${e.message}</p>`;
+        }
+    },
+
+    _extractedFasta: '',
+
+    async _copiarSecuencia() {
+        try {
+            await navigator.clipboard.writeText(DashboardRenderer._extractedFasta);
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copiado!';
+            btn.classList.replace('bg-emerald-500', 'bg-green-600');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.replace('bg-green-600', 'bg-emerald-500');
+            }, 2000);
+        } catch (e) {
+            alert('Error al copiar: ' + e.message);
+        }
+    },
+
+    _descargarFASTA(genome, start, end, mode) {
+        const blob = new Blob([DashboardRenderer._extractedFasta], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${genome}_genes_${start}-${end}_${mode}.fasta`;
+        a.click();
+        URL.revokeObjectURL(url);
     },
 
     // =========================================================================
@@ -1537,6 +2646,843 @@ const DashboardRenderer = {
 
     clearCache() {
         this._cache = {};
+    },
+
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - GENES COMPARTIDOS (PANGENOMA)
+    // =========================================================================
+
+    renderEvolucionPangenoma(data, container) {
+        const pan = data.pangenoma || {};
+        const curva = data.curva_pangenoma || [];
+        const genomas = data.genomas_analizados || [];
+        const genesDetalle = pan.genes_unicos_detalle || {};
+        const genesPorGenoma = pan.genes_por_genoma || {};
+        const totalConocidos = pan.total_productos_conocidos || pan.total_genes_unicos || 0;
+        const corePct = totalConocidos > 0 ? ((pan.core_genome || 0) / totalConocidos * 100).toFixed(1) : '0';
+        const accPct = totalConocidos > 0 ? ((pan.accessory_genome || 0) / totalConocidos * 100).toFixed(1) : '0';
+        const uniqPct = totalConocidos > 0 ? ((pan.genes_unicos_total || 0) / totalConocidos * 100).toFixed(1) : '0';
+
+        container.innerHTML = `
+            <!-- Explicacion general -->
+            <div class="bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-emerald-700 mb-2">Genes Compartidos entre tus ${data.total_genomas || 0} Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Analizamos <strong>todos los genes</strong> de cada bacteria y los comparamos. Encontramos <strong>${this.fmt(totalConocidos)} tipos de genes diferentes</strong> en total.
+                    De esos, <strong class="text-cyan-600">${this.fmt(pan.core_genome || 0)} genes (${corePct}%) son compartidos por TODAS</strong> las bacterias (son esenciales para vivir),
+                    <strong class="text-amber-600">${this.fmt(pan.accessory_genome || 0)} (${accPct}%) los tienen algunas pero no todas</strong> (dan ventajas especiales),
+                    y <strong class="text-red-600">${this.fmt(pan.genes_unicos_total || 0)} (${uniqPct}%) son unicos</strong> de una sola bacteria (la hacen diferente al resto).
+                </p>
+            </div>
+
+            <!-- Stat cards interactivos -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Todos los tipos de genes diferentes encontrados entre todas tus bacterias">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Total de Genes</p>
+                    <p class="text-2xl font-bold text-emerald-500 mt-1">${this.fmt(totalConocidos)}</p>
+                    <p class="text-xs text-secondary mt-1">tipos distintos encontrados</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que TODAS las bacterias comparten. Son esenciales para la vida bacteriana">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes en Comun</p>
+                    <p class="text-2xl font-bold text-cyan-500 mt-1">${this.fmt(pan.core_genome || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">compartidos por TODAS (${corePct}%)</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que tienen ALGUNAS bacterias pero no todas. Dan habilidades especiales como resistencia">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes Parciales</p>
+                    <p class="text-2xl font-bold text-amber-500 mt-1">${this.fmt(pan.accessory_genome || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">en algunas, no en todas (${accPct}%)</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Genes que SOLO tiene una bacteria. La hacen unica respecto a las demas">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Genes Exclusivos</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">${this.fmt(pan.genes_unicos_total || 0)}</p>
+                    <p class="text-xs text-secondary mt-1">unicos de 1 sola bacteria (${uniqPct}%)</p>
+                </div>
+            </div>
+
+            <!-- Charts row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h4 class="text-sm font-semibold text-primary mb-1">Como se reparten los genes</h4>
+                    <p class="text-xs text-secondary mb-3">La "torta" muestra cuantos genes comparten todas, algunas o solo una bacteria</p>
+                    <canvas id="chart-evo-donut" height="280"></canvas>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-slate-200">
+                    <h4 class="text-sm font-semibold text-primary mb-1">Que pasa al agregar mas bacterias?</h4>
+                    <p class="text-xs text-secondary mb-3">Al agregar mas bacterias se descubren mas genes (verde sube), pero los compartidos por TODAS bajan (azul baja)</p>
+                    <canvas id="chart-evo-curva" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabla detalle por bacteria -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-1">Detalle por Bacteria</h4>
+                <p class="text-xs text-secondary mb-3">Pasa el mouse sobre cada fila para ver mas informacion</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-secondary">Bacteria</th>
+                                <th class="px-3 py-2 text-right text-secondary">Total Genes</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Genes que comparte con TODAS las demas">En Comun</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Genes que solo tiene esta bacteria">Exclusivos</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Porcentaje de guanina-citosina en el ADN">GC%</th>
+                                <th class="px-3 py-2 text-right text-secondary" title="Tamano del genoma en millones de pares de bases">Tamano</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${genomas.map(g => {
+                                const gpg = genesPorGenoma[g.basename] || {};
+                                const pctCore = g.total_genes > 0 ? ((gpg.core || 0) / g.total_genes * 100).toFixed(0) : 0;
+                                return `
+                                    <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-default"
+                                        title="Bacteria: ${(g.nombre || g.basename).substring(0, 80)} | ${gpg.core || 0} genes en comun (${pctCore}% de sus genes) | ${gpg.unicos || 0} exclusivos | ${gpg.hypothetical || 0} sin identificar">
+                                        <td class="px-3 py-2.5 font-medium text-primary">${(g.nombre || g.basename).replace(/_/g, ' ').substring(0, 50)}</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${this.fmt(g.total_genes)}</td>
+                                        <td class="px-3 py-2.5 text-right"><span class="text-cyan-500 font-bold">${this.fmt(gpg.core || 0)}</span> <span class="text-secondary">(${pctCore}%)</span></td>
+                                        <td class="px-3 py-2.5 text-right text-red-500 font-medium">${this.fmt(gpg.unicos || 0)}</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${(g.gc_porcentaje || 0).toFixed(1)}%</td>
+                                        <td class="px-3 py-2.5 text-right text-primary">${((g.longitud_pb || 0) / 1e6).toFixed(2)} Mb</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Genes exclusivos expandibles -->
+            ${Object.keys(genesDetalle).length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-1">Genes Exclusivos de cada Bacteria</h4>
+                <p class="text-xs text-secondary mb-3">Haz click en cada bacteria para ver que genes tiene que las demas NO tienen. Estos genes pueden darle habilidades especiales (resistencia a antibioticos, produccion de toxinas, etc.)</p>
+                <div class="space-y-2 max-h-[400px] overflow-y-auto">
+                    ${Object.entries(genesDetalle).map(([basename, genes]) => `
+                        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                             onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium text-sm text-primary">${basename.replace(/_/g, ' ').substring(0, 50)}</span>
+                                <span class="text-xs px-2 py-0.5 bg-red-500/10 text-red-500 rounded-full">${genes.length} genes exclusivos - click para ver</span>
+                            </div>
+                        </div>
+                        <div class="hidden px-3 pb-2">
+                            <div class="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 text-xs max-h-[200px] overflow-y-auto">
+                                ${genes.slice(0, 50).map(g => `
+                                    <div class="py-1.5 border-b border-slate-50 dark:border-slate-800 flex justify-between gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 px-1 rounded"
+                                         title="Gen: ${g.nombre_gen || 'sin nombre'} | Codigo: ${g.locus_tag || ''} | Tamano: ${g.longitud_pb || 0} pares de bases | Funcion: ${g.producto || 'desconocida'}">
+                                        <span class="text-primary flex-1">${g.producto || 'Funcion desconocida'}</span>
+                                        <span class="text-secondary font-mono">${g.locus_tag || ''}</span>
+                                    </div>
+                                `).join('')}
+                                ${genes.length > 50 ? `<p class="text-secondary mt-2 text-center">... y ${genes.length - 50} genes exclusivos mas</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        `;
+
+        setTimeout(() => {
+            this.createChart('chart-evo-donut', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Compartidos por TODAS', 'En algunas (no todas)', 'Exclusivos de una sola'],
+                    datasets: [{
+                        data: [pan.core_genome || 0, pan.accessory_genome || 0, pan.genes_unicos_total || 0],
+                        backgroundColor: ['#06b6d4', '#f59e0b', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: document.body.classList.contains('dark') ? '#1a1a1a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 15, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = totalConocidos || 1;
+                                    const pct = ((ctx.raw / total) * 100).toFixed(1);
+                                    return `${ctx.label}: ${this.fmt(ctx.raw)} genes (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (curva.length > 0) {
+                this.createChart('chart-evo-curva', {
+                    type: 'line',
+                    data: {
+                        labels: curva.map(c => c.n_genomas + ' bacterias'),
+                        datasets: [
+                            {
+                                label: 'Total genes descubiertos',
+                                data: curva.map(c => c.pan),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.1)',
+                                fill: true, tension: 0.3, pointRadius: 5,
+                                pointHoverRadius: 8
+                            },
+                            {
+                                label: 'Genes compartidos por TODAS',
+                                data: curva.map(c => c.core),
+                                borderColor: '#06b6d4',
+                                backgroundColor: 'rgba(6,182,212,0.1)',
+                                fill: true, tension: 0.3, pointRadius: 5,
+                                pointHoverRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.dataset.label}: ${this.fmt(ctx.raw)} genes`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Cantidad de bacterias analizadas' } },
+                            y: { title: { display: true, text: 'Cantidad de genes' }, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        }, 100);
+    },
+
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - ARBOL FAMILIAR
+    // =========================================================================
+
+    renderEvolucionArbol(data, container) {
+        const arbol = data.arbol_upgma || {};
+        const nodos = arbol.nodos || [];
+        const genomas = data.genomas_analizados || [];
+        const dist = data.distancias_jaccard || {};
+        const matriz = dist.matriz || [];
+        const raiz = arbol.raiz || 0;
+
+        // Calcular pares mas cercanos y lejanos
+        let parCercano = { i: '', j: '', d: 999 };
+        let parLejano = { i: '', j: '', d: 0 };
+        const dGenomas = dist.genomas || [];
+        for (let i = 0; i < dGenomas.length; i++) {
+            for (let j = i + 1; j < dGenomas.length; j++) {
+                const v = matriz[i]?.[j] || 0;
+                if (v < parCercano.d) parCercano = { i: dGenomas[i], j: dGenomas[j], d: v };
+                if (v > parLejano.d) parLejano = { i: dGenomas[i], j: dGenomas[j], d: v };
+            }
+        }
+        const cercSimil = ((1 - parCercano.d) * 100).toFixed(0);
+        const lejSimil = ((1 - parLejano.d) * 100).toFixed(0);
+
+        container.innerHTML = `
+            <!-- Explicacion -->
+            <div class="bg-violet-50 dark:bg-violet-900/15 border border-violet-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-violet-700 mb-2">Arbol Familiar de tus Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Este arbol muestra <strong>que tan "parientes" son</strong> tus bacterias entre si, basandose en los genes que comparten.
+                    Las bacterias que comparten mas genes estan mas cerca en el arbol (como hermanos).
+                    Las que comparten menos genes estan mas lejos (como primos lejanos).
+                    <strong>No es un arbol de tiempo real</strong>, sino de similitud genetica: mientras mas parecidos son sus genes, mas "cercanas" estan.
+                </p>
+            </div>
+
+            <!-- Stats con contexto -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-card rounded-xl p-5 border border-slate-200 evo-hover-card" title="Cantidad de bacterias representadas como hojas del arbol">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Bacterias en el Arbol</p>
+                    <p class="text-2xl font-bold text-emerald-500 mt-1">${genomas.length}</p>
+                    <p class="text-xs text-secondary mt-1">cada una es una "hoja" del arbol</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-emerald-200 evo-hover-card" title="${parCercano.i.replace(/_/g,' ')} y ${parCercano.j.replace(/_/g,' ')} comparten ${cercSimil}% de sus genes">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Par mas Parecido</p>
+                    <p class="text-2xl font-bold text-cyan-500 mt-1">${cercSimil}% similares</p>
+                    <p class="text-xs text-secondary mt-1 line-clamp-2">${parCercano.i.replace(/_/g,' ').substring(0,30)} y ${parCercano.j.replace(/_/g,' ').substring(0,30)}</p>
+                </div>
+                <div class="bg-card rounded-xl p-5 border border-red-200 evo-hover-card" title="${parLejano.i.replace(/_/g,' ')} y ${parLejano.j.replace(/_/g,' ')} solo comparten ${lejSimil}% de sus genes">
+                    <p class="text-xs font-medium text-secondary uppercase tracking-wide">Par mas Diferente</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">${lejSimil}% similares</p>
+                    <p class="text-xs text-secondary mt-1 line-clamp-2">${parLejano.i.replace(/_/g,' ').substring(0,30)} y ${parLejano.j.replace(/_/g,' ').substring(0,30)}</p>
+                </div>
+            </div>
+
+            <!-- Estimacion temporal -->
+            <div class="bg-amber-50 dark:bg-amber-900/15 border border-amber-200 rounded-xl p-4 mb-6">
+                <h4 class="text-sm font-semibold text-amber-700 mb-1">Sobre el tiempo de evolucion</h4>
+                <p class="text-xs text-secondary leading-relaxed">
+                    Las bacterias evolucionan rapido: una E. coli se reproduce cada ~20 minutos, acumulando mutaciones. Dos cepas de E. coli con ~${cercSimil}% de genes compartidos
+                    pudieron divergir hace <strong>miles a decenas de miles de anos</strong>.
+                    Si comparas E. coli con otra especie (ej. Salmonella) con ~${lejSimil}% similitud, la divergencia pudo ocurrir hace <strong>cientos de millones de anos</strong>.
+                    Estas son estimaciones aproximadas - la velocidad real depende de la presion ambiental y la transferencia horizontal de genes.
+                </p>
+            </div>
+
+            <!-- Canvas del arbol -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6 relative">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h4 class="text-sm font-semibold text-primary">Arbol de Parentesco (vertical)</h4>
+                        <p class="text-xs text-secondary">El ancestro comun esta arriba. Las bacterias mas parecidas se conectan mas abajo (ramas cortas). Pasa el mouse sobre cada nombre.</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-[10px] text-secondary">
+                        <span class="flex items-center gap-1"><span class="w-8 h-0.5 inline-block" style="background:#10b981;"></span> Ramas</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full inline-block" style="background:#10b981;"></span> Bacteria</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto overflow-y-auto" style="position:relative; max-height:700px;">
+                    <canvas id="canvas-evo-tree" width="${Math.max(900, genomas.length * 140 + 120)}" height="${Math.max(650, 500)}"></canvas>
+                    <div id="evo-tree-tooltip" class="evo-tooltip hidden" style="position:absolute; top:0; left:0;"></div>
+                </div>
+            </div>
+
+            <!-- Newick -->
+            ${arbol.newick ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-1">Formato Newick (para expertos)</h4>
+                <p class="text-xs text-secondary mb-2">Este texto codifica el arbol. Puedes copiarlo y pegarlo en herramientas como iTOL, FigTree o MEGA para verlo en 3D. Haz click para copiar.</p>
+                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 font-mono text-xs break-all max-h-[150px] overflow-y-auto select-all cursor-pointer hover:ring-2 hover:ring-emerald-500/30 transition"
+                     onclick="navigator.clipboard.writeText(this.textContent).then(()=>showNotification('Newick copiado al portapapeles','success'))">${arbol.newick}</div>
+            </div>` : ''}
+        `;
+
+        // Draw tree with hover interactivity
+        setTimeout(() => {
+            this._drawFamilyTree('canvas-evo-tree', nodos, raiz, genomas, data);
+        }, 100);
+    },
+
+    _drawFamilyTree(canvasId, nodos, raizId, genomas, data) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || nodos.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+
+        const hojas = nodos.filter(n => n.hoja);
+        const numHojas = hojas.length;
+
+        // Vertical layout: wide for leaves, tall for depth + labels
+        const displayW = Math.max(900, numHojas * 140 + 120);
+        const displayH = Math.max(650, 500);
+        canvas.width = displayW * dpr;
+        canvas.height = displayH * dpr;
+        canvas.style.width = displayW + 'px';
+        canvas.style.height = displayH + 'px';
+        ctx.scale(dpr, dpr);
+
+        const isDark = document.body.classList.contains('dark');
+        const textColor = isDark ? '#e2e8f0' : '#1e293b';
+        const highlightColor = '#06b6d4';
+        const branchColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899', '#6366f1', '#ef4444', '#14b8a6'];
+
+        const marginLeft = 65;
+        const marginRight = 50;
+        const marginTop = 55;
+        const marginBottom = 130; // space for rotated labels
+        const treeWidth = displayW - marginLeft - marginRight;
+        const treeHeight = displayH - marginTop - marginBottom;
+
+        let maxDist = 0;
+        nodos.forEach(n => { if (n.distancia > maxDist) maxDist = n.distancia; });
+        if (maxDist === 0) maxDist = 1;
+
+        const xPos = {};
+        const yPos = {};
+        let leafIdx = 0;
+        const leafPositions = [];
+
+        // Vertical tree: x = leaf spread horizontal, y = distance from top
+        // Root (maxDist) at top, leaves (dist~0) at bottom
+        function assignPositions(nid) {
+            const n = nodos[nid];
+            if (!n) return 0;
+            if (n.hoja) {
+                xPos[nid] = marginLeft + leafIdx * (treeWidth / Math.max(numHojas - 1, 1));
+                yPos[nid] = marginTop + treeHeight; // leaves at bottom
+                leafIdx++;
+                return xPos[nid];
+            }
+            const childXs = (n.hijos || []).map(cid => assignPositions(cid));
+            xPos[nid] = childXs.reduce((a, b) => a + b, 0) / childXs.length;
+            yPos[nid] = marginTop + (1 - n.distancia / maxDist) * treeHeight;
+            return xPos[nid];
+        }
+        assignPositions(raizId);
+
+        // Assign colors per subtree from root
+        const nodeColors = {};
+        function assignColors(nid, colorIdx) {
+            nodeColors[nid] = branchColors[colorIdx % branchColors.length];
+            const n = nodos[nid];
+            if (n && !n.hoja) {
+                (n.hijos || []).forEach((cid, i) => {
+                    assignColors(cid, nid === raizId ? i : colorIdx);
+                });
+            }
+        }
+        assignColors(raizId, 0);
+
+        function drawTree(highlightId) {
+            ctx.clearRect(0, 0, displayW, displayH);
+
+            // Title at top center
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 13px Space Grotesk, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Ancestro comun (raiz)', displayW / 2, marginTop - 30);
+            ctx.textAlign = 'left';
+
+            // Horizontal grid lines with similarity %
+            ctx.font = '9px JetBrains Mono, monospace';
+            for (let i = 0; i <= 4; i++) {
+                const y = marginTop + (treeHeight / 4) * i;
+                const dist = maxDist * (1 - i / 4);
+                const simPct = ((1 - dist) * 100).toFixed(0);
+
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                ctx.lineWidth = 0.5;
+                ctx.setLineDash([3, 5]);
+                ctx.beginPath();
+                ctx.moveTo(marginLeft - 10, y);
+                ctx.lineTo(displayW - marginRight + 10, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${simPct}%`, marginLeft - 15, y + 3);
+                ctx.textAlign = 'left';
+            }
+
+            // Vertical axis label
+            ctx.save();
+            ctx.translate(14, marginTop + treeHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+            ctx.font = '10px Space Grotesk, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Similitud genetica', 0, 0);
+            ctx.restore();
+
+            function drawNode(nid) {
+                const n = nodos[nid];
+                if (!n) return;
+                const x = xPos[nid];
+                const y = yPos[nid];
+
+                if (n.hoja) {
+                    const isHighlight = nid === highlightId;
+                    const r = isHighlight ? 9 : 7;
+                    const color = isHighlight ? highlightColor : nodeColors[nid] || '#10b981';
+
+                    if (isHighlight) {
+                        ctx.shadowColor = highlightColor;
+                        ctx.shadowBlur = 16;
+                    }
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // White border
+                    ctx.strokeStyle = isDark ? '#1e293b' : '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Rotated label below leaf
+                    ctx.save();
+                    ctx.translate(x, y + r + 8);
+                    ctx.rotate(Math.PI / 5);
+                    ctx.fillStyle = isHighlight ? highlightColor : textColor;
+                    ctx.font = isHighlight ? 'bold 11px Space Grotesk, sans-serif' : '10px Space Grotesk, sans-serif';
+                    ctx.textAlign = 'left';
+                    const label = (n.nombre || '').replace(/_/g, ' ').substring(0, 32);
+                    ctx.fillText(label, 0, 0);
+                    ctx.restore();
+
+                    leafPositions.push({ nid, x, y, r: 18, nombre: n.nombre });
+                } else {
+                    const hijos = n.hijos || [];
+                    const childXs = hijos.map(cid => xPos[cid]);
+                    const minX = Math.min(...childXs);
+                    const maxX = Math.max(...childXs);
+
+                    // Horizontal connector at parent's y level
+                    ctx.strokeStyle = nodeColors[nid] || '#10b981';
+                    ctx.lineWidth = 3.5;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(minX, y);
+                    ctx.lineTo(maxX, y);
+                    ctx.stroke();
+
+                    // Small dot at junction
+                    ctx.fillStyle = nodeColors[nid] || '#10b981';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    hijos.forEach(cid => {
+                        const cx = xPos[cid];
+                        const cy = yPos[cid];
+
+                        // Vertical branch down
+                        ctx.strokeStyle = nodeColors[cid] || '#10b981';
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(cx, y);
+                        ctx.lineTo(cx, cy);
+                        ctx.stroke();
+
+                        drawNode(cid);
+                    });
+                }
+            }
+
+            leafPositions.length = 0;
+            drawNode(raizId);
+
+            // Vertical scale bar on right side
+            const scaleLen = treeHeight * 0.2;
+            ctx.strokeStyle = textColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(displayW - marginRight + 25, marginTop + treeHeight);
+            ctx.lineTo(displayW - marginRight + 25, marginTop + treeHeight - scaleLen);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(displayW - marginRight + 20, marginTop + treeHeight);
+            ctx.lineTo(displayW - marginRight + 30, marginTop + treeHeight);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(displayW - marginRight + 20, marginTop + treeHeight - scaleLen);
+            ctx.lineTo(displayW - marginRight + 30, marginTop + treeHeight - scaleLen);
+            ctx.stroke();
+            ctx.fillStyle = textColor;
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            const scaleVal = (maxDist * 0.2 * 100).toFixed(0);
+            ctx.fillText(`${scaleVal}%`, displayW - marginRight + 25, marginTop + treeHeight + 14);
+            ctx.fillText('diferencia', displayW - marginRight + 25, marginTop + treeHeight + 24);
+            ctx.textAlign = 'left';
+        }
+
+        drawTree(null);
+
+        // Hover interactivity
+        const tooltip = document.getElementById('evo-tree-tooltip');
+        const genesPorGenoma = data.pangenoma?.genes_por_genoma || {};
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            let found = null;
+            for (const leaf of leafPositions) {
+                const dx = mx - leaf.x;
+                const dy = my - leaf.y;
+                if (dx * dx + dy * dy < leaf.r * leaf.r * 4) {
+                    found = leaf;
+                    break;
+                }
+            }
+
+            if (found) {
+                canvas.style.cursor = 'pointer';
+                const gInfo = genomas.find(g => g.basename === found.nombre) || {};
+                const gpg = genesPorGenoma[found.nombre] || {};
+                tooltip.classList.remove('hidden');
+                // Position tooltip above the leaf node
+                tooltip.style.left = (found.x + 20) + 'px';
+                tooltip.style.top = (found.y - 80) + 'px';
+                tooltip.innerHTML = `
+                    <strong>${(found.nombre || '').replace(/_/g, ' ')}</strong><br>
+                    <span style="color:#06b6d4">Genes totales:</span> ${gInfo.total_genes || '?'}<br>
+                    <span style="color:#10b981">Genes en comun:</span> ${gpg.core || '?'}<br>
+                    <span style="color:#ef4444">Genes exclusivos:</span> ${gpg.unicos || '?'}<br>
+                    <span style="color:#94a3b8">GC:</span> ${gInfo.gc_porcentaje || '?'}% | <span style="color:#94a3b8">Tamano:</span> ${((gInfo.longitud_pb || 0) / 1e6).toFixed(2)} Mb
+                `;
+                drawTree(found.nid);
+            } else {
+                canvas.style.cursor = 'default';
+                tooltip.classList.add('hidden');
+                drawTree(null);
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.classList.add('hidden');
+            drawTree(null);
+        });
+    },
+
+    // =========================================================================
+    // DASHBOARD DE EVOLUCION - MAPA DE PARENTESCO (MATRIZ)
+    // =========================================================================
+
+    renderEvolucionMatriz(data, container) {
+        const dist = data.distancias_jaccard || {};
+        const matrizGenomas = dist.genomas || [];
+        const matriz = dist.matriz || [];
+        const presencia = data.matriz_presencia || {};
+
+        // Store presencia for click-to-expand
+        DashboardRenderer._evoPresencia = presencia;
+
+        // Build all pairs sorted, filter out 0% similarity
+        const pares = [];
+        const paresCero = [];
+        for (let i = 0; i < matrizGenomas.length; i++) {
+            for (let j = i + 1; j < matrizGenomas.length; j++) {
+                const d = matriz[i]?.[j] || 0;
+                const sim = ((1 - d) * 100);
+                const par = {
+                    a: matrizGenomas[i],
+                    b: matrizGenomas[j],
+                    distancia: d,
+                    similitud: sim.toFixed(1)
+                };
+                if (sim > 0.5) {
+                    pares.push(par);
+                } else {
+                    paresCero.push(par);
+                }
+            }
+        }
+        pares.sort((a, b) => a.distancia - b.distancia);
+
+        container.innerHTML = `
+            <!-- Explicacion -->
+            <div class="bg-cyan-50 dark:bg-cyan-900/15 border border-cyan-200 rounded-xl p-5 mb-6">
+                <h3 class="text-lg font-bold text-cyan-700 mb-2">Mapa de Parentesco entre Bacterias</h3>
+                <p class="text-sm text-secondary leading-relaxed">
+                    Este mapa muestra <strong>que tan parecida es cada bacteria con cada otra</strong>, basandose en cuantos genes comparten.
+                    El color <strong class="text-emerald-600">verde</strong> significa "muy parecidas" (comparten muchos genes, como hermanos).
+                    El color <strong class="text-red-600">rojo</strong> significa "muy diferentes" (comparten pocos genes, como especies distintas).
+                    <strong>Haz click en cualquier par</strong> para ver que genes comparten y en que se diferencian.
+                </p>
+            </div>
+
+            <!-- Ranking de pares (solo los que comparten algo) -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-1">Ranking de Similitud</h4>
+                <p class="text-xs text-secondary mb-3">Pares que comparten al menos algun gen, ordenados de mas a menos parecidos. <strong>Click para ver genes en detalle.</strong></p>
+                <div class="space-y-1 max-h-[450px] overflow-y-auto" id="evo-ranking-list">
+                    ${pares.length === 0 ? '<p class="text-sm text-secondary py-4 text-center">No hay pares con genes en comun</p>' : ''}
+                    ${pares.map((p, idx) => {
+                        const simPct = parseFloat(p.similitud);
+                        const barColor = simPct > 80 ? '#10b981' : simPct > 50 ? '#f59e0b' : '#ef4444';
+                        const relacion = simPct > 90 ? 'Casi identicos' : simPct > 70 ? 'Muy parecidos' : simPct > 50 ? 'Moderadamente parecidos' : simPct > 30 ? 'Bastante diferentes' : 'Muy diferentes';
+                        const emoji = simPct > 90 ? '&#9733;' : simPct > 70 ? '&#9830;' : simPct > 50 ? '&#9679;' : '&#9651;';
+                        return `
+                            <div class="rounded-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                <div class="flex items-center gap-3 p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
+                                     onclick="DashboardRenderer._expandParDetail(${idx}, '${p.a}', '${p.b}')">
+                                    <span class="text-xs font-mono text-secondary w-6 text-right">${idx + 1}.</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 text-xs">
+                                            <span class="text-primary font-medium truncate">${p.a.replace(/_/g,' ').substring(0,28)}</span>
+                                            <span class="text-secondary">vs</span>
+                                            <span class="text-primary font-medium truncate">${p.b.replace(/_/g,' ').substring(0,28)}</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mt-1.5">
+                                            <div class="h-2 rounded-full transition-all" style="width:${simPct}%; background:${barColor};"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right shrink-0 flex items-center gap-2">
+                                        <div>
+                                            <span class="text-sm font-bold" style="color:${barColor}">${p.similitud}%</span>
+                                            <p class="text-[10px] text-secondary">${relacion}</p>
+                                        </div>
+                                        <span class="text-secondary text-xs" id="par-arrow-${idx}">&#9654;</span>
+                                    </div>
+                                </div>
+                                <div id="par-detail-${idx}" class="hidden border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-3">
+                                    <p class="text-xs text-secondary">Calculando genes...</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                ${paresCero.length > 0 ? `
+                <div class="mt-3 p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-slate-200">
+                    <p class="text-xs text-secondary"><strong>${paresCero.length} pares</strong> no comparten ningun gen (0% similitud) y no se muestran en el ranking.</p>
+                </div>` : ''}
+            </div>
+
+            <!-- Heatmap -->
+            <div class="bg-card rounded-xl p-5 border border-slate-200 mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-1">Mapa de Calor (Heatmap)</h4>
+                <p class="text-xs text-secondary mb-3">Cada celda muestra el % de genes que comparten dos bacterias. Verde = muchos genes en comun, Rojo = pocos. Pasa el mouse sobre cada celda.</p>
+                <div class="overflow-x-auto">
+                    <table class="text-xs border-collapse" id="evo-heatmap-table">
+                        <thead>
+                            <tr>
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-10" style="min-width:30px;"></th>
+                                ${matrizGenomas.map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:130px; font-size:10px; cursor:default;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 22)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${matrizGenomas.map((g, i) => `
+                                <tr>
+                                    <td class="px-2 py-1.5 text-secondary font-medium whitespace-nowrap sticky left-0 bg-card z-10 cursor-default" style="font-size:10px;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 25)}</td>
+                                    ${matrizGenomas.map((g2, j) => {
+                                        if (i === j) return `<td class="px-1 py-1.5 text-center" style="background:rgba(16,185,129,0.15); min-width:42px; font-size:9px;">100%</td>`;
+                                        const val = (matriz[i] && matriz[i][j] !== undefined) ? matriz[i][j] : 0;
+                                        const sim = ((1 - val) * 100).toFixed(0);
+                                        const color = this._distToColor(val);
+                                        const relacion = sim > 90 ? 'Casi identicos' : sim > 70 ? 'Muy parecidos' : sim > 50 ? 'Moderadamente parecidos' : sim > 30 ? 'Bastante diferentes' : 'Muy diferentes';
+                                        return `<td class="px-1 py-1.5 text-center font-mono cursor-default hover:ring-2 hover:ring-emerald-500 hover:z-10 relative transition"
+                                                    style="background:${color}; min-width:42px; font-size:9px;"
+                                                    title="${g.replace(/_/g,' ')} vs ${g2.replace(/_/g,' ')}: ${sim}% similares. ${relacion}.">${sim}%</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Presencia/ausencia -->
+            ${presencia.genes && presencia.genes.length > 0 ? `
+            <div class="bg-card rounded-xl p-5 border border-slate-200">
+                <h4 class="text-sm font-semibold text-primary mb-1">Que genes tiene cada bacteria?</h4>
+                <p class="text-xs text-secondary mb-3">Cada fila es un gen y cada columna una bacteria. <span class="inline-block w-3 h-3 rounded" style="background:rgba(16,185,129,0.3)"></span> = lo tiene, vacio = no lo tiene. Mostrando los ${Math.min(100, presencia.genes.length)} genes mas frecuentes.</p>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table class="text-[9px] border-collapse">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-card">
+                                <th class="px-1 py-1 text-secondary text-left sticky left-0 bg-card z-20">Gen (funcion)</th>
+                                ${(presencia.genomas || []).map(g => `<th class="px-1 py-1 text-secondary text-center" style="writing-mode:vertical-lr; max-height:90px;" title="${g.replace(/_/g,' ')}">${g.replace(/_/g,' ').substring(0, 15)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(presencia.genes || []).slice(0, 100).map((gen, gi) => {
+                                const count = (presencia.genomas || []).reduce((acc, _, gj) => acc + ((presencia.matriz?.[gi]?.[gj]) || 0), 0);
+                                const total = (presencia.genomas || []).length;
+                                return `
+                                <tr class="border-t border-slate-50 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800" title="Gen: ${gen} | Presente en ${count} de ${total} bacterias">
+                                    <td class="px-1 py-0.5 text-secondary whitespace-nowrap sticky left-0 bg-card z-10" style="max-width:180px; overflow:hidden; text-overflow:ellipsis;">${gen.substring(0, 30)}</td>
+                                    ${(presencia.genomas || []).map((_, gj) => {
+                                        const val = presencia.matriz?.[gi]?.[gj] || 0;
+                                        return `<td class="px-1 py-0.5 text-center" style="background:${val ? 'rgba(16,185,129,0.25)' : 'transparent'}; min-width:20px;">${val ? '<span style="color:#10b981">&#9679;</span>' : ''}</td>`;
+                                    }).join('')}
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${(presencia.genes || []).length > 100 ? `<p class="text-xs text-secondary mt-2">Mostrando 100 de ${this.fmt(presencia.genes.length)} genes</p>` : ''}
+            </div>` : ''}
+        `;
+    },
+
+    _expandParDetail(idx, a, b) {
+        const el = document.getElementById(`par-detail-${idx}`);
+        const arrow = document.getElementById(`par-arrow-${idx}`);
+        if (!el) return;
+
+        if (!el.classList.contains('hidden')) {
+            el.classList.add('hidden');
+            if (arrow) arrow.innerHTML = '&#9654;';
+            return;
+        }
+        el.classList.remove('hidden');
+        if (arrow) arrow.innerHTML = '&#9660;';
+
+        // Skip recomputation if already done
+        if (el.dataset.computed) return;
+        el.dataset.computed = '1';
+
+        const presencia = DashboardRenderer._evoPresencia || {};
+        const genes = presencia.genes || [];
+        const genomas = presencia.genomas || [];
+        const matrizP = presencia.matriz || [];
+        const idxA = genomas.indexOf(a);
+        const idxB = genomas.indexOf(b);
+
+        if (idxA < 0 || idxB < 0 || genes.length === 0) {
+            el.innerHTML = '<p class="text-xs text-secondary p-2">No hay datos de presencia/ausencia disponibles para este par.</p>';
+            return;
+        }
+
+        const compartidos = [];
+        const soloA = [];
+        const soloB = [];
+
+        for (let i = 0; i < genes.length; i++) {
+            const inA = matrizP[i]?.[idxA] || 0;
+            const inB = matrizP[i]?.[idxB] || 0;
+            if (inA && inB) compartidos.push(genes[i]);
+            else if (inA) soloA.push(genes[i]);
+            else if (inB) soloB.push(genes[i]);
+        }
+
+        const labelA = a.replace(/_/g, ' ').substring(0, 22);
+        const labelB = b.replace(/_/g, ' ').substring(0, 22);
+        const maxShow = 40;
+
+        el.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-emerald-50 dark:bg-emerald-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-emerald-600 mb-2">Genes compartidos (${this.fmt(compartidos.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Estos genes estan en ambas bacterias:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${compartidos.slice(0, maxShow).map(g => `<span class="inline-block bg-emerald-100 dark:bg-emerald-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${compartidos.length > maxShow ? `<p class="text-[10px] text-emerald-600 mt-1">...y ${this.fmt(compartidos.length - maxShow)} genes mas</p>` : ''}
+                        ${compartidos.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+                <div class="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-amber-600 mb-2">Solo en ${labelA} (${this.fmt(soloA.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Genes que la otra bacteria NO tiene:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${soloA.slice(0, maxShow).map(g => `<span class="inline-block bg-amber-100 dark:bg-amber-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${soloA.length > maxShow ? `<p class="text-[10px] text-amber-600 mt-1">...y ${this.fmt(soloA.length - maxShow)} genes mas</p>` : ''}
+                        ${soloA.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+                <div class="bg-red-50 dark:bg-red-900/15 rounded-lg p-3">
+                    <p class="text-xs font-bold text-red-600 mb-2">Solo en ${labelB} (${this.fmt(soloB.length)})</p>
+                    <p class="text-[10px] text-secondary mb-1">Genes que la otra bacteria NO tiene:</p>
+                    <div class="max-h-[150px] overflow-y-auto text-[10px] text-secondary leading-relaxed">
+                        ${soloB.slice(0, maxShow).map(g => `<span class="inline-block bg-red-100 dark:bg-red-900/30 rounded px-1 py-0.5 mr-1 mb-1">${g.substring(0, 35)}</span>`).join('')}
+                        ${soloB.length > maxShow ? `<p class="text-[10px] text-red-600 mt-1">...y ${this.fmt(soloB.length - maxShow)} genes mas</p>` : ''}
+                        ${soloB.length === 0 ? '<p class="text-secondary italic">Ninguno</p>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    _matrizMinMax(matriz) {
+        let min = Infinity, max = -Infinity;
+        for (let i = 0; i < matriz.length; i++) {
+            for (let j = i + 1; j < matriz.length; j++) {
+                const v = matriz[i][j];
+                if (v < min) min = v;
+                if (v > max) max = v;
+            }
+        }
+        return { min: min === Infinity ? 0 : min, max: max === -Infinity ? 0 : max };
+    },
+
+    _distToColor(val) {
+        const clamped = Math.max(0, Math.min(1, val));
+        const r = Math.round(239 * clamped + 16 * (1 - clamped));
+        const g = Math.round(68 * clamped + 185 * (1 - clamped));
+        const b = Math.round(68 * clamped + 129 * (1 - clamped));
+        return `rgba(${r},${g},${b},0.3)`;
     },
 
     downloadJSON(type) {
