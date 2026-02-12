@@ -177,6 +177,17 @@ body::after {
 }
 
 /* === Block Filter Pills === */
+.select-all-pill {
+  margin-bottom: 6px;
+  border-color: rgba(129, 140, 248, 0.25) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
+.select-all-pill .label {
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+}
+
 #filters-container {
   display: flex;
   flex-direction: column;
@@ -548,6 +559,7 @@ body::after {
   max-height: 50vh;
   overflow-y: auto;
   padding-right: 4px;
+  padding-bottom: 60px;
 }
 
 #concepts-list::-webkit-scrollbar {

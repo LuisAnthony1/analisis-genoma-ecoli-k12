@@ -38,6 +38,7 @@
   let currentIndex = 0;
   let currentActiveNodeId = null;
   let _blockFocusTimer = null;
+  let isGlobalNav = false; // true = navegar los 69, false = solo el bloque
   // Map to track concept list item DOM elements by node id
   const conceptItemByNodeId = new Map();
 
@@ -90,8 +91,37 @@
           }
         }
         updateFilteredGraphData();
+        // Sincronizar el checkbox de "Seleccionar todo"
+        const selectAllCb = document.getElementById("select-all-check");
+        if (selectAllCb) selectAllCb.checked = activeBlocks.size === bloques.length;
       });
     });
+
+    // Botón "Seleccionar todo"
+    const selectAllCheck = document.getElementById("select-all-check");
+    if (selectAllCheck) {
+      selectAllCheck.addEventListener("change", () => {
+        if (selectAllCheck.checked) {
+          bloques.forEach((b) => {
+            activeBlocks.add(b.id);
+            const cb = checkboxByBlock.get(b.id);
+            if (cb) { cb.checked = true; cb.closest(".filter-pill").classList.add("active"); }
+          });
+        } else {
+          bloques.forEach((b) => {
+            activeBlocks.delete(b.id);
+            const cb = checkboxByBlock.get(b.id);
+            if (cb) { cb.checked = false; cb.closest(".filter-pill").classList.remove("active"); }
+          });
+          selectedNavBlockId = null;
+          conceptList = [];
+          currentIndex = 0;
+          currentActiveNodeId = null;
+          updateNavUI();
+        }
+        updateFilteredGraphData();
+      });
+    }
   }
 
   // Construir lista de todos los conceptos organizada por bloques
@@ -148,17 +178,18 @@
         conceptItemByNodeId.set(node.id, item);
 
         item.addEventListener("click", () => {
-          // Activar bloque si no está activo
+          // Navegación global: los 69 conceptos en orden
+          isGlobalNav = true;
+          conceptList = nodes.slice(); // todos los 69
+          currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === node.id));
+          selectedNavBlockId = null;
+          // Activar bloque del concepto si no está activo
           if (!activeBlocks.has(bloque.id)) {
             activeBlocks.add(bloque.id);
             const cb = checkboxByBlock.get(bloque.id);
             if (cb) { cb.checked = true; cb.closest(".filter-pill").classList.add("active"); }
             updateFilteredGraphData();
           }
-          selectedNavBlockId = bloque.id;
-          conceptList = nodes.filter((n) => n.bloque === bloque.id);
-          currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === node.id));
-          // Esperar a que el grafo tenga los nodos posicionados si recién se activó
           setTimeout(() => focusConcept(node.id), 200);
         });
       });
@@ -180,15 +211,27 @@
   }
 
   // Animar cámara hacia un nodo del grafo 3D
-  // Vuelo 3D pero al llegar queda de frente (vista 2D centrada)
+  // Vuelo 3D pero al llegar queda de frente (vista 2D centrada en TODA la pantalla)
   function flyToNode(nodeId) {
     const graphNode = Graph.graphData().nodes.find((n) => n.id === nodeId);
     if (!graphNode || graphNode.x === undefined) return;
     const distance = 120;
-    // Cámara queda directamente enfrente del nodo en el eje Z → vista 2D al llegar
+
+    // Compensar el panel izquierdo para centrar en el viewport completo
+    const panel = document.getElementById("glass-panel");
+    const panelW = panel ? panel.offsetWidth + 32 : 0; // 32px = margins
+    const graphEl = document.getElementById("3d-graph");
+    const graphW = graphEl ? graphEl.offsetWidth : window.innerWidth;
+    const cam = Graph.camera();
+    const fov = cam.fov * Math.PI / 180;
+    const visibleW = 2 * distance * Math.tan(fov / 2);
+    // Offset en unidades 3D: desplazar la vista a la derecha para que el nodo
+    // quede al centro de la pantalla completa (no solo del canvas)
+    const xOffset = (panelW / 2) * (visibleW / graphW);
+
     Graph.cameraPosition(
-      { x: graphNode.x, y: graphNode.y, z: graphNode.z + distance },
-      { x: graphNode.x, y: graphNode.y, z: graphNode.z },
+      { x: graphNode.x + xOffset, y: graphNode.y, z: graphNode.z + distance },
+      { x: graphNode.x + xOffset, y: graphNode.y, z: graphNode.z },
       1000
     );
   }
@@ -310,9 +353,11 @@
 
   function updateNavUI() {
     if (!navPanel) return;
-    const bName = selectedNavBlockId ? bloqueNombreById.get(selectedNavBlockId) || "" : "";
-    navBlockName.textContent = bName;
     const concept = conceptList.length ? conceptList[currentIndex] : null;
+    // En modo global: mostrar bloque del concepto actual; en modo bloque: el bloque seleccionado
+    const blockId = isGlobalNav && concept ? concept.bloque : selectedNavBlockId;
+    const bName = blockId ? bloqueNombreById.get(blockId) || "" : "";
+    navBlockName.textContent = isGlobalNav ? (bName ? `${bName} · Global` : "Global") : bName;
     navConceptName.textContent = concept ? (concept.nombre || "") : "";
     navCounter.textContent = conceptList.length ? `${currentIndex + 1} / ${conceptList.length}` : "0 / 0";
   }
@@ -354,8 +399,17 @@
   function navigate(delta) {
     if (!conceptList.length) return;
     currentIndex = (currentIndex + delta + conceptList.length) % conceptList.length;
-    const id = conceptList[currentIndex].id;
-    focusConcept(id);
+    const concept = conceptList[currentIndex];
+    // En modo global, activar el bloque del siguiente concepto si no está visible
+    if (isGlobalNav && !activeBlocks.has(concept.bloque)) {
+      activeBlocks.add(concept.bloque);
+      const cb = checkboxByBlock.get(concept.bloque);
+      if (cb) { cb.checked = true; cb.closest(".filter-pill").classList.add("active"); }
+      updateFilteredGraphData();
+      setTimeout(() => focusConcept(concept.id), 200);
+      return;
+    }
+    focusConcept(concept.id);
   }
 
   if (navPrevBtn) {
@@ -365,10 +419,11 @@
     navNextBtn.addEventListener("click", () => navigate(1));
   }
 
-  // Click en nodo del grafo 3D: centrar cámara y actualizar todo
+  // Click en nodo del grafo 3D: navegación solo por bloque
   Graph.onNodeClick((node) => {
+    isGlobalNav = false;
     selectedNavBlockId = node.bloque;
-    conceptList = nodes.filter((n) => n.bloque === node.bloque).slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+    conceptList = nodes.filter((n) => n.bloque === node.bloque);
     currentIndex = Math.max(0, conceptList.findIndex((c) => c.id === node.id));
     focusConcept(node.id);
   });
