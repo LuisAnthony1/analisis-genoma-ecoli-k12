@@ -8,7 +8,7 @@
   const { bloques, nodes, links } = rawData;
 
   const filtersContainer = document.getElementById("filters-container");
-  const infoPanel = document.getElementById("info-panel");
+  const infoPanel = document.getElementById("right-panels");
   const infoTitle = document.getElementById("info-title");
   const infoBlock = document.getElementById("info-block");
   const infoDesc = document.getElementById("info-desc");
@@ -224,23 +224,40 @@
   }
 
   // Animar cámara hacia un nodo del grafo 3D
-  // Vuelo 3D pero al llegar queda de frente (vista 2D centrada en TODA la pantalla)
+  // Vuelo 3D pero al llegar queda de frente, centrado en el área visible entre paneles
   function flyToNode(nodeId) {
     const graphNode = Graph.graphData().nodes.find((n) => n.id === nodeId);
     if (!graphNode || graphNode.x === undefined) return;
     const distance = 120;
 
-    // Compensar el panel izquierdo para centrar en el viewport completo
-    const panel = document.getElementById("glass-panel");
-    const panelW = panel ? panel.offsetWidth + 32 : 0; // 32px = margins
-    const graphEl = document.getElementById("3d-graph");
-    const graphW = graphEl ? graphEl.offsetWidth : window.innerWidth;
     const cam = Graph.camera();
-    const fov = cam.fov * Math.PI / 180;
-    const visibleW = 2 * distance * Math.tan(fov / 2);
-    // Offset en unidades 3D: desplazar la vista a la derecha para que el nodo
-    // quede al centro de la pantalla completa (no solo del canvas)
-    const xOffset = (panelW / 2) * (visibleW / graphW);
+    const vFov = cam.fov * Math.PI / 180;
+    const graphEl = document.getElementById("3d-graph");
+    const canvasH = graphEl ? graphEl.offsetHeight : window.innerHeight;
+
+    // Conversión píxeles a unidades 3D (usando FOV vertical y alto del canvas)
+    const visibleH = 2 * distance * Math.tan(vFov / 2);
+    const pxTo3D = visibleH / canvasH;
+
+    // Área visible: entre el borde derecho del panel izquierdo y el borde izquierdo de los paneles derechos
+    const canvasRect = graphEl ? graphEl.getBoundingClientRect() : { left: 0, width: window.innerWidth };
+    const leftEdge = canvasRect.left; // donde inicia el canvas (después del panel izquierdo)
+
+    const rightPanels = document.getElementById("right-panels");
+    const rightVisible = rightPanels && !rightPanels.classList.contains("hidden");
+    const vpW = window.innerWidth;
+    // Posición final del panel derecho (right:16px + ancho)
+    const rightEdge = rightVisible ? (vpW - 16 - rightPanels.offsetWidth) : vpW;
+
+    // Centro del área visible entre ambos paneles
+    const visibleCenter = (leftEdge + rightEdge) / 2;
+    // Centro del canvas 3D en coordenadas de viewport
+    const canvasCenter = canvasRect.left + canvasRect.width / 2;
+
+    // Desplazamiento en píxeles (negativo = nodo debe ir a la izquierda del centro del canvas)
+    const pxShift = visibleCenter - canvasCenter;
+    // Offset 3D: mover cámara en dirección opuesta al desplazamiento deseado del nodo
+    const xOffset = -pxShift * pxTo3D;
 
     Graph.cameraPosition(
       { x: graphNode.x + xOffset, y: graphNode.y, z: graphNode.z + distance },
@@ -372,9 +389,9 @@
   function buildNodeObject(node) {
     const group = new THREE.Group();
     const conns = connectionCount.get(node.id) || 0;
-    const importance = 0.7 + (conns / maxConns) * 0.6; // 0.7 a 1.3
+    const importance = 0.8 + (conns / maxConns) * 0.7; // 0.8 a 1.5
     const isActive = node.id === currentActiveNodeId;
-    const baseHeight = (isActive ? 3 : 2) * importance;
+    const baseHeight = (isActive ? 5 : 3.5) * importance;
 
     const label = new SpriteText(node.nombre || "");
     label.color = "#ffd86b";
@@ -408,8 +425,8 @@
       _zoomTimer = null;
       const cam = Graph.camera();
       const dist = cam.position.length();
-      // Lejos (~500+) → texto grande, Cerca (~120 flyTo) → texto chico
-      const factor = Math.max(0.3, Math.min(1.8, dist / 450));
+      // Lejos (~600+) → texto grande, Cerca (~120 flyTo) → texto reducido pero legible
+      const factor = Math.max(0.5, Math.min(2.0, dist / 350));
       labelDataByNodeId.forEach(({ sprite, baseScaleX, baseScaleY }) => {
         sprite.scale.set(baseScaleX * factor, baseScaleY * factor, 1);
       });
@@ -591,6 +608,14 @@
       }
     }, 100);
   }
+
+  // Redimensionar el grafo cuando cambie el tamaño de ventana o zoom del navegador
+  window.addEventListener("resize", () => {
+    const el = document.getElementById("3d-graph");
+    if (el) {
+      Graph.width(el.clientWidth).height(el.clientHeight);
+    }
+  });
 
   // Inicializar
   buildBlockFilters();

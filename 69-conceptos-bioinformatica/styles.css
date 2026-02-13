@@ -362,18 +362,35 @@ body::after {
 }
 
 /* ============================================================
-   Info Panel (Right side - concept details)
+   Right Panels (3 cards stacked vertically)
    ============================================================ */
-.info-panel {
+.right-panels {
   position: absolute;
+  top: 16px;
+  right: 16px;
   bottom: 16px;
-  right: -420px;
   z-index: 2;
-  width: 380px;
-  max-width: 40vw;
-  max-height: calc(100vh - 32px);
-  margin: 0 16px 16px 0;
-  padding: 0;
+  width: 340px;
+  max-width: 35vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.right-panels.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(60px);
+}
+
+.right-panels.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.right-card {
   border-radius: var(--radius-lg);
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
@@ -381,35 +398,28 @@ body::after {
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
+  padding: 14px 18px;
   overflow-y: auto;
-  overflow: hidden;
-  transition: opacity 0.3s ease, right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.info-panel.hidden {
-  opacity: 0;
-  pointer-events: none;
-  right: -420px;
+.right-card::-webkit-scrollbar { width: 3px; }
+.right-card::-webkit-scrollbar-thumb { background: rgba(129, 140, 248, 0.3); border-radius: 3px; }
+
+/* Card 1: Definición (la más alta, flex-grow) */
+.right-card:first-child {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
-.info-panel.visible {
-  opacity: 1;
-  pointer-events: auto;
-  right: 16px;
-}
-
-.info-panel-header {
+.right-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid rgba(148, 163, 230, 0.08);
+  margin-bottom: 8px;
 }
 
-.info-panel-header h2 {
+.right-card-header h2 {
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -443,28 +453,18 @@ body::after {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-weight: 600;
-  padding: 0 20px;
-  margin-top: 2px;
+  margin-bottom: 4px;
   color: var(--accent);
 }
 
 .info-description {
-  font-size: 0.82rem;
-  line-height: 1.65;
+  font-size: 0.78rem;
+  line-height: 1.6;
   color: var(--text-secondary);
   white-space: pre-line;
-  padding: 12px 20px 16px;
-  max-height: 200px;
-  overflow-y: auto;
 }
 
-/* --- Info sections: Conexiones y Analogía --- */
-.info-section {
-  border-top: 1px solid rgba(148, 163, 230, 0.08);
-  padding: 12px 20px 16px;
-}
-
-.info-section-title {
+.right-card-title {
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -476,7 +476,7 @@ body::after {
   gap: 6px;
 }
 
-.info-section-title::before {
+.right-card-title::before {
   content: "";
   display: inline-block;
   width: 3px;
@@ -485,24 +485,20 @@ body::after {
   border-radius: 2px;
 }
 
+/* Conexiones */
 .info-connections {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 140px;
-  overflow-y: auto;
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
-
-.info-connections::-webkit-scrollbar { width: 3px; }
-.info-connections::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
 
 .conn-item {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 3px 0;
+  padding: 2px 0;
   line-height: 1.4;
 }
 
@@ -523,16 +519,12 @@ body::after {
   font-style: italic;
 }
 
+/* Analogía */
 .info-analogy {
-  font-size: 0.82rem;
-  line-height: 1.65;
+  font-size: 0.8rem;
+  line-height: 1.6;
   color: #ffd86b;
-  max-height: 120px;
-  overflow-y: auto;
 }
-
-.info-analogy::-webkit-scrollbar { width: 3px; }
-.info-analogy::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
 
 .info-description::-webkit-scrollbar {
   width: 3px;
@@ -732,7 +724,7 @@ body::after {
    Responsive
    ============================================================ */
 @media (max-width: 960px) {
-  .info-panel {
+  .right-panels {
     display: none;
   }
 }

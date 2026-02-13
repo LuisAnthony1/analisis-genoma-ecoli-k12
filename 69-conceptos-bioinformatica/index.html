@@ -71,31 +71,36 @@
       </div>
     </div>
 
-    <!-- Right: Info panel -->
-    <aside id="info-panel" class="info-panel hidden">
-      <div class="info-panel-header">
-        <h2 id="info-title">Selecciona un concepto</h2>
-        <button id="info-close" class="info-close-btn" aria-label="Cerrar panel">&times;</button>
-      </div>
-      <p id="info-block" class="info-block-label"></p>
-      <p id="info-desc" class="info-description">
-        Haz clic en un nodo del grafo 3D para ver la definicion completa del concepto.
-      </p>
+    <!-- Right: 3 paneles apilados verticalmente -->
+    <div id="right-panels" class="right-panels hidden">
+      <!-- Panel 1: Definición -->
+      <aside class="right-card">
+        <div class="right-card-header">
+          <h2 id="info-title">Selecciona un concepto</h2>
+          <button id="info-close" class="info-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <p id="info-block" class="info-block-label"></p>
+        <p id="info-desc" class="info-description">
+          Haz clic en un nodo del grafo 3D para ver la definicion completa del concepto.
+        </p>
+      </aside>
 
-      <div class="info-section">
-        <h3 class="info-section-title">Conexiones</h3>
+      <!-- Panel 2: Conexiones -->
+      <aside class="right-card">
+        <h3 class="right-card-title">Conexiones</h3>
         <div id="info-connections" class="info-connections">
           Sin conexiones visibles
         </div>
-      </div>
+      </aside>
 
-      <div class="info-section">
-        <h3 class="info-section-title">En cristiano</h3>
+      <!-- Panel 3: Analogía -->
+      <aside class="right-card">
+        <h3 class="right-card-title">En cristiano</h3>
         <p id="info-analogy" class="info-analogy">
           Selecciona un concepto para ver la explicacion simple.
         </p>
-      </div>
-    </aside>
+      </aside>
+    </div>
 
   </div>
 
